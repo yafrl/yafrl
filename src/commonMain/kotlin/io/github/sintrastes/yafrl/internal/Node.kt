@@ -13,7 +13,8 @@ import kotlin.jvm.JvmInline
 open class Node<out A> internal constructor(
     private val initialValue: Lazy<A>,
     internal val id: NodeID,
-    internal val recompute: () -> A
+    internal val recompute: () -> A,
+    internal val onNextFrame: ((Node<@UnsafeVariance A>) -> Unit)? = null,
 ) : Flow<A> {
     internal val onValueChangedListeners: MutableList<FlowCollector<@UnsafeVariance A>> = mutableListOf()
 
@@ -27,7 +28,6 @@ open class Node<out A> internal constructor(
         set(value) {
             _rawValue = value
         }
-
 
     internal var dirty = false
 

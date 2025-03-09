@@ -1,5 +1,6 @@
 package io.github.sintrastes.yafrl.internal
 
+import io.github.sintrastes.yafrl.EventState
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
@@ -14,7 +15,9 @@ import kotlin.coroutines.CoroutineContext
  * Dirty values are recomputed lazily upon request.
  **/
 class Timeline {
-    var latestID = -1
+    private var latestID = -1
+
+    val onNextFrameListeners = mutableListOf<() -> Unit>()
 
     private fun newID(): NodeID {
         latestID++
@@ -22,13 +25,19 @@ class Timeline {
         return NodeID(latestID)
     }
 
-    internal fun <A> createNode(value: Lazy<A>): Node<A> {
+    internal fun <A> createNode(
+        value: Lazy<A>,
+        onUpdate: (Node<A>) -> A = { it -> it.rawValue },
+        onNextFrame: ((Node<A>) -> Unit)? = null
+    ): Node<A> {
         val id = newID()
 
-        val newNode = Node(
+        var newNode: Node<A>? = null
+        newNode = Node(
             value,
             id,
-            { value.value }
+            { onUpdate(newNode!!) },
+            onNextFrame
         )
 
         nodes[id] = newNode
@@ -36,17 +45,27 @@ class Timeline {
         return newNode
     }
 
-    internal fun <A, B> createMappedNode(parent: Node<A>, f: (A) -> B): Node<B> {
+    internal fun <A, B> createMappedNode(
+        parent: Node<A>,
+        f: (A) -> B,
+        onNextFrame: ((Node<B>) -> Unit)? = null
+    ): Node<B> {
         val mapNodeID = newID()
 
         val initialValue = lazy { f(fetchNodeValue(parent) as A) }
 
-        val mappedNode = Node(
-            initialValue,
-            mapNodeID,
-            {
-                f(fetchNodeValue(parent) as A)
-            }
+        var mappedNode: Node<B>? = null
+        mappedNode = Node(
+            initialValue = initialValue,
+            id = mapNodeID,
+            recompute = {
+                val parentValue = fetchNodeValue(parent) as A
+
+                val result = f(parentValue)
+
+                result
+            },
+            onNextFrame = onNextFrame
         )
 
         nodes[mapNodeID] = mappedNode
@@ -58,6 +77,66 @@ class Timeline {
         return mappedNode
     }
 
+    internal fun <A, B> createFoldNode(
+        initialValue: A,
+        eventNode: Node<EventState<B>>,
+        reducer: (A, B) -> A
+    ): Node<A> {
+        val foldNodeID = newID()
+
+        var currentValue = initialValue
+
+        val foldNode = Node(
+            lazy { initialValue },
+            foldNodeID,
+            {
+                val event = fetchNodeValue(eventNode) as EventState<B>
+                if (event is EventState.Fired) {
+                    currentValue = reducer(currentValue, event.event)
+                }
+
+                currentValue
+            }
+        )
+
+        nodes[foldNodeID] = foldNode
+
+        children[eventNode.id]
+            ?.add(foldNodeID)
+            ?: run { children[eventNode.id] = mutableListOf(foldNodeID) }
+
+        return foldNode
+    }
+
+    internal fun <A> createCombinedNode(
+        parentNodes: List<Node<A>>,
+        combine: (List<A>) -> A,
+        onNextFrame: ((Node<A>) -> Unit)? = null
+    ): Node<A> {
+        val combinedNodeID = newID()
+
+        val initialValue = lazy { combine(parentNodes.map { it.rawValue }) }
+
+        val combinedNode = Node(
+            initialValue,
+            combinedNodeID,
+            {
+                combine(parentNodes.map { fetchNodeValue(it) as A })
+            },
+            onNextFrame
+        )
+
+        nodes[combinedNodeID] = combinedNode
+
+        for (parentNode in parentNodes) {
+            children[parentNode.id]
+                ?.add(combinedNodeID)
+                ?: run { children[parentNode.id] = mutableListOf(combinedNodeID) }
+        }
+
+        return combinedNode
+    }
+
     private val nodes: MutableMap<NodeID, Node<Any?>> = mutableMapOf()
 
     // Basically we are building up a doubly-lined DAG here:
@@ -65,10 +144,17 @@ class Timeline {
     // Map from a node ID to it's set of child nodes
     private val children: MutableMap<NodeID, MutableList<NodeID>> = mutableMapOf()
 
+    // Note: This is the entrypoint for a new "frame" in the timeline.
     internal suspend fun updateNodeValue(
         node: Node<Any?>,
         newValue: Any?
     ) {
+        for (listener in onNextFrameListeners) {
+            listener()
+        }
+
+        onNextFrameListeners.clear()
+
         node.rawValue = newValue
 
         for (listener in node.onValueChangedListeners) {
@@ -76,23 +162,31 @@ class Timeline {
         }
 
         updateChildNodes(node)
+
+        if (node.onNextFrame != null) {
+            onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
+        }
     }
 
-    private fun updateChildNodes(
+    private suspend fun updateChildNodes(
         node: Node<Any?>
     ) {
-        println("Marking children of ${node.id} dirty")
         val childNodes = children[node.id] ?: listOf()
 
         for (childID in childNodes) {
             val child = nodes[childID]!!
 
             if (child.onValueChangedListeners.size == 0) {
-                // If not listeneing, we can mark the node dirty
+                // If not listening, we can mark the node dirty
                 child.dirty = true
             } else {
                 // Otherwise, we are forced to calculate the node's value
                 child.rawValue = child.recompute()
+
+                // As well as invoking any listeners on the child.
+                for (listener in child.onValueChangedListeners) {
+                    listener.emit(child.rawValue)
+                }
             }
 
             updateChildNodes(child)

@@ -1,10 +1,12 @@
+package states
+
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.internal.newTimeline
 import kotlinx.coroutines.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class StateUpdatingTests {
+class MapUpdatingTests {
     @Test
     fun `Build node`() {
         runBlocking(newTimeline()) {

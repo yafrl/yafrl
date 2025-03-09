@@ -1,11 +1,7 @@
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.runBlocking
+package negative_tests
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.TestScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -109,6 +105,55 @@ class NegativeResults {
             val result = mapped.value
 
             assertEquals(5, result)
+        }
+    }
+
+    // Example from https://qfpl.io/posts/reflex/basics/events/
+    @Test
+    fun `Does not handle simultaneous events`() {
+        val clicks = MutableSharedFlow<Unit>()
+
+        val ones = clicks.scan(0) { x, _ -> x + 1 }
+
+        val hundreds = ones.map { it * 100 }
+
+        val sum = ones.combine(hundreds) { x, y -> x + y }
+
+        val scope = CoroutineScope(Dispatchers.Default)
+
+        runBlocking {
+            // Count the number of times that sum emits
+            var sumEmitted = 0
+
+            scope.launch {
+                sum.collect {
+                    sumEmitted++
+                }
+            }
+
+            // Count the number of clicks
+            var clicksEmitted = 0
+
+            // Simulate clicking the button a few times
+            scope.launch {
+                clicks.emit(Unit)
+                clicksEmitted++
+                delay(10)
+            }
+
+            // Wait for a decent number of clicks
+            delay(50)
+
+            //
+            // Naively, we'd expect these to be the same -- but because
+            // kotlinx.coroutine's Flows by default work fully asynchronously,
+            // this causes more events to be emitted than we'd expect -- with
+            // "glitch" states where the states are not in sync.
+            //
+            // yafrl with its synchronous timeline implementation does not have
+            // this problem.
+            //
+            assertNotSame(sumEmitted, clicksEmitted)
         }
     }
 }

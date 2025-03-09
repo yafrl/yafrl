@@ -43,17 +43,86 @@ open class State<A> internal constructor(
         node.collect(collector)
     }
 
+    /**
+     * Return the current value of the state.
+     **/
     override suspend fun current(): A {
         return node.current()
     }
 
+    /**
+     * Applies the passed function [f] to each state,
+     *  producing a new transformed [State] value.
+     *
+     * Note: [f] should be a pure function.
+     **/
     suspend fun <B> map(f: (A) -> B): State<B> {
         val graph = currentCoroutineContext().nodeGraph!!
 
         return State(graph.createMappedNode(node, f))
     }
 
+    /**
+     * Combine two states together into a single [State] by applying a function
+     *  to the two input states.
+     *
+     * Example:
+     *
+     * ```
+     * val countA: State<Int> = ...
+     * val countB: State<Int> = ...
+     *
+     * val sum = countA.combineWith(countB) { x, y -> x + y }
+     * ```
+     **/
+    suspend fun <B, C> combineWith(other: State<B>, op: (A, B) -> C): State<C> {
+        TODO()
+    }
 
+    suspend fun <B, C, D> combineWith(other: State<B>, op: (A, B, C) -> D): State<D> {
+        TODO()
+    }
+
+    suspend fun <B, C, D, E> combineWith(other: State<B>, op: (A, B, C, D) -> E): State<E> {
+        TODO()
+    }
+
+    suspend fun <B, C, D, E, F> combineWith(other: State<B>, op: (A, B, C, D, E) -> F): State<F> {
+        TODO()
+    }
+
+    companion object {
+        /**
+         * Construct a [State] by suppling an [initial] value, a set of [events]
+         *  driving the updates of the [State], together with a [reducer] describing
+         *  how new events update the existing state.
+         *
+         *  Example:
+         *
+         * ```
+         * enum class CounterEvent {
+         *     Increment,
+         *     Decrement;
+         * }
+         *
+         * val events: Event<CounterEvent> = ...
+         *
+         * val counter: State<Int> = State.fold(0, incrementEvents) { state, event ->
+         *     when (event) {
+         *         is CounterEvent.Increment -> state + 1
+         *         is CounterEvent.Decrement -> state - 1
+         *     }
+         * }
+         * ```
+         **/
+        suspend fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): State<A> {
+            val graph = currentCoroutineContext().nodeGraph!!
+
+            return State(
+                graph.createFoldNode(initial, events.node, reducer)
+            )
+        }
+    }
 }
 
 /**
