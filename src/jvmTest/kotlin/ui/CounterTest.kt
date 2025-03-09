@@ -19,13 +19,12 @@ import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import org.junit.Test
 
 object CounterComponent {
     class ViewModel(
         clicks: Event<Unit>
     ) {
-        val count: State<Int> = State.fold(0, clicks) { state, _click ->
+        val count = State.fold(0, clicks) { state, _click ->
             state + 1
         }
     }
