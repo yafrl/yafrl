@@ -1,11 +1,11 @@
 package io.github.sintrastes.yafrl
 
 import io.github.sintrastes.yafrl.internal.Node
-import io.github.sintrastes.yafrl.internal.nodeGraph
-import kotlinx.coroutines.currentCoroutineContext
+import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.launch
 
 /**
  * An event is a value which is defined in instantaneous moments at time.
@@ -50,8 +50,8 @@ open class Event<A> internal constructor(
      *
      * Note: [f] should be a pure function.
      **/
-    suspend fun <B> map(f: (A) -> B): Event<B> {
-        val graph = currentCoroutineContext().nodeGraph!!
+    fun <B> map(f: (A) -> B): Event<B> {
+        val graph = Timeline.currentTimeline()
 
         return Event(
             graph.createMappedNode(
@@ -69,8 +69,8 @@ open class Event<A> internal constructor(
      *  [Event], and produces an event that only emits if
      *  the function evaluates to true.
      **/
-    suspend fun filter(f: (A) -> Boolean): Event<A> {
-        val graph = currentCoroutineContext().nodeGraph!!
+    fun filter(f: (A) -> Boolean): Event<A> {
+        val graph = Timeline.currentTimeline()
 
         return Event(
             graph.createMappedNode(
@@ -93,7 +93,7 @@ open class Event<A> internal constructor(
         /**
          * Merges [Event]s using the [Leftmost][MergeStrategy.Leftmost] strategy.
          **/
-        suspend fun <A> merged(
+        fun <A> merged(
             vararg events: Event<A>
         ): Event<A> {
             return mergedWith(
@@ -106,11 +106,11 @@ open class Event<A> internal constructor(
          * Merges [Event]s using the supplied [MergeStrategy] to handle
          *  the case of simultaneous events.
          **/
-        suspend fun <A> mergedWith(
+        fun <A> mergedWith(
             strategy: MergeStrategy<A>,
             vararg events: Event<A>
         ): Event<A> {
-            val graph = currentCoroutineContext().nodeGraph!!
+            val graph = Timeline.currentTimeline()
 
             val parentNodes = events.map {
                 it.node
@@ -152,18 +152,19 @@ open class Event<A> internal constructor(
 open class BroadcastEvent<A> internal constructor(
     node: Node<EventState<A>>
 ): Event<A>(node) {
-    suspend fun emit(value: A) {
-        val graph = currentCoroutineContext().nodeGraph!!
+    fun send(value: A) {
+        val timeline = Timeline.currentTimeline()
 
-        graph.updateNodeValue(node, EventState.Fired(value))
+
+        timeline.updateNodeValue(node, EventState.Fired(value))
     }
 }
 
 /**
  * Constructs a new [BroadcastEvent].
  **/
-suspend fun <A> broadcastEvent(): BroadcastEvent<A> {
-    val graph = currentCoroutineContext().nodeGraph!!
+fun <A> broadcastEvent(): BroadcastEvent<A> {
+    val graph = Timeline.currentTimeline()
 
     val initialValue = lazy { EventState.None }
 

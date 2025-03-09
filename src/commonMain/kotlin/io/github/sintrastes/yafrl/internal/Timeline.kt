@@ -1,7 +1,9 @@
 package io.github.sintrastes.yafrl.internal
 
 import io.github.sintrastes.yafrl.EventState
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -14,7 +16,9 @@ import kotlin.coroutines.CoroutineContext
  *
  * Dirty values are recomputed lazily upon request.
  **/
-class Timeline {
+class Timeline(
+    internal val scope: CoroutineScope
+) {
     private var latestID = -1
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
@@ -145,7 +149,7 @@ class Timeline {
     private val children: MutableMap<NodeID, MutableList<NodeID>> = mutableMapOf()
 
     // Note: This is the entrypoint for a new "frame" in the timeline.
-    internal suspend fun updateNodeValue(
+    internal fun updateNodeValue(
         node: Node<Any?>,
         newValue: Any?
     ) {
@@ -157,8 +161,10 @@ class Timeline {
 
         node.rawValue = newValue
 
-        for (listener in node.onValueChangedListeners) {
-            listener.emit(newValue)
+        scope.launch {
+            for (listener in node.onValueChangedListeners) {
+                listener.emit(newValue)
+            }
         }
 
         updateChildNodes(node)
@@ -168,7 +174,7 @@ class Timeline {
         }
     }
 
-    private suspend fun updateChildNodes(
+    private fun updateChildNodes(
         node: Node<Any?>
     ) {
         val childNodes = children[node.id] ?: listOf()
@@ -184,8 +190,10 @@ class Timeline {
                 child.rawValue = child.recompute()
 
                 // As well as invoking any listeners on the child.
-                for (listener in child.onValueChangedListeners) {
-                    listener.emit(child.rawValue)
+                scope.launch {
+                    for (listener in child.onValueChangedListeners) {
+                        listener.emit(child.rawValue)
+                    }
                 }
             }
 
@@ -204,27 +212,23 @@ class Timeline {
 
         return node.rawValue
     }
+
+    companion object {
+        private var _timeline: Timeline? = null
+
+        fun initializeTimeline(scope: CoroutineScope) {
+            _timeline = Timeline(scope)
+        }
+
+        fun currentTimeline(): Timeline {
+            return _timeline
+                ?: error("Timeline must be initialized with Timeline.initializeTimeline().")
+        }
+    }
 }
 
-private data class NodeGraphID(val graph: Timeline) : AbstractCoroutineContextElement(NodeGraphID) {
-    companion object Key : CoroutineContext.Key<NodeGraphID>
-}
-
-internal val CoroutineContext.nodeGraph: Timeline?
-    get() = this[NodeGraphID]?.graph
-
-/**
- * Constructs a [CoroutineContext] which is associated with a single
- *  [Timeline].
- **/
-fun newTimeline(): CoroutineContext {
-    val nodeGraph = Timeline()
-
-    return NodeGraphID(nodeGraph)
-}
-
-suspend fun <A> Node<A>.current(): A {
-    val graph = currentCoroutineContext().nodeGraph!!
+fun <A> Node<A>.current(): A {
+    val graph = Timeline.currentTimeline()
 
     return graph.fetchNodeValue(this) as A
 }

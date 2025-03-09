@@ -4,60 +4,70 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.MergeStrategy
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.internal.newTimeline
-import io.github.sintrastes.yafrl.internal.nodeGraph
+import io.github.sintrastes.yafrl.internal.Timeline
 import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import kotlin.test.BeforeTest
 
 class EventUpdatingTests {
+    @BeforeTest
+    fun `init timeline`() {
+        Timeline.initializeTimeline(
+            CoroutineScope(Dispatchers.Default)
+        )
+    }
+
     @Test
     fun `Event updates immediately`() {
-        runBlocking(newTimeline()) {
+        runBlocking {
+            val timeline = Timeline.currentTimeline()
+
             val events = broadcastEvent<Int>()
 
-            var latestEvent: Int? = null
+            events.send(1)
 
-            events.collect {
-                latestEvent = it
-            }
-
-            events.emit(1)
-
-            assert(latestEvent == 1)
+            assertEquals(
+                EventState.Fired(1),
+                timeline.fetchNodeValue(events.node)
+            )
         }
     }
 
     @Test
     fun `Mapped event updates if collected`() {
-        runBlocking(newTimeline()) {
+        runBlocking {
+            val timeline = Timeline.currentTimeline()
+
             val events = broadcastEvent<Int>()
 
             val mappedEvents = events
                 .map { it + 2 }
 
-            var latestEvent: Int? = null
-
             mappedEvents.collect {
-                latestEvent = it
+                // no-op
             }
 
-            events.emit(1)
+            events.send(1)
 
-            assertEquals(3, latestEvent)
+            assertEquals(
+                EventState.Fired(3),
+                timeline.fetchNodeValue(mappedEvents.node)
+            )
         }
     }
 
     @Test
     fun `Mapped event is lazy`() {
-        runBlocking(newTimeline()) {
+        runBlocking {
             val events = broadcastEvent<Int>()
 
             val mappedEvents = events
                 .map { it + 2 }
 
-            events.emit(1)
+            events.send(1)
 
             assertEquals(
                 EventState.None,
@@ -68,14 +78,14 @@ class EventUpdatingTests {
 
     @Test
     fun `filtered event does not emit on filtered elements`() {
-        runBlocking(newTimeline()) {
+        runBlocking {
             val events = broadcastEvent<Int>()
 
             // Should only let event events through.
             val filtered = events
                 .filter { it % 2 == 0 }
 
-            events.emit(1)
+            events.send(1)
 
             assertEquals(EventState.None, filtered.node.rawValue)
         }
@@ -83,19 +93,19 @@ class EventUpdatingTests {
 
     @Test
     fun `Event should not be fired on next tick`() {
-        runBlocking(newTimeline()) {
+        runBlocking {
             val event1 = broadcastEvent<Unit>()
 
             val event2 = broadcastEvent<Unit>()
 
             // Emit an event
-            event1.emit(Unit)
+            event1.send(Unit)
 
             // In this frame, we should see the event has fired.
             assertEquals(EventState.Fired(Unit), event1.node.rawValue)
 
             // Simulate a new frame by emitting a second event
-            event2.emit(Unit)
+            event2.send(Unit)
 
             // The first event should no longer be "fired" in this frame.
             assertEquals(EventState.None, event1.node.rawValue)
@@ -105,8 +115,8 @@ class EventUpdatingTests {
 
     @Test
     fun `Default merge handling is Leftmost`() {
-        runBlocking(newTimeline()) {
-            val graph = currentCoroutineContext().nodeGraph!!
+        runBlocking {
+            val graph = Timeline.currentTimeline()
 
             val count = broadcastEvent<Int>()
 
@@ -120,19 +130,19 @@ class EventUpdatingTests {
 
             val fizzbuzz = Event.merged(fizz, buzz)
 
-            count.emit(3)
+            count.send(3)
             assertEquals(
                 EventState.Fired("fizz"),
                 graph.fetchNodeValue(fizzbuzz.node)
             )
 
-            count.emit(5)
+            count.send(5)
             assertEquals(
                 EventState.Fired("buzz"),
                 graph.fetchNodeValue(fizzbuzz.node)
             )
 
-            count.emit(15)
+            count.send(15)
             assertEquals(
                 EventState.Fired("fizz"),
                 graph.fetchNodeValue(fizzbuzz.node)
@@ -142,8 +152,8 @@ class EventUpdatingTests {
 
     @Test
     fun `Custom merge works for fizzbuzz`() {
-        runBlocking(newTimeline()) {
-            val graph = currentCoroutineContext().nodeGraph!!
+        runBlocking {
+            val graph = Timeline.currentTimeline()
 
             val count = broadcastEvent<Int>()
 
@@ -164,19 +174,19 @@ class EventUpdatingTests {
                 buzz
             )
 
-            count.emit(3)
+            count.send(3)
             assertEquals(
                 EventState.Fired("fizz"),
                 graph.fetchNodeValue(fizzbuzz.node)
             )
 
-            count.emit(5)
+            count.send(5)
             assertEquals(
                 EventState.Fired("buzz"),
                 graph.fetchNodeValue(fizzbuzz.node)
             )
 
-            count.emit(15)
+            count.send(15)
             assertEquals(
                 EventState.Fired("fizzbuzz"),
                 graph.fetchNodeValue(fizzbuzz.node)

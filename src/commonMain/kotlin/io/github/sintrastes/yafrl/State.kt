@@ -1,9 +1,8 @@
 package io.github.sintrastes.yafrl
 
 import io.github.sintrastes.yafrl.internal.Node
+import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
-import io.github.sintrastes.yafrl.internal.nodeGraph
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.StateFlow
@@ -46,7 +45,7 @@ open class State<A> internal constructor(
     /**
      * Return the current value of the state.
      **/
-    override suspend fun current(): A {
+    override fun current(): A {
         return node.current()
     }
 
@@ -56,8 +55,8 @@ open class State<A> internal constructor(
      *
      * Note: [f] should be a pure function.
      **/
-    suspend fun <B> map(f: (A) -> B): State<B> {
-        val graph = currentCoroutineContext().nodeGraph!!
+    fun <B> map(f: (A) -> B): State<B> {
+        val graph = Timeline.currentTimeline()
 
         return State(graph.createMappedNode(node, f))
     }
@@ -75,19 +74,19 @@ open class State<A> internal constructor(
      * val sum = countA.combineWith(countB) { x, y -> x + y }
      * ```
      **/
-    suspend fun <B, C> combineWith(other: State<B>, op: (A, B) -> C): State<C> {
+    fun <B, C> combineWith(other: State<B>, op: (A, B) -> C): State<C> {
         TODO()
     }
 
-    suspend fun <B, C, D> combineWith(other: State<B>, op: (A, B, C) -> D): State<D> {
+    fun <B, C, D> combineWith(other: State<B>, op: (A, B, C) -> D): State<D> {
         TODO()
     }
 
-    suspend fun <B, C, D, E> combineWith(other: State<B>, op: (A, B, C, D) -> E): State<E> {
+    fun <B, C, D, E> combineWith(other: State<B>, op: (A, B, C, D) -> E): State<E> {
         TODO()
     }
 
-    suspend fun <B, C, D, E, F> combineWith(other: State<B>, op: (A, B, C, D, E) -> F): State<F> {
+    fun <B, C, D, E, F> combineWith(other: State<B>, op: (A, B, C, D, E) -> F): State<F> {
         TODO()
     }
 
@@ -115,8 +114,8 @@ open class State<A> internal constructor(
          * }
          * ```
          **/
-        suspend fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): State<A> {
-            val graph = currentCoroutineContext().nodeGraph!!
+        fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): State<A> {
+            val graph = Timeline.currentTimeline()
 
             return State(
                 graph.createFoldNode(initial, events.node, reducer)
@@ -133,15 +132,15 @@ open class State<A> internal constructor(
 class MutableState<A> internal constructor(
     node: Node<A>
 ): State<A>(node) {
-    suspend infix fun setTo(updatedValue: A) {
-        val graph = currentCoroutineContext().nodeGraph!!
+    infix suspend fun setTo(updatedValue: A) {
+        val graph = Timeline.currentTimeline()
 
         graph.updateNodeValue(node, updatedValue)
     }
 }
 
-suspend fun <A> mutableStateOf(value: A): MutableState<A> {
-    val graph = currentCoroutineContext().nodeGraph!!
+fun <A> mutableStateOf(value: A): MutableState<A> {
+    val graph = Timeline.currentTimeline()
 
     return MutableState(graph.createNode(lazy { value }))
 }

@@ -23,5 +23,5 @@ package io.github.sintrastes.yafrl
  *  functions of time.
  **/
 interface Behavior<A> {
-    suspend fun current(): A
+    fun current(): A
 }

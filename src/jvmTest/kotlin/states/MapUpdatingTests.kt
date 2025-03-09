@@ -1,36 +1,40 @@
 package states
 
 import io.github.sintrastes.yafrl.*
-import io.github.sintrastes.yafrl.internal.newTimeline
+import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.*
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MapUpdatingTests {
+    @BeforeTest
+    fun `init timeline`() {
+        Timeline.initializeTimeline(
+            CoroutineScope(Dispatchers.Default)
+        )
+    }
+
     @Test
     fun `Build node`() {
-        runBlocking(newTimeline()) {
-            val node = mutableStateOf(0)
+        val node = mutableStateOf(0)
 
-            assert(node.current() == 0)
-        }
+        assert(node.current() == 0)
     }
 
     @Test
     fun `Build map node`() {
-        runBlocking(newTimeline()) {
-            val node = mutableStateOf(0)
+        val node = mutableStateOf(0)
 
-            val mapped = node
-                .map { it + 2 }
+        val mapped = node
+            .map { it + 2 }
 
-            assert(mapped.current() == 2)
-        }
+        assert(mapped.current() == 2)
     }
 
     @Test
     fun `Map node updates immediately`() {
-        runBlocking(newTimeline()) {
+        runBlocking {
             val node = mutableStateOf(0)
 
             val mapped = node
@@ -40,13 +44,14 @@ class MapUpdatingTests {
 
             assertEquals(5, mapped.current())
         }
+
     }
 
     @Test
     fun `Map does not update unless queried`() {
-        var mapEvaluated = false
+        runBlocking {
+            var mapEvaluated = false
 
-        runBlocking(newTimeline()) {
             val node = mutableStateOf(0)
 
             node.map {
@@ -62,9 +67,9 @@ class MapUpdatingTests {
 
     @Test
     fun `Map updates if listened to`() {
-        var mapEvaluated = false
+        runBlocking {
+            var mapEvaluated = false
 
-        runBlocking(newTimeline()) {
             val node = mutableStateOf(0)
 
             val mapped = node.map {
