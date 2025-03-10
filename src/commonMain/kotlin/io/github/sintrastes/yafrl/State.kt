@@ -74,20 +74,85 @@ open class State<A> internal constructor(
      * val sum = countA.combineWith(countB) { x, y -> x + y }
      * ```
      **/
-    fun <B, C> combineWith(other: State<B>, op: (A, B) -> C): State<C> {
-        TODO()
+    fun <B, C> combineWith(state2: State<B>, op: (A, B) -> C): State<C> {
+        val timeline = Timeline.currentTimeline()
+
+        val combined = timeline.createCombinedNode(
+            parentNodes = listOf(this.node, state2.node),
+            combine = { values ->
+                val first = values[0] as A
+                val second = values[1] as B
+
+                op(first, second)
+            }
+        )
+
+        return State(combined)
     }
 
-    fun <B, C, D> combineWith(other: State<B>, op: (A, B, C) -> D): State<D> {
-        TODO()
+    fun <B, C, D> combineWith(state2: State<B>, state3: State<C>, op: (A, B, C) -> D): State<D> {
+        val timeline = Timeline.currentTimeline()
+
+        val combined = timeline.createCombinedNode(
+            parentNodes = listOf(this.node, state2.node, state3.node),
+            combine = { values ->
+                val first = values[0] as A
+                val second = values[1] as B
+                val third = values[2] as C
+
+                op(first, second, third)
+            }
+        )
+
+        return State(combined)
     }
 
-    fun <B, C, D, E> combineWith(other: State<B>, op: (A, B, C, D) -> E): State<E> {
-        TODO()
+    fun <B, C, D, E> combineWith(
+        state2: State<B>,
+        state3: State<C>,
+        state4: State<D>,
+        op: (A, B, C, D) -> E
+    ): State<E> {
+        val timeline = Timeline.currentTimeline()
+
+        val combined = timeline.createCombinedNode(
+            parentNodes = listOf(this.node, state2.node, state3.node, state4.node),
+            combine = { values ->
+                val first = values[0] as A
+                val second = values[1] as B
+                val third = values[2] as C
+                val fourth = values[3] as D
+
+                op(first, second, third, fourth)
+            }
+        )
+
+        return State(combined)
     }
 
-    fun <B, C, D, E, F> combineWith(other: State<B>, op: (A, B, C, D, E) -> F): State<F> {
-        TODO()
+    fun <B, C, D, E, F> combineWith(
+        state2: State<B>,
+        state3: State<C>,
+        state4: State<D>,
+        state5: State<E>,
+        op: (A, B, C, D, E) -> F
+    ): State<F> {
+        val timeline = Timeline.currentTimeline()
+
+        val combined = timeline.createCombinedNode(
+            parentNodes = listOf(this.node, state2.node, state3.node, state4.node, state5.node),
+            combine = { values ->
+                val first = values[0] as A
+                val second = values[1] as B
+                val third = values[2] as C
+                val fourth = values[3] as D
+                val fifth = values[4] as E
+
+                op(first, second, third, fourth, fifth)
+            }
+        )
+
+        return State(combined)
     }
 
     companion object {

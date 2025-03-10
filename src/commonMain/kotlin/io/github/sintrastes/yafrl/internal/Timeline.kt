@@ -112,8 +112,8 @@ class Timeline(
     }
 
     internal fun <A> createCombinedNode(
-        parentNodes: List<Node<A>>,
-        combine: (List<A>) -> A,
+        parentNodes: List<Node<Any?>>,
+        combine: (List<Any?>) -> A,
         onNextFrame: ((Node<A>) -> Unit)? = null
     ): Node<A> {
         val combinedNodeID = newID()
