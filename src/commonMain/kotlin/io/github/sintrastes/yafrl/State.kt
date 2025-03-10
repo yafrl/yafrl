@@ -132,11 +132,13 @@ open class State<A> internal constructor(
 class MutableState<A> internal constructor(
     node: Node<A>
 ): State<A>(node) {
-    infix suspend fun setTo(updatedValue: A) {
-        val graph = Timeline.currentTimeline()
+    var value: A
+        get() = current()
+        set(value) {
+            val graph = Timeline.currentTimeline()
 
-        graph.updateNodeValue(node, updatedValue)
-    }
+            return graph.updateNodeValue(node, value)
+        }
 }
 
 fun <A> mutableStateOf(value: A): MutableState<A> {

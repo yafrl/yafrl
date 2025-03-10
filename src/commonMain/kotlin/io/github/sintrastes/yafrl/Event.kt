@@ -56,7 +56,10 @@ open class Event<A> internal constructor(
         return Event(
             graph.createMappedNode(
                 parent = node,
-                f = { it.map(f) },
+                f = {
+                    it.map(f)
+                },
+                initialValue = lazy { EventState.None },
                 onNextFrame = { node ->
                     node.rawValue = EventState.None
                 }
@@ -155,7 +158,6 @@ open class BroadcastEvent<A> internal constructor(
     fun send(value: A) {
         val timeline = Timeline.currentTimeline()
 
-
         timeline.updateNodeValue(node, EventState.Fired(value))
     }
 }
@@ -170,9 +172,6 @@ fun <A> broadcastEvent(): BroadcastEvent<A> {
 
     val node = graph.createNode(
         value = initialValue,
-        onUpdate = { node ->
-            node.rawValue
-        },
         onNextFrame = { node ->
             node.rawValue = EventState.None
         }

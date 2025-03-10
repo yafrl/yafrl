@@ -34,35 +34,30 @@ class MapUpdatingTests {
 
     @Test
     fun `Map node updates immediately`() {
-        runBlocking {
-            val node = mutableStateOf(0)
+        val node = mutableStateOf(0)
 
-            val mapped = node
-                .map { it + 2 }
+        val mapped = node
+            .map { it + 2 }
 
-            node.setTo(3)
+        node.value = 3
 
-            assertEquals(5, mapped.current())
-        }
-
+        assertEquals(5, mapped.current())
     }
 
     @Test
     fun `Map does not update unless queried`() {
-        runBlocking {
-            var mapEvaluated = false
+        var mapEvaluated = false
 
-            val node = mutableStateOf(0)
+        val node = mutableStateOf(0)
 
-            node.map {
-                mapEvaluated = true
-                it + 2
-            }
-
-            node.setTo(3)
-
-            assert(!mapEvaluated)
+        node.map {
+            mapEvaluated = true
+            it + 2
         }
+
+        node.value = 3
+
+        assert(!mapEvaluated)
     }
 
     @Test
@@ -81,7 +76,7 @@ class MapUpdatingTests {
                 println("Collecting $value")
             }
 
-            node.setTo(3)
+            node.value = 3
 
             assert(mapEvaluated)
         }

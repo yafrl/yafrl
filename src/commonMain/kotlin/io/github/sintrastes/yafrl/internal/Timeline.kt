@@ -52,11 +52,10 @@ class Timeline(
     internal fun <A, B> createMappedNode(
         parent: Node<A>,
         f: (A) -> B,
+        initialValue: Lazy<B> = lazy { f(fetchNodeValue(parent) as A) },
         onNextFrame: ((Node<B>) -> Unit)? = null
     ): Node<B> {
         val mapNodeID = newID()
-
-        val initialValue = lazy { f(fetchNodeValue(parent) as A) }
 
         var mappedNode: Node<B>? = null
         mappedNode = Node(
