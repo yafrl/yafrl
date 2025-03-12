@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 /**
@@ -93,6 +95,34 @@ open class Event<A> internal constructor(
                 }
             )
         )
+    }
+
+    /**
+     * Blocks occurrence of events until the [window] of time has passed,
+     *  after which the latest event will be emitted.
+     **/
+    fun debounced(window: Duration): Event<A> {
+        val debounced = broadcastEvent<A>()
+
+        val scope = Timeline.currentTimeline().scope
+
+        var lastTime: Instant? = null
+        var lastEvent: A? = null
+
+        scope.launch {
+            collect { event ->
+                val currentTime = Clock.System.now()
+
+                if (lastTime != null && currentTime - lastTime!! > window) {
+                    debounced.send(lastEvent!!)
+                }
+
+                lastTime = currentTime
+                lastEvent = event
+            }
+        }
+
+        return debounced
     }
 
     companion object {

@@ -24,6 +24,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
                 implementation("app.cash.molecule:molecule-runtime:2.0.0")
             }
         }
