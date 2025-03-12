@@ -1,10 +1,10 @@
 import org.jetbrains.dokka.gradle.DokkaTask
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree.Companion.test
 import java.net.URL
 
 plugins {
     kotlin("multiplatform") version "2.1.10"
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.10"
+    id("org.jetbrains.kotlinx.atomicfu") version "0.27.0"
     id("org.jetbrains.compose") version "1.7.3"
     id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"

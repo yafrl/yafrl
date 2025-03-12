@@ -1,11 +1,10 @@
 package io.github.sintrastes.yafrl.internal
 
 import io.github.sintrastes.yafrl.EventState
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 
 /**
  * Simple implementation of a push-pull FRP system using a graph
@@ -18,7 +17,7 @@ import kotlin.coroutines.CoroutineContext
  **/
 class Timeline(
     internal val scope: CoroutineScope
-) {
+) : SynchronizedObject() {
     private var latestID = -1
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
@@ -151,7 +150,7 @@ class Timeline(
     internal fun updateNodeValue(
         node: Node<Any?>,
         newValue: Any?
-    ) {
+    ) = synchronized(this) {
         for (listener in onNextFrameListeners) {
             listener()
         }
@@ -202,7 +201,7 @@ class Timeline(
 
     internal fun fetchNodeValue(
         node: Node<Any?>
-    ): Any? {
+    ): Any? = synchronized(this) {
         if (!node.dirty) {
             return node.rawValue
         } else {
