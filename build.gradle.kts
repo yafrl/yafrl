@@ -50,7 +50,7 @@ tasks.withType<DokkaTask>().configureEach {
             // to easily find source code for inspected declarations
             sourceLink {
                 localDirectory.set(file("src/commonMain/kotlin"))
-                remoteUrl.set(URL("https://github.com/sintrastes/yafrl/tree/main/"))
+                remoteUrl.set(URL("https://github.com/sintrastes/yafrl/tree/main/src/commonMain/kotlin"))
                 remoteLineSuffix.set("#L")
             }
         }
