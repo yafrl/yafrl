@@ -22,6 +22,6 @@ package io.github.sintrastes.yafrl
  * [Behavior]s have no other restrictions, and can be either continuous or discrete
  *  functions of time.
  **/
-interface Behavior<A> {
+interface Behavior<out A> {
     val value: A
 }

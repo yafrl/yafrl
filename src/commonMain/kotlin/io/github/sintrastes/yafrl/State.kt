@@ -3,9 +3,9 @@ package io.github.sintrastes.yafrl
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /**
  * A flow can be thought of as a combination of a [Behavior] and an
@@ -35,12 +35,23 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * They are very similar to [StateFlow]s in this sense -- only better.
  **/
-open class State<A> internal constructor(
+open class State<out A> internal constructor(
     internal val node: Node<A>
 ): Behavior<A> {
+    /**
+     * Launches a handler that asynchronously listens to updates
+     *  on the state.
+     *
+     * Comparable to [Flow.collect][kotlinx.coroutines.flow.Flow.collect].
+     **/
     @FragileYafrlAPI
-    suspend fun collect(collector: FlowCollector<A>) {
+    suspend fun collectAsync(collector: FlowCollector<A>) {
         node.collect(collector)
+    }
+
+    @FragileYafrlAPI
+    fun collectSync(collector: (A) -> Unit) {
+        node.collectSync(collector)
     }
 
     /**
@@ -60,6 +71,11 @@ open class State<A> internal constructor(
         val graph = Timeline.currentTimeline()
 
         return State(graph.createMappedNode(node, f))
+    }
+
+    @OptIn(FragileYafrlAPI::class)
+    fun <B> flatMap(f: (A) -> State<B>): State<B> {
+        return map(f).flatten()
     }
 
     /**
@@ -188,6 +204,34 @@ open class State<A> internal constructor(
             )
         }
     }
+}
+
+@OptIn(FragileYafrlAPI::class)
+fun <A> State<State<A>>.flatten(): State<A> {
+    var currentState = value
+
+    val flattened = mutableStateOf(currentState.value)
+
+    // Note: Order of registration for these collects is important here.
+    collectSync { newState ->
+        println("Updating to new state")
+        currentState = newState
+
+        flattened.value = currentState.value
+
+        // TODO: Probably want to be able to unregister these
+        //  to avoid memory leaks.
+        currentState.collectSync { newValue ->
+            flattened.value = newValue
+        }
+    }
+
+    currentState.collectSync { newValue ->
+        println("Updating flattened value: $newValue")
+        flattened.value = newValue
+    }
+
+    return flattened
 }
 
 /**

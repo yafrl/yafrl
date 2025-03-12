@@ -18,6 +18,8 @@ open class Node<out A> internal constructor(
 ) : Flow<A> {
     internal val onValueChangedListeners: MutableList<FlowCollector<@UnsafeVariance A>> = mutableListOf()
 
+    internal val syncOnValueChangedListeners: MutableList<(@UnsafeVariance A) -> Unit> = mutableListOf()
+
     private var _rawValue: A? = null
 
     internal var rawValue: @UnsafeVariance A
@@ -33,6 +35,10 @@ open class Node<out A> internal constructor(
 
     override suspend fun collect(collector: FlowCollector<A>) {
         onValueChangedListeners += collector
+    }
+
+    fun collectSync(collector: (A) -> Unit) {
+        syncOnValueChangedListeners += collector
     }
 }
 

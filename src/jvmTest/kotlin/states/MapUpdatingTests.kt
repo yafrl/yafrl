@@ -73,7 +73,7 @@ class MapUpdatingTests {
                 it + 2
             }
 
-            mapped.collect { value ->
+            mapped.collectAsync { value ->
                 println("Collecting $value")
             }
 

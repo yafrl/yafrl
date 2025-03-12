@@ -159,6 +159,11 @@ class Timeline(
 
         node.rawValue = newValue
 
+        println("Updating sync listeners: ${node.syncOnValueChangedListeners.size}")
+        for (listener in node.syncOnValueChangedListeners) {
+            listener.invoke(newValue)
+        }
+
         scope.launch {
             for (listener in node.onValueChangedListeners) {
                 listener.emit(newValue)
@@ -180,7 +185,8 @@ class Timeline(
         for (childID in childNodes) {
             val child = nodes[childID]!!
 
-            if (child.onValueChangedListeners.size == 0) {
+            if (child.onValueChangedListeners.size == 0 &&
+                child.syncOnValueChangedListeners.size == 0) {
                 // If not listening, we can mark the node dirty
                 child.dirty = true
             } else {
@@ -188,6 +194,10 @@ class Timeline(
                 child.rawValue = child.recompute()
 
                 // As well as invoking any listeners on the child.
+                for (listener in child.syncOnValueChangedListeners) {
+                    listener.invoke(child.rawValue)
+                }
+
                 scope.launch {
                     for (listener in child.onValueChangedListeners) {
                         listener.emit(child.rawValue)

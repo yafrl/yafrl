@@ -17,7 +17,7 @@ fun <A> State<A>.composeState(): androidx.compose.runtime.State<A> {
     val scope = Timeline.currentTimeline().scope
 
     scope.launch {
-        collect { updatedState ->
+        collectAsync { updatedState ->
             state.value = updatedState
         }
     }
