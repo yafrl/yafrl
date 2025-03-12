@@ -201,6 +201,15 @@ open class State<out A> internal constructor(
                 graph.createFoldNode(initial, events.node, reducer)
             )
         }
+
+        /**
+         * Produce a new [State] by providing an initial value, which is held
+         *  constant until the [update] function occurs, at which point
+         *  it will hold that value until the next update.
+         */
+        fun <A> hold(initial: A, update: Event<A>): State<A> {
+            TODO()
+        }
     }
 }
 

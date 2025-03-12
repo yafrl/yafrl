@@ -48,4 +48,13 @@ interface Behavior<out A> {
             value
         }
     }
+
+    /**
+     * Sample a [Behavior] to produce a [State].
+     *
+     * See [sample].
+     **/
+    fun sampleState(times: Event<Any?>): State<A> {
+        return State.hold(value, sample(times))
+    }
 }
