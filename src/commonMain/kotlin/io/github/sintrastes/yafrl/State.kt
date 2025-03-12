@@ -37,8 +37,9 @@ import kotlinx.coroutines.flow.StateFlow
  **/
 open class State<A> internal constructor(
     internal val node: Node<A>
-): Flow<A>, Behavior<A> {
-    override suspend fun collect(collector: FlowCollector<A>) {
+): Behavior<A> {
+    @FragileYafrlAPI
+    suspend fun collect(collector: FlowCollector<A>) {
         node.collect(collector)
     }
 

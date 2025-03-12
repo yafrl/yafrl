@@ -17,8 +17,10 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.interop.composeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlin.test.Test
 
 object CounterComponent {
     class ViewModel(
@@ -34,8 +36,7 @@ object CounterComponent {
         val clicks = remember { broadcastEvent<Unit>() }
         val viewModel = remember { ViewModel(clicks) }
 
-        val count by viewModel.count
-            .collectAsState(0)
+        val count by viewModel.count.composeState()
 
         Column {
             Row(

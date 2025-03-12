@@ -12,6 +12,12 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
+@RequiresOptIn(
+    message = "This API is fragile and only intended for low-level interop with other frameworks.",
+    level = RequiresOptIn.Level.WARNING
+)
+annotation class FragileYafrlAPI
+
 /**
  * An event is a value which is defined in instantaneous moments at time.
  *
@@ -40,8 +46,9 @@ import kotlin.time.Duration
  **/
 open class Event<out A> internal constructor(
     internal val node: Node<EventState<A>>
-) : Flow<A> {
-    override suspend fun collect(collector: FlowCollector<A>) {
+) {
+    @FragileYafrlAPI
+    suspend fun collect(collector: FlowCollector<A>) {
         node.collect { value ->
             if (value is EventState.Fired) {
                 collector.emit(value.event)
