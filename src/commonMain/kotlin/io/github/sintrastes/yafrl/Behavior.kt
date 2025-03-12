@@ -1,5 +1,8 @@
 package io.github.sintrastes.yafrl
 
+import kotlinx.datetime.Clock
+import kotlin.time.Duration
+
 /**
  * A behavior is a value of type [A] whose value varies over time.
  *
@@ -56,5 +59,33 @@ interface Behavior<out A> {
      **/
     fun sampleState(times: Event<Any?>): State<A> {
         return State.hold(value, sample(times))
+    }
+
+    companion object {
+        /**
+         * Create a [Behavior] from a continuous function of time since
+         * the initial state of the behavior.
+         *
+         * Example:
+         *
+         * ```
+         * val wave = Behavior.continuous { time ->
+         *     sin(time.seconds)
+         * }
+         * ```
+         **/
+        fun <A> continuous(f: (Duration) -> A): Behavior<A> {
+            val initialTime = Clock.System.now()
+
+            return object: Behavior<A> {
+                override val value: A
+                    get() {
+                        val currentTime = Clock.System.now()
+                        val difference = currentTime - initialTime
+
+                        return f(difference)
+                    }
+            }
+        }
     }
 }
