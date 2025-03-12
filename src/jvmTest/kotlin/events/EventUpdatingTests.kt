@@ -2,6 +2,7 @@ package events
 
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.CoroutineScope

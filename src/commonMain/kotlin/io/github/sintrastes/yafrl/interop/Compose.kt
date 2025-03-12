@@ -1,7 +1,7 @@
 package io.github.sintrastes.yafrl.interop
 
 import androidx.compose.runtime.mutableStateOf
-import io.github.sintrastes.yafrl.FragileYafrlAPI
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.launch

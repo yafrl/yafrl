@@ -1,5 +1,6 @@
 package io.github.sintrastes.yafrl
 
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.delay
@@ -11,12 +12,6 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
-
-@RequiresOptIn(
-    message = "This API is fragile and only intended for low-level interop with other frameworks.",
-    level = RequiresOptIn.Level.ERROR
-)
-annotation class FragileYafrlAPI
 
 /**
  * An event is a value which is defined in instantaneous moments at time.

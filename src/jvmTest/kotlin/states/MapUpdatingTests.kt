@@ -1,6 +1,7 @@
 package states
 
 import io.github.sintrastes.yafrl.*
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.*
 import kotlin.test.BeforeTest
