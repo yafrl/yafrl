@@ -105,6 +105,30 @@ open class Event<out A> internal constructor(
     }
 
     /**
+     * Returns an [Event] that only fires if the [condition]
+     * does not hold at a particular time.
+     **/
+    fun gate(condition: Behavior<Boolean>): Event<A> {
+        val graph = Timeline.currentTimeline()
+
+        return Event(
+            graph.createMappedNode(
+                parent = node,
+                f = { event ->
+                    if (event is EventState.Fired && condition.value) {
+                        event
+                    } else {
+                        EventState.None
+                    }
+                },
+                onNextFrame = { node ->
+                    node.rawValue = EventState.None
+                }
+            )
+        )
+    }
+
+    /**
      * Blocks occurrence of events until the [window] of time has passed,
      *  after which the latest event will be emitted.
      **/
