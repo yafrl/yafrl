@@ -2,10 +2,13 @@ package io.github.sintrastes.yafrl
 
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
 
 /**
  * An event is a value which is defined in instantaneous moments at time.
@@ -93,6 +96,24 @@ open class Event<A> internal constructor(
     }
 
     companion object {
+        /**
+         * Create an event that triggers every [delayTime].
+         **/
+        fun tick(delayTime: Duration): Event<Unit> {
+            val event = broadcastEvent<Unit>()
+
+            val scope = Timeline.currentTimeline().scope
+
+            scope.launch {
+                while (isActive) {
+                    delay(delayTime)
+                    event.send(Unit)
+                }
+            }
+
+            return event
+        }
+
         /**
          * Merges [Event]s using the [Leftmost][MergeStrategy.Leftmost] strategy.
          **/
