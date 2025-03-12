@@ -37,12 +37,12 @@ jobs:
       run: ./gradlew build
 
     - name: Generate code coverage
-      run: ./gradlew koverBinaryReport
+      run: ./gradlew koverXmlReport
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        files: build/kover/bin-reports/jvmTest.ic
+        files: build/reports/kover/report.xml
         fail_ci_if_error: true
 
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
