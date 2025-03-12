@@ -38,7 +38,7 @@ import kotlin.time.Duration
  *  necessary for your application -- and if necessary, [collect] should only be used
  *  at the "edges" of your application.
  **/
-open class Event<A> internal constructor(
+open class Event<out A> internal constructor(
     internal val node: Node<EventState<A>>
 ) : Flow<A> {
     override suspend fun collect(collector: FlowCollector<A>) {
@@ -229,6 +229,43 @@ fun <A> broadcastEvent(): BroadcastEvent<A> {
     )
 
     return BroadcastEvent(node)
+}
+
+/**
+ * [onEvent] acts similarly to [map][Event.map], however, rather than transforming
+ *  each value of the input [Event] by a pure synchronous function, [onEvent] will
+ *  launch a [perform] coroutine for every frame in which [trigger] has fired.
+ *
+ * Essentially, [onEvent] lets us perform some action "outside" the regular [Timeline],
+ *  and responds with a new [Event] that fires when said actions complete.
+ *
+ * Unlike [map][Event.map], for [onEvent] the [perform] action is encouraged to be
+ *  a side-effecting function (making API calls, fetching data, etc...) if appropriate.
+ *
+ * Example:
+ *
+ * ```
+ * val buttonClick: Event<Unit> = submitButton.clicks()
+ *
+ * val submitResponse: Event<DataResponse> = onEvent(buttonClick) {
+ *     fetchData()
+ * }
+ * ```
+ **/
+fun <A, B> onEvent(trigger: Event<A>, perform: suspend (A) -> B): Event<B> {
+    val responseEvent = broadcastEvent<B>()
+
+    val scope = Timeline.currentTimeline().scope
+
+    scope.launch {
+        trigger.collect { event ->
+            val result = perform(event)
+
+            responseEvent.send(result)
+        }
+    }
+
+    return responseEvent
 }
 
 /**
