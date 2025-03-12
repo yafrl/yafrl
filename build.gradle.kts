@@ -8,6 +8,7 @@ plugins {
     id("org.jetbrains.compose") version "1.7.3"
     id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    id("maven-publish")
 }
 
 repositories {
