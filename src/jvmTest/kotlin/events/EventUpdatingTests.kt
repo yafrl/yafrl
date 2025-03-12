@@ -1,9 +1,7 @@
 package events
 
-import io.github.sintrastes.yafrl.Event
+import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.EventState
-import io.github.sintrastes.yafrl.MergeStrategy
-import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +32,7 @@ class EventUpdatingTests {
         )
     }
 
+    @OptIn(FragileYafrlAPI::class)
     @Test
     fun `Mapped event updates if collected`() {
         runBlocking {

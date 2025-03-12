@@ -46,7 +46,7 @@ open class State<A> internal constructor(
     /**
      * Return the current value of the state.
      **/
-    override fun current(): A {
+    override val value: A get() {
         return node.current()
     }
 
@@ -198,8 +198,8 @@ open class State<A> internal constructor(
 class MutableState<A> internal constructor(
     node: Node<A>
 ): State<A>(node) {
-    var value: A
-        get() = current()
+    override var value: A
+        get() = super.value
         set(value) {
             val graph = Timeline.currentTimeline()
 

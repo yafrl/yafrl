@@ -24,15 +24,15 @@ class CombineUpdatingTests {
 
         val sum = x.combineWith(y) { x, y -> x + y }
 
-        assertEquals(0, sum.current())
+        assertEquals(0, sum.value)
 
         x.value = 1
 
-        assertEquals(1, sum.current())
+        assertEquals(1, sum.value)
 
         y.value = 1
 
-        assertEquals(2, sum.current())
+        assertEquals(2, sum.value)
     }
 
     @Test
@@ -63,19 +63,19 @@ class CombineUpdatingTests {
 
         val sum = x.combineWith(y, z) { x, y, z -> x + y + z }
 
-        assertEquals(0, sum.current())
+        assertEquals(0, sum.value)
 
         x.value = 1
 
-        assertEquals(1, sum.current())
+        assertEquals(1, sum.value)
 
         y.value = 1
 
-        assertEquals(2, sum.current())
+        assertEquals(2, sum.value)
 
         z.value = 1
 
-        assertEquals(3, sum.current())
+        assertEquals(3, sum.value)
     }
 
     @Test
@@ -90,23 +90,23 @@ class CombineUpdatingTests {
 
         val sum = x.combineWith(y, z, w) { x, y, z, w -> x + y + z + w }
 
-        assertEquals(0, sum.current())
+        assertEquals(0, sum.value)
 
         x.value = 1
 
-        assertEquals(1, sum.current())
+        assertEquals(1, sum.value)
 
         y.value = 1
 
-        assertEquals(2, sum.current())
+        assertEquals(2, sum.value)
 
         z.value = 1
 
-        assertEquals(3, sum.current())
+        assertEquals(3, sum.value)
 
         w.value = 1
 
-        assertEquals(4, sum.current())
+        assertEquals(4, sum.value)
     }
 
     @Test
@@ -123,26 +123,26 @@ class CombineUpdatingTests {
 
         val sum = x.combineWith(y, z, w, q) { x, y, z, w, q -> x + y + z + w + q }
 
-        assertEquals(0, sum.current())
+        assertEquals(0, sum.value)
 
         x.value = 1
 
-        assertEquals(1, sum.current())
+        assertEquals(1, sum.value)
 
         y.value = 1
 
-        assertEquals(2, sum.current())
+        assertEquals(2, sum.value)
 
         z.value = 1
 
-        assertEquals(3, sum.current())
+        assertEquals(3, sum.value)
 
         w.value = 1
 
-        assertEquals(4, sum.current())
+        assertEquals(4, sum.value)
 
         q.value = 1
 
-        assertEquals(5, sum.current())
+        assertEquals(5, sum.value)
     }
 }

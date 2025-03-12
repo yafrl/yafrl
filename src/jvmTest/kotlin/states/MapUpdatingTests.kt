@@ -19,7 +19,7 @@ class MapUpdatingTests {
     fun `Build node`() {
         val node = mutableStateOf(0)
 
-        assert(node.current() == 0)
+        assert(node.value == 0)
     }
 
     @Test
@@ -29,7 +29,7 @@ class MapUpdatingTests {
         val mapped = node
             .map { it + 2 }
 
-        assert(mapped.current() == 2)
+        assert(mapped.value == 2)
     }
 
     @Test
@@ -41,7 +41,7 @@ class MapUpdatingTests {
 
         node.value = 3
 
-        assertEquals(5, mapped.current())
+        assertEquals(5, mapped.value)
     }
 
     @Test
@@ -60,6 +60,7 @@ class MapUpdatingTests {
         assert(!mapEvaluated)
     }
 
+    @OptIn(FragileYafrlAPI::class)
     @Test
     fun `Map updates if listened to`() {
         runBlocking {

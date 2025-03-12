@@ -23,5 +23,5 @@ package io.github.sintrastes.yafrl
  *  functions of time.
  **/
 interface Behavior<A> {
-    fun current(): A
+    val value: A
 }

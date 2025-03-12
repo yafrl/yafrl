@@ -25,16 +25,16 @@ class FoldUpdatingTests {
             state + event
         }
 
-        assertEquals(0, counter.current())
+        assertEquals(0, counter.value)
 
         // Increment by 1
         events.send(1)
 
-        assertEquals(1, counter.current())
+        assertEquals(1, counter.value)
 
         // Increment by 2
         events.send(2)
 
-        assertEquals(3, counter.current())
+        assertEquals(3, counter.value)
     }
 }

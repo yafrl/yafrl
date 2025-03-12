@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
  **/
 @OptIn(FragileYafrlAPI::class)
 fun <A> State<A>.composeState(): androidx.compose.runtime.State<A> {
-    val state = mutableStateOf(value = current())
+    val state = mutableStateOf(value = value)
 
     val scope = Timeline.currentTimeline().scope
 

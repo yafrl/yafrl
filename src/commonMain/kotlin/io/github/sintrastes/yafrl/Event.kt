@@ -14,7 +14,7 @@ import kotlin.time.Duration
 
 @RequiresOptIn(
     message = "This API is fragile and only intended for low-level interop with other frameworks.",
-    level = RequiresOptIn.Level.WARNING
+    level = RequiresOptIn.Level.ERROR
 )
 annotation class FragileYafrlAPI
 
@@ -108,6 +108,7 @@ open class Event<out A> internal constructor(
      * Blocks occurrence of events until the [window] of time has passed,
      *  after which the latest event will be emitted.
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun debounced(window: Duration): Event<A> {
         val debounced = broadcastEvent<A>()
 
@@ -259,6 +260,7 @@ fun <A> broadcastEvent(): BroadcastEvent<A> {
  * }
  * ```
  **/
+@OptIn(FragileYafrlAPI::class)
 fun <A, B> onEvent(trigger: Event<A>, perform: suspend (A) -> B): Event<B> {
     val responseEvent = broadcastEvent<B>()
 
