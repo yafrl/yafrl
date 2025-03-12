@@ -209,7 +209,15 @@ open class State<out A> internal constructor(
          *  it will hold that value until the next update.
          */
         fun <A> hold(initial: A, update: Event<A>): State<A> {
-            TODO()
+            val state = mutableStateOf(initial)
+
+            update.node.collectSync { updated ->
+                if (updated is EventState.Fired<A>) {
+                    state.value = updated.event
+                }
+            }
+
+            return state
         }
     }
 }

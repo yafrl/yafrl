@@ -24,6 +24,19 @@ class MapUpdatingTests {
     }
 
     @Test
+    fun `Build held node`() {
+        val updates = broadcastEvent<Int>()
+
+        val state = State.hold(0, updates)
+
+        assertEquals(0, state.value)
+
+        updates.send(1)
+
+        assertEquals(1, state.value)
+    }
+
+    @Test
     fun `Build map node`() {
         val node = mutableStateOf(0)
 
