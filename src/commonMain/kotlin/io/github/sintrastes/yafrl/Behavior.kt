@@ -24,4 +24,28 @@ package io.github.sintrastes.yafrl
  **/
 interface Behavior<out A> {
     val value: A
+
+    /**
+     * Sample a [Behavior] at the occurrences of [times],
+     *  returning a new [Event] with the values of the behavior
+     *  at those times.
+     *
+     * Useful for producing a sampled version of a continuous behavior.
+     *
+     * Example:
+     *
+     * ```
+     * val signal: Behavior<Double> = ...
+     *
+     * val sampled = signal
+     *     .sample(Event.tick(1.second))
+     * ```
+     *
+     * Compare with [tag](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#v:tag) from Reflex.
+     **/
+    fun sample(times: Event<Any?>): Event<A> {
+        return times.map {
+            value
+        }
+    }
 }
