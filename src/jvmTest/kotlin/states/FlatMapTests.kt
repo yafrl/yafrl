@@ -1,6 +1,5 @@
 package states
 
-import io.github.sintrastes.yafrl.flatten
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.mutableStateOf
 import kotlinx.coroutines.CoroutineScope

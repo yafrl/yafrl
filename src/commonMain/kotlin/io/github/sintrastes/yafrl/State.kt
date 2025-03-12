@@ -73,7 +73,6 @@ open class State<out A> internal constructor(
         return State(graph.createMappedNode(node, f))
     }
 
-    @OptIn(FragileYafrlAPI::class)
     fun <B> flatMap(f: (A) -> State<B>): State<B> {
         return map(f).flatten()
     }
