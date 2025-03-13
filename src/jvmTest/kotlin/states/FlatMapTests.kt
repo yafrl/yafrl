@@ -34,7 +34,6 @@ class FlatMapTests {
 
         assertEquals(2, flatmapped.value)
 
-        println("Updating use1")
         use1.value = false
 
         assertEquals(1, flatmapped.value)

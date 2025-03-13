@@ -230,7 +230,6 @@ fun <A> State<State<A>>.flatten(): State<A> {
 
     // Note: Order of registration for these collects is important here.
     collectSync { newState ->
-        println("Updating to new state")
         currentState = newState
 
         flattened.value = currentState.value
@@ -243,7 +242,6 @@ fun <A> State<State<A>>.flatten(): State<A> {
     }
 
     currentState.collectSync { newValue ->
-        println("Updating flattened value: $newValue")
         flattened.value = newValue
     }
 

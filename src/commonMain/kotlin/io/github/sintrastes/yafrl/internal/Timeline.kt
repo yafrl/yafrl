@@ -159,7 +159,6 @@ class Timeline(
 
         node.rawValue = newValue
 
-        println("Updating sync listeners: ${node.syncOnValueChangedListeners.size}")
         for (listener in node.syncOnValueChangedListeners) {
             listener.invoke(newValue)
         }
