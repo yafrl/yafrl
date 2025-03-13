@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.dokka.gradle.DokkaTask
 import java.net.URL
 
@@ -8,7 +9,7 @@ plugins {
     id("org.jetbrains.compose") version "1.7.3"
     id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
-    id("maven-publish")
+    id("com.vanniktech.maven.publish") version "0.31.0"
 }
 
 repositories {
@@ -58,9 +59,6 @@ tasks.withType<DokkaTask>().configureEach {
     }
 }
 
-group = "io.github.sintrastes"
-version = "0.1-SNAPSHOT"
-
 dependencies {
     commonMainImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     commonMainImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
@@ -68,4 +66,41 @@ dependencies {
 
 kotlin {
     jvmToolchain(17)
+}
+
+group = "io.github.sintrastes"
+version = "0.1"
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.S01)
+
+    signAllPublications()
+
+    coordinates(group.toString(), "yafrl", version.toString())
+
+    pom {
+        name = "yafrl"
+        description = "Yet Another Functional Reactive Library"
+        inceptionYear = "2025"
+        url = "https://github.com/sintrastes/yafrl/"
+        licenses {
+            license {
+                name = "The MIT License"
+                url = "https://opensource.org/license/mit"
+                distribution = "https://opensource.org/license/mit"
+            }
+        }
+        developers {
+            developer {
+                id = "sintrastes"
+                name = "Nathan Bedell"
+                url = "https://github.com/sintrastes/"
+            }
+        }
+        scm {
+            url = "https://github.com/sintrastes/yafrl/"
+            connection = "scm:git:git://github.com/sintrastes/yafrl.git"
+            developerConnection = "scm:git:ssh://git@github.com/sintrastes/yafrl.git"
+        }
+    }
 }
