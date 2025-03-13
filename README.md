@@ -10,3 +10,27 @@
  to constructs from `kotlinx-coroutines` such as `Flow` and `StateFlow`.
 
 For more information, including potential use-cases and some concrete advantages over `Flow`s, see [the docs](https://sintrastes.github.io/yafrl/).
+
+# Quickstart
+
+For non-multiplatform Android / JVM projects:
+
+```
+dependencies {
+    implementation("io.github.sintrastes:yafrl-jvm:0.1")
+}
+```
+
+For KMP projects (Kotlin DSL): 
+
+```
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("io.github.sintrastes:yafrl:0.1")
+            }
+        }
+    }
+}
+```
