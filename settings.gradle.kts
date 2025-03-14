@@ -12,3 +12,11 @@ plugins {
 }
 
 rootProject.name = "yafrl"
+include("core")
+project(":core").name = "yafrl-core"
+
+include("coroutines")
+project(":coroutines").name = "yafrl-coroutines"
+
+include("compose")
+project(":compose").name = "yafrl-compose"
