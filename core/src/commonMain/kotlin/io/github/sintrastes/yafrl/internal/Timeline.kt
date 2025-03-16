@@ -16,9 +16,22 @@ import kotlinx.coroutines.launch
  * Dirty values are recomputed lazily upon request.
  **/
 class Timeline(
-    val scope: CoroutineScope
+    val scope: CoroutineScope,
+    private val debug: Boolean
 ) : SynchronizedObject() {
     private var latestID = -1
+
+    data class ExternalEvent(
+        val id: NodeID,
+        val value: Any?
+    )
+
+    /**
+     * Log of all external events that have been emitted into the timeline.
+     *
+     * Only works if [debug] is enabled
+     **/
+    internal val eventTrace = mutableListOf<ExternalEvent>()
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
 
@@ -172,6 +185,10 @@ class Timeline(
             }
         }
 
+        if (debug && externalNodes.contains(node.id)) {
+            eventTrace += ExternalEvent(node.id, node.rawValue)
+        }
+
         updateChildNodes(node)
 
         if (node.onNextFrame != null) {
@@ -226,8 +243,11 @@ class Timeline(
     companion object {
         private var _timeline: Timeline? = null
 
-        fun initializeTimeline(scope: CoroutineScope) {
-            _timeline = Timeline(scope)
+        fun initializeTimeline(
+            scope: CoroutineScope,
+            debug: Boolean = false
+        ) {
+            _timeline = Timeline(scope, debug)
         }
 
         fun currentTimeline(): Timeline {
