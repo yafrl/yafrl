@@ -122,6 +122,22 @@ open class Event<out A> internal constructor(
     }
 
     /**
+     * Takes and event, and constructs a moving window of [size]
+     *  when events occur.
+     *
+     * This is useful for things like calculating moving averages
+     *  for the values of an [Event].
+     **/
+    fun window(size: Int): Event<List<A>> = State.fold(listOf<A>(), this) { window, newValue ->
+        if (window.size < size) {
+            window + listOf(newValue)
+        } else {
+            window.drop(1) + listOf(newValue)
+        }
+    }
+        .updated()
+
+    /**
      * Blocks occurrence of events until the [window] of time has passed,
      *  after which the latest event will be emitted.
      **/
@@ -150,19 +166,50 @@ open class Event<out A> internal constructor(
         return debounced
     }
 
+    /**
+     *
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    fun throttled(window: Duration): Event<A> {
+        val throttled = broadcastEvent<A>()
+
+        val scope = Timeline.currentTimeline().scope
+
+        var lastTime: Instant? = null
+        var latestEvent: A? = null
+
+        scope.launch {
+            collect { event ->
+                lastTime = Clock.System.now()
+                latestEvent = event
+            }
+        }
+
+        scope.launch {
+            while (isActive) {
+                if (latestEvent != null) {
+                    delay(window)
+                    throttled.send(latestEvent!!)
+                }
+            }
+        }
+
+        return throttled
+    }
+
     companion object {
         /**
          * Create an event that triggers every [delayTime].
          **/
-        fun tick(delayTime: Duration): Event<Unit> {
-            val event = broadcastEvent<Unit>()
+        fun tick(delayTime: Duration): Event<Duration> {
+            val event = broadcastEvent<Duration>()
 
             val scope = Timeline.currentTimeline().scope
 
             scope.launch {
                 while (isActive) {
                     delay(delayTime)
-                    event.send(Unit)
+                    event.send(delayTime)
                 }
             }
 
@@ -230,7 +277,7 @@ open class Event<out A> internal constructor(
  **/
 open class BroadcastEvent<A> internal constructor(
     node: Node<EventState<A>>
-): Event<A>(node) {
+) : Event<A>(node) {
     fun send(value: A) {
         val timeline = Timeline.currentTimeline()
 
@@ -303,7 +350,7 @@ fun <A, B> onEvent(trigger: Event<A>, perform: suspend (A) -> B): Event<B> {
 internal sealed interface EventState<out A> {
     fun <B> map(f: (A) -> B): EventState<B>
 
-    data class Fired<A>(val event: A): EventState<A> {
+    data class Fired<A>(val event: A) : EventState<A> {
         override fun <B> map(f: (A) -> B): EventState<B> {
             return Fired(f(event))
         }

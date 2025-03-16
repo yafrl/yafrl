@@ -77,6 +77,32 @@ open class State<out A> internal constructor(
     }
 
     /**
+     * Variant of [State.fold] that rather than constructing a new [State] from scratch,
+     * updates an existing state with a new set of [events] and a [reducer].
+     **/
+    fun <B> fold(events: Event<B>, reducer: (A, B) -> @UnsafeVariance A): State<A> {
+        // There's probably a more efficient way to do this.
+        return flatMap { current ->
+            fold(current, events, reducer)
+        }
+    }
+
+    /**
+     * Get the [Event] with just the updates associated with a [State].
+     **/
+    fun updated(): Event<A> {
+        val graph = Timeline.currentTimeline()
+
+        return Event(
+            graph.createMappedNode(
+                parent = node,
+                initialValue = lazy { EventState.None },
+                f = { EventState.Fired(it) }
+            )
+        )
+    }
+
+    /**
      * Combine two states together into a single [State] by applying a function
      *  to the two input states.
      *
@@ -171,6 +197,10 @@ open class State<out A> internal constructor(
     }
 
     companion object {
+        fun <A> const(value: A): State<A> {
+            return mutableStateOf(value)
+        }
+
         /**
          * Construct a [State] by suppling an [initial] value, a set of [events]
          *  driving the updates of the [State], together with a [reducer] describing
@@ -202,6 +232,21 @@ open class State<out A> internal constructor(
             )
         }
 
+        fun <A> combineAll(
+            vararg states: State<A>
+        ): State<List<A>> {
+            val timeline = Timeline.currentTimeline()
+
+            val combined = timeline.createCombinedNode(
+                parentNodes = states.map { it.node },
+                combine = { values ->
+                    values.map { it as A }
+                }
+            )
+
+            return State(combined)
+        }
+
         /**
          * Produce a new [State] by providing an initial value, which is held
          *  constant until the [update] function occurs, at which point
@@ -227,24 +272,48 @@ fun <A> State<State<A>>.flatten(): State<A> {
 
     val flattened = mutableStateOf(currentState.value)
 
-    // Note: Order of registration for these collects is important here.
-    collectSync { newState ->
-        currentState = newState
+    var collector: ((A) -> Unit)? = null
 
+    // Note: Order of registration for these collects is important here.
+
+    collectSync { newState ->
+        // Remove the old collector when the state changes.
+        collector?.let { currentState.node.unregisterSync(it) }
+
+        // Update the current value to the new state's current value.
+        currentState = newState
         flattened.value = currentState.value
 
-        // TODO: Probably want to be able to unregister these
-        //  to avoid memory leaks.
-        currentState.collectSync { newValue ->
-            flattened.value = newValue
+        // Collect on value updates to the new state
+        collector = { newValue -> flattened.value = newValue }
+        currentState.collectSync(collector!!)
+    }
+
+    // Collect on value updates to the initial state.
+    collector = { newValue -> flattened.value = newValue }
+    currentState.collectSync(collector)
+
+    return flattened
+}
+
+@OptIn(FragileYafrlAPI::class)
+fun <A> List<State<A>>.sequenceState(): State<List<A>> {
+    val initialValues = map { it.value }
+
+    val result = mutableStateOf(initialValues)
+
+    mapIndexed { i, state ->
+        state.collectSync { newValue ->
+            val newValues = result.value
+                .toMutableList()
+
+            newValues[i] = newValue
+
+            result.value = newValues
         }
     }
 
-    currentState.collectSync { newValue ->
-        flattened.value = newValue
-    }
-
-    return flattened
+    return result
 }
 
 /**
