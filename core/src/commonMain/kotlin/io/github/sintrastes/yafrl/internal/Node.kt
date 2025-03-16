@@ -40,6 +40,10 @@ open class Node<out A> internal constructor(
     fun collectSync(collector: (A) -> Unit) {
         syncOnValueChangedListeners += collector
     }
+
+    fun unregisterSync(collector: (A) -> Unit) {
+        syncOnValueChangedListeners -= collector
+    }
 }
 
 @JvmInline
