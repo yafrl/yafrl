@@ -198,7 +198,7 @@ open class State<out A> internal constructor(
 
     companion object {
         fun <A> const(value: A): State<A> {
-            return mutableStateOf(value)
+            return internalMutableStateOf(value)
         }
 
         /**
@@ -253,7 +253,7 @@ open class State<out A> internal constructor(
          *  it will hold that value until the next update.
          */
         fun <A> hold(initial: A, update: Event<A>): State<A> {
-            val state = mutableStateOf(initial)
+            val state = internalMutableStateOf(initial)
 
             update.node.collectSync { updated ->
                 if (updated is EventState.Fired<A>) {
@@ -270,7 +270,7 @@ open class State<out A> internal constructor(
 fun <A> State<State<A>>.flatten(): State<A> {
     var currentState = value
 
-    val flattened = mutableStateOf(currentState.value)
+    val flattened = internalMutableStateOf(currentState.value)
 
     var collector: ((A) -> Unit)? = null
 
@@ -300,7 +300,7 @@ fun <A> State<State<A>>.flatten(): State<A> {
 fun <A> List<State<A>>.sequenceState(): State<List<A>> {
     val initialValues = map { it.value }
 
-    val result = mutableStateOf(initialValues)
+    val result = internalMutableStateOf(initialValues)
 
     mapIndexed { i, state ->
         state.collectSync { newValue ->
@@ -334,6 +334,20 @@ class MutableState<A> internal constructor(
 }
 
 fun <A> mutableStateOf(value: A): MutableState<A> {
+    val timeline = Timeline.currentTimeline()
+
+    val state = internalMutableStateOf(value)
+
+    timeline.externalNodes[state.node.id] = state.node
+
+    return state
+}
+
+/**
+ * Internal version of [mutableStateOf] used for states which should be considered
+ * "internal" implementation details of the graph.
+ **/
+internal fun <A> internalMutableStateOf(value: A): MutableState<A> {
     val graph = Timeline.currentTimeline()
 
     return MutableState(graph.createNode(lazy { value }))

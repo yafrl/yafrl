@@ -143,7 +143,7 @@ open class Event<out A> internal constructor(
      **/
     @OptIn(FragileYafrlAPI::class)
     fun debounced(window: Duration): Event<A> {
-        val debounced = broadcastEvent<A>()
+        val debounced = internalBroadcastEvent<A>()
 
         val scope = Timeline.currentTimeline().scope
 
@@ -167,11 +167,12 @@ open class Event<out A> internal constructor(
     }
 
     /**
-     *
+     * Creates a modified [Event] that only emits the latest value after the
+     *  [duration] specified
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun throttled(window: Duration): Event<A> {
-        val throttled = broadcastEvent<A>()
+    fun throttled(duration: Duration): Event<A> {
+        val throttled = internalBroadcastEvent<A>()
 
         val scope = Timeline.currentTimeline().scope
 
@@ -188,7 +189,7 @@ open class Event<out A> internal constructor(
         scope.launch {
             while (isActive) {
                 if (latestEvent != null) {
-                    delay(window)
+                    delay(duration)
                     throttled.send(latestEvent!!)
                 }
             }
@@ -202,7 +203,7 @@ open class Event<out A> internal constructor(
          * Create an event that triggers every [delayTime].
          **/
         fun tick(delayTime: Duration): Event<Duration> {
-            val event = broadcastEvent<Duration>()
+            val event = internalBroadcastEvent<Duration>()
 
             val scope = Timeline.currentTimeline().scope
 
@@ -285,15 +286,13 @@ open class BroadcastEvent<A> internal constructor(
     }
 }
 
-/**
- * Constructs a new [BroadcastEvent].
- **/
-fun <A> broadcastEvent(): BroadcastEvent<A> {
-    val graph = Timeline.currentTimeline()
+/** Creates a [BroadcastEvent] for internal implementation purposes. */
+internal fun <A> internalBroadcastEvent(): BroadcastEvent<A> {
+    val timeline = Timeline.currentTimeline()
 
     val initialValue = lazy { EventState.None }
 
-    val node = graph.createNode(
+    val node = timeline.createNode(
         value = initialValue,
         onNextFrame = { node ->
             node.rawValue = EventState.None
@@ -301,6 +300,21 @@ fun <A> broadcastEvent(): BroadcastEvent<A> {
     )
 
     return BroadcastEvent(node)
+}
+
+/**
+ * Constructs a new [BroadcastEvent].
+ **/
+fun <A> broadcastEvent(): BroadcastEvent<A> {
+    val timeline = Timeline.currentTimeline()
+
+    val event = internalBroadcastEvent<A>()
+
+    // If the user creates a broadcast event, assume it is an "external"
+    //  input to the system.
+    timeline.externalNodes[event.node.id] = event.node
+
+    return event
 }
 
 /**
@@ -326,6 +340,8 @@ fun <A> broadcastEvent(): BroadcastEvent<A> {
  **/
 @OptIn(FragileYafrlAPI::class)
 fun <A, B> onEvent(trigger: Event<A>, perform: suspend (A) -> B): Event<B> {
+    // Note: For now treat this as an external event, since the result from
+    // perform could be nondeterministic.
     val responseEvent = broadcastEvent<B>()
 
     val scope = Timeline.currentTimeline().scope

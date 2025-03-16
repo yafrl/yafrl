@@ -22,6 +22,9 @@ class Timeline(
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
 
+    /** Keep track of any external (or "input") nodes to the system. */
+    internal val externalNodes = mutableMapOf<NodeID, Node<Any?>>()
+
     private fun newID(): NodeID {
         latestID++
 
