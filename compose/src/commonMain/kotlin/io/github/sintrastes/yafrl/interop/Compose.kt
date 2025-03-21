@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import io.github.sintrastes.yafrl.Behavior
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.State
@@ -40,15 +41,21 @@ fun <A> State<A>.composeState(): androidx.compose.runtime.State<A> {
  * Each event consists of the [Duration] of the most recent frame.
  **/
 @Composable
-fun getFrameClock(): Event<Duration> {
-    val clock = remember { broadcastEvent<Duration>() }
+fun newComposeFrameClock(
+    paused: Behavior<Boolean>
+): Event<Duration> {
+    val clock = remember {
+        broadcastEvent<Duration>(
+            label = "compose_frame_clock"
+        )
+    }
 
     var lastTime: Long = -1
 
     LaunchedEffect(Unit) {
         while (true) {
             withFrameNanos { time ->
-                if (lastTime > 0) {
+                if (lastTime > 0 && !paused.value) {
                     clock.send((time - lastTime).nanoseconds)
                 }
 

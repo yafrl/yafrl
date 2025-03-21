@@ -3,6 +3,11 @@ package io.github.sintrastes.yafrl.internal
 import io.github.sintrastes.yafrl.EventState
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -21,6 +26,68 @@ class Timeline(
 ) : SynchronizedObject() {
     private var latestID = -1
 
+    private fun newID(): NodeID {
+        latestID++
+
+        return NodeID(latestID)
+    }
+
+    /////////// Basically we are building up a doubly-linked DAG here: /////////////
+
+    var latestFrame: Long = -1
+    var currentFrame: Long = -1
+
+    // Indexed by frame number.
+    val previousStates: MutableMap<Long, GraphState> = mutableMapOf()
+
+    data class GraphState(
+        val nodeValues: PersistentMap<NodeID, Any?>,
+        val children: PersistentMap<NodeID, PersistentList<NodeID>>
+    )
+
+    fun persistState() {
+        if (debug) {
+            previousStates[latestFrame] = GraphState(
+                nodes
+                    .mapValues { it.value._rawValue }
+                    .toPersistentMap(),
+                children
+            )
+        }
+    }
+
+    fun resetState(frame: Long) = synchronized(this) {
+        if(debug) println("Resetting to frame ${frame}, event was: ${eventTrace[frame.toInt()]}")
+        val nodeValues = previousStates[frame]
+            ?.nodeValues ?: return
+
+        nodes.values.forEach { node ->
+            val resetValue = nodeValues[node.id]
+
+            if (resetValue != null) {
+                updateNodeValue(node, resetValue)
+            }
+        }
+
+        children = previousStates[frame]!!.children
+        latestFrame = frame
+    }
+
+    fun rollbackState() {
+        resetState(latestFrame - 1)
+    }
+
+    fun nextState() {
+        resetState(latestFrame + 1)
+    }
+
+    private var nodes: PersistentMap<NodeID, Node<Any?>> = persistentMapOf()
+
+    // Map from a node ID to it's set of child nodes
+    private var children: PersistentMap<NodeID, PersistentList<NodeID>> = persistentMapOf()
+
+    ///////////////////////////////////////////////////////////////////////////////
+
     data class ExternalEvent(
         val id: NodeID,
         val value: Any?
@@ -38,17 +105,14 @@ class Timeline(
     /** Keep track of any external (or "input") nodes to the system. */
     internal val externalNodes = mutableMapOf<NodeID, Node<Any?>>()
 
-    private fun newID(): NodeID {
-        latestID++
-
-        return NodeID(latestID)
-    }
-
     internal fun <A> createNode(
         value: Lazy<A>,
         onUpdate: (Node<A>) -> A = { it -> it.rawValue },
-        onNextFrame: ((Node<A>) -> Unit)? = null
-    ): Node<A> {
+        onNextFrame: ((Node<A>) -> Unit)? = null,
+        label: String? = null,
+    ): Node<A> = synchronized(this) {
+        //frameNumber++
+
         val id = newID()
 
         var newNode: Node<A>? = null
@@ -56,10 +120,13 @@ class Timeline(
             value,
             id,
             { onUpdate(newNode!!) },
-            onNextFrame
+            onNextFrame,
+            label
         )
 
-        nodes[id] = newNode
+        nodes.put(id, newNode)
+
+        persistState()
 
         return newNode
     }
@@ -69,7 +136,9 @@ class Timeline(
         f: (A) -> B,
         initialValue: Lazy<B> = lazy { f(fetchNodeValue(parent) as A) },
         onNextFrame: ((Node<B>) -> Unit)? = null
-    ): Node<B> {
+    ): Node<B> = synchronized(this) {
+        //frameNumber++
+
         val mapNodeID = newID()
 
         var mappedNode: Node<B>? = null
@@ -86,11 +155,17 @@ class Timeline(
             onNextFrame = onNextFrame
         )
 
-        nodes[mapNodeID] = mappedNode
+        nodes = nodes.put(mapNodeID, mappedNode)
 
-        children[parent.id]
-            ?.add(mapNodeID)
-            ?: run { children[parent.id] = mutableListOf(mapNodeID) }
+        val mapChildren = children[parent.id]
+
+        children = if (mapChildren != null) {
+            children.put(parent.id, mapChildren.add(mapNodeID))
+        } else {
+            children.put(parent.id, persistentListOf(mapNodeID))
+        }
+
+        persistState()
 
         return mappedNode
     }
@@ -99,7 +174,9 @@ class Timeline(
         initialValue: A,
         eventNode: Node<EventState<B>>,
         reducer: (A, B) -> A
-    ): Node<A> {
+    ): Node<A> = synchronized(this) {
+        //frameNumber++
+
         val foldNodeID = newID()
 
         var currentValue = initialValue
@@ -117,11 +194,17 @@ class Timeline(
             }
         )
 
-        nodes[foldNodeID] = foldNode
+        nodes = nodes.put(foldNodeID, foldNode)
 
-        children[eventNode.id]
-            ?.add(foldNodeID)
-            ?: run { children[eventNode.id] = mutableListOf(foldNodeID) }
+        val eventChildren = children[eventNode.id]
+
+        children = if (eventChildren != null) {
+            children.put(eventNode.id, eventChildren.add(foldNodeID))
+        } else {
+            children.put(eventNode.id, persistentListOf(foldNodeID))
+        }
+
+        persistState()
 
         return foldNode
     }
@@ -130,7 +213,9 @@ class Timeline(
         parentNodes: List<Node<Any?>>,
         combine: (List<Any?>) -> A,
         onNextFrame: ((Node<A>) -> Unit)? = null
-    ): Node<A> {
+    ): Node<A> = synchronized(this) {
+        //frameNumber++
+
         val combinedNodeID = newID()
 
         val initialValue = lazy { combine(parentNodes.map { it.rawValue }) }
@@ -144,29 +229,37 @@ class Timeline(
             onNextFrame
         )
 
-        nodes[combinedNodeID] = combinedNode
+        nodes = nodes.put(combinedNodeID, combinedNode)
 
         for (parentNode in parentNodes) {
-            children[parentNode.id]
-                ?.add(combinedNodeID)
-                ?: run { children[parentNode.id] = mutableListOf(combinedNodeID) }
+            val nodeChildren = children[parentNode.id]
+
+            children = if (nodeChildren != null) {
+                children.put(parentNode.id, nodeChildren.add(combinedNodeID))
+            } else {
+                children.put(parentNode.id, persistentListOf(combinedNodeID))
+            }
         }
+
+        persistState()
 
         return combinedNode
     }
-
-    private val nodes: MutableMap<NodeID, Node<Any?>> = mutableMapOf()
-
-    // Basically we are building up a doubly-lined DAG here:
-
-    // Map from a node ID to it's set of child nodes
-    private val children: MutableMap<NodeID, MutableList<NodeID>> = mutableMapOf()
 
     // Note: This is the entrypoint for a new "frame" in the timeline.
     internal fun updateNodeValue(
         node: Node<Any?>,
         newValue: Any?
     ) = synchronized(this) {
+        if (debug && externalNodes.contains(node.id)) {
+            latestFrame++
+            currentFrame++
+
+            eventTrace += ExternalEvent(node.id, node.rawValue)
+
+            println("${latestFrame}: Updating node ${node.label} to $newValue")
+        }
+
         for (listener in onNextFrameListeners) {
             listener()
         }
@@ -185,15 +278,13 @@ class Timeline(
             }
         }
 
-        if (debug && externalNodes.contains(node.id)) {
-            eventTrace += ExternalEvent(node.id, node.rawValue)
-        }
-
         updateChildNodes(node)
 
         if (node.onNextFrame != null) {
             onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
         }
+
+        persistState()
     }
 
     private fun updateChildNodes(

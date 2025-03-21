@@ -197,6 +197,7 @@ open class State<out A> internal constructor(
     }
 
     companion object {
+        @OptIn(FragileYafrlAPI::class)
         fun <A> const(value: A): State<A> {
             return internalMutableStateOf(value)
         }
@@ -252,6 +253,7 @@ open class State<out A> internal constructor(
          *  constant until the [update] function occurs, at which point
          *  it will hold that value until the next update.
          */
+        @OptIn(FragileYafrlAPI::class)
         fun <A> hold(initial: A, update: Event<A>): State<A> {
             val state = internalMutableStateOf(initial)
 
@@ -333,10 +335,11 @@ class MutableState<A> internal constructor(
         }
 }
 
-fun <A> mutableStateOf(value: A): MutableState<A> {
+@OptIn(FragileYafrlAPI::class)
+fun <A> mutableStateOf(value: A, label: String? = null): MutableState<A> {
     val timeline = Timeline.currentTimeline()
 
-    val state = internalMutableStateOf(value)
+    val state = internalMutableStateOf(value, label)
 
     timeline.externalNodes[state.node.id] = state.node
 
@@ -347,8 +350,14 @@ fun <A> mutableStateOf(value: A): MutableState<A> {
  * Internal version of [mutableStateOf] used for states which should be considered
  * "internal" implementation details of the graph.
  **/
-internal fun <A> internalMutableStateOf(value: A): MutableState<A> {
+@FragileYafrlAPI
+fun <A> internalMutableStateOf(value: A, label: String? = null): MutableState<A> {
     val graph = Timeline.currentTimeline()
 
-    return MutableState(graph.createNode(lazy { value }))
+    return MutableState(
+        graph.createNode(
+            value = lazy { value },
+            label = label
+        )
+    )
 }

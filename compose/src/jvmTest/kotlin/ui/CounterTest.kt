@@ -38,41 +38,43 @@ object CounterComponent {
 
         val count by viewModel.count.composeState()
 
-        Column {
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                Text(
-                    "Increment: ",
-                    fontWeight = FontWeight.Bold,
+        TimeTravel {
+            Column {
+                Row(
                     modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                )
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        "Increment: ",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                    )
 
-                Button(
-                    content = { Text("Click me!") },
-                    onClick = {
-                        clicks.send(Unit)
-                    },
+                    Button(
+                        content = { Text("Click me!") },
+                        onClick = {
+                            clicks.send(Unit)
+                        },
+                        modifier = Modifier
+                            .padding(start = 6.dp)
+                            .align(Alignment.CenterVertically)
+                    )
+                }
+
+                Row(
                     modifier = Modifier
-                        .padding(start = 6.dp)
-                        .align(Alignment.CenterVertically)
-                )
-            }
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        "Count: ",
+                        fontWeight = FontWeight.Bold
+                    )
 
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                Text(
-                    "Count: ",
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    "$count"
-                )
+                    Text(
+                        "$count"
+                    )
+                }
             }
         }
     }
@@ -80,10 +82,11 @@ object CounterComponent {
 
 class CounterTest {
     // Disabled by default
-    //@Test
+    @Test
     fun `run counter example`() {
         Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
+            scope = CoroutineScope(Dispatchers.Default),
+            debug = true
         )
 
         // Open a window with the view.

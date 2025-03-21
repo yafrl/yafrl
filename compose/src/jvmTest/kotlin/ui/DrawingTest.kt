@@ -1,10 +1,8 @@
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -16,7 +14,6 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -26,11 +23,11 @@ import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.composeState
-import io.github.sintrastes.yafrl.interop.getFrameClock
 import io.github.sintrastes.yafrl.sequenceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
+import ui.TimeTravel
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import kotlin.math.min
@@ -145,81 +142,61 @@ object DrawingComponent {
         val size = Size(1000f, 944f)
 
         val spacePressed = remember {
-            broadcastEvent<Unit>()
+            broadcastEvent<Unit>("space_pressed")
         }
 
         val clicked = remember {
-            broadcastEvent<Offset>()
+            broadcastEvent<Offset>("clicked")
         }
 
-        val clock = getFrameClock()
-
-        val entities by remember {
-            ViewModel(size, clock, spacePressed, clicked)
-                .entities()
-                .composeState()
-        }
-
-        // Setup a global event handler.
-        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher { event ->
-            if (event.id == KeyEvent.KEY_PRESSED && event.keyCode == KeyEvent.VK_SPACE) {
-                spacePressed.send(Unit)
-                true
-            } else {
-                false
+        TimeTravel { clock ->
+            val entities by remember {
+                ViewModel(size, clock, spacePressed, clicked)
+                    .entities()
+                    .composeState()
             }
-        }
 
-        val textMeasurer = rememberTextMeasurer()
-        val textStyle = TextStyle(fontSize = 18.sp, color = Color.Black)
-
-        val runningAverage = remember {
-            clock
-                .window(10)
-                .map { it.sumOf { it.inWholeMilliseconds } / it.size }
-                .throttled(1.0.seconds)
-        }
-
-        val fps by remember {
-            State.fold(0, runningAverage) { _, avgFrameTime ->
-                (1000f / avgFrameTime).fastRoundToInt()
+            // Setup a global event handler.
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher { event ->
+                if (event.id == KeyEvent.KEY_PRESSED && event.keyCode == KeyEvent.VK_SPACE) {
+                    spacePressed.send(Unit)
+                    true
+                } else {
+                    false
+                }
             }
-                .composeState()
-        }
 
-        Canvas(
-            modifier = Modifier
-                .size(500.dp)
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            if (event.type == PointerEventType.Press) {
-                                clicked.send(event.changes.first().position)
+            val textMeasurer = rememberTextMeasurer()
+            val textStyle = TextStyle(fontSize = 18.sp, color = Color.Black)
+
+            Canvas(
+                modifier = Modifier
+                    .size(500.dp)
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                if (event.type == PointerEventType.Press) {
+                                    clicked.send(event.changes.first().position)
+                                }
                             }
                         }
-                    }
-                },
-        ) {
-            drawText(
-                textMeasurer = textMeasurer,
-                style = textStyle,
-                text = "Entities created: ${entities.size}"
-            )
-
-            drawText(
-                textMeasurer = textMeasurer,
-                style = textStyle,
-                text = "FPS: $fps",
-                topLeft = Offset(0f, 32f)
-            )
-
-            for (entity in entities) {
-                drawCircle(
-                    color = entity.color,
-                    radius = entity.size,
-                    center = entity.position
+                    },
+            ) {
+                drawText(
+                    textMeasurer = textMeasurer,
+                    style = textStyle,
+                    text = "Entities created: ${entities.size}",
+                    topLeft = Offset(6f, 0f)
                 )
+
+                for (entity in entities) {
+                    drawCircle(
+                        color = entity.color,
+                        radius = entity.size,
+                        center = entity.position
+                    )
+                }
             }
         }
     }
@@ -253,17 +230,18 @@ class DrawingTest {
     }
 
     // Disabled by default
-    //@Test
+    @Test
     fun `run drawing example`() {
         Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
+            scope = CoroutineScope(Dispatchers.Default),
+            debug = true
         )
 
         // Open a window with the view.
         application {
             val state = rememberWindowState(
                 width = 500.dp,
-                height = 500.dp
+                height = 600.dp
             )
 
             Window(

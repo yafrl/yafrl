@@ -15,12 +15,13 @@ open class Node<out A> internal constructor(
     internal val id: NodeID,
     internal val recompute: () -> A,
     internal val onNextFrame: ((Node<@UnsafeVariance A>) -> Unit)? = null,
+    internal val label: String? = null,
 ) : Flow<A> {
     internal val onValueChangedListeners: MutableList<FlowCollector<@UnsafeVariance A>> = mutableListOf()
 
     internal val syncOnValueChangedListeners: MutableList<(@UnsafeVariance A) -> Unit> = mutableListOf()
 
-    private var _rawValue: A? = null
+    internal var _rawValue: @UnsafeVariance A? = null
 
     internal var rawValue: @UnsafeVariance A
         get() {

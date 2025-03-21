@@ -108,7 +108,7 @@ open class Event<out A> internal constructor(
             graph.createMappedNode(
                 parent = node,
                 f = { event ->
-                    if (event is EventState.Fired && condition.value) {
+                    if (event is EventState.Fired && !condition.value) {
                         event
                     } else {
                         EventState.None
@@ -287,7 +287,9 @@ open class BroadcastEvent<A> internal constructor(
 }
 
 /** Creates a [BroadcastEvent] for internal implementation purposes. */
-internal fun <A> internalBroadcastEvent(): BroadcastEvent<A> {
+internal fun <A> internalBroadcastEvent(
+    label: String? = null
+): BroadcastEvent<A> {
     val timeline = Timeline.currentTimeline()
 
     val initialValue = lazy { EventState.None }
@@ -296,7 +298,8 @@ internal fun <A> internalBroadcastEvent(): BroadcastEvent<A> {
         value = initialValue,
         onNextFrame = { node ->
             node.rawValue = EventState.None
-        }
+        },
+        label = label
     )
 
     return BroadcastEvent(node)
@@ -305,10 +308,12 @@ internal fun <A> internalBroadcastEvent(): BroadcastEvent<A> {
 /**
  * Constructs a new [BroadcastEvent].
  **/
-fun <A> broadcastEvent(): BroadcastEvent<A> {
+fun <A> broadcastEvent(
+    label: String? = null
+): BroadcastEvent<A> {
     val timeline = Timeline.currentTimeline()
 
-    val event = internalBroadcastEvent<A>()
+    val event = internalBroadcastEvent<A>(label)
 
     // If the user creates a broadcast event, assume it is an "external"
     //  input to the system.
