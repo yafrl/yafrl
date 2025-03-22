@@ -26,13 +26,13 @@ kotlin {
             dependencies {
                 implementation(project(":yafrl-core"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-                implementation(compose.runtime)
+                implementation(compose.material)
             }
         }
         val jvmTest by getting {
             dependencies {
-                implementation("app.cash.molecule:molecule-runtime:2.0.0")
                 implementation(compose.desktop.currentOs)
+                implementation("app.cash.molecule:molecule-runtime:2.0.0")
                 implementation(kotlin("test"))
             }
         }

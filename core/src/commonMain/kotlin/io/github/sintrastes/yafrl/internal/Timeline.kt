@@ -1,6 +1,11 @@
 package io.github.sintrastes.yafrl.internal
 
+import io.github.sintrastes.yafrl.Event
+import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.internalMutableStateOf
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.collections.immutable.PersistentList
@@ -10,6 +15,8 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
+import kotlin.time.measureTime
 
 /**
  * Simple implementation of a push-pull FRP system using a graph
@@ -22,8 +29,22 @@ import kotlinx.coroutines.launch
  **/
 class Timeline(
     val scope: CoroutineScope,
-    private val debug: Boolean
+    private val debug: Boolean,
+    initClock: (State<Boolean>) -> Event<Duration>
 ) : SynchronizedObject() {
+    // Needs to be internal because we can't undo a "pause" event.
+    @OptIn(FragileYafrlAPI::class)
+    val pausedState by lazy { internalMutableStateOf(false, "paused_state") }
+
+    // The clock is lazily initialized so that if an explicit clock is not used,
+    //  it will not start ticking.
+    val clock: Event<Duration> by lazy {
+        initClock(pausedState)
+        // Theoretically gate should work for this, but not
+        // currently working.
+        //.gate(pausedState)
+    }
+
     private var latestID = -1
 
     private fun newID(): NodeID {
@@ -57,20 +78,24 @@ class Timeline(
     }
 
     fun resetState(frame: Long) = synchronized(this) {
-        if(debug) println("Resetting to frame ${frame}, event was: ${eventTrace[frame.toInt()]}")
-        val nodeValues = previousStates[frame]
-            ?.nodeValues ?: return
+        val time = measureTime {
+            if (debug) println("Resetting to frame ${frame}, event was: ${eventTrace[frame.toInt()]}")
+            val nodeValues = previousStates[frame]
+                ?.nodeValues ?: return@synchronized
 
-        nodes.values.forEach { node ->
-            val resetValue = nodeValues[node.id]
+            nodes.values.forEach { node ->
+                val resetValue = nodeValues[node.id]
 
-            if (resetValue != null) {
-                updateNodeValue(node, resetValue)
+                if (resetValue != null) {
+                    updateNodeValue(node, resetValue)
+                }
             }
+
+            children = previousStates[frame]!!.children
+            latestFrame = frame
         }
 
-        children = previousStates[frame]!!.children
-        latestFrame = frame
+        if (debug) println("Reset state in ${time}")
     }
 
     fun rollbackState() {
@@ -336,9 +361,13 @@ class Timeline(
 
         fun initializeTimeline(
             scope: CoroutineScope,
-            debug: Boolean = false
+            debug: Boolean = false,
+            // Use a trivial (discrete) clock by default.
+            initClock: (State<Boolean>) -> Event<Duration> = {
+                broadcastEvent<Duration>("clock")
+            }
         ) {
-            _timeline = Timeline(scope, debug)
+            _timeline = Timeline(scope, debug, initClock)
         }
 
         fun currentTimeline(): Timeline {

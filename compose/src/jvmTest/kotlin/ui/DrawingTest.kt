@@ -27,7 +27,7 @@ import io.github.sintrastes.yafrl.sequenceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
-import ui.TimeTravel
+import io.github.sintrastes.yafrl.interop.YafrlCompose
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import kotlin.math.min
@@ -137,10 +137,12 @@ object DrawingComponent {
         }
     }
 
-    @Composable
-    fun view() {
-        val size = Size(1000f, 944f)
+    val size = Size(1000f, 944f)
 
+    @Composable
+    fun view() = YafrlCompose(
+        timeTravelDebugger = true
+    ) {
         val spacePressed = remember {
             broadcastEvent<Unit>("space_pressed")
         }
@@ -149,14 +151,8 @@ object DrawingComponent {
             broadcastEvent<Offset>("clicked")
         }
 
-        TimeTravel { clock ->
-            val entities by remember {
-                ViewModel(size, clock, spacePressed, clicked)
-                    .entities()
-                    .composeState()
-            }
-
-            // Setup a global event handler.
+        // Setup a global event handler.
+        remember {
             KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher { event ->
                 if (event.id == KeyEvent.KEY_PRESSED && event.keyCode == KeyEvent.VK_SPACE) {
                     spacePressed.send(Unit)
@@ -165,38 +161,46 @@ object DrawingComponent {
                     false
                 }
             }
+        }
 
-            val textMeasurer = rememberTextMeasurer()
-            val textStyle = TextStyle(fontSize = 18.sp, color = Color.Black)
+        val textMeasurer = rememberTextMeasurer()
+        val textStyle = remember { TextStyle(fontSize = 18.sp, color = Color.Black) }
 
-            Canvas(
-                modifier = Modifier
-                    .size(500.dp)
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val event = awaitPointerEvent()
-                                if (event.type == PointerEventType.Press) {
-                                    clicked.send(event.changes.first().position)
-                                }
+        val entities by remember {
+            ViewModel(size, Timeline.currentTimeline().clock, spacePressed, clicked)
+                .entities()
+                .composeState()
+        }
+
+        println("Recomposing ${entities.first().position.y}.")
+
+        Canvas(
+            modifier = Modifier
+                .size(500.dp)
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            if (event.type == PointerEventType.Press) {
+                                clicked.send(event.changes.first().position)
                             }
                         }
-                    },
-            ) {
-                drawText(
-                    textMeasurer = textMeasurer,
-                    style = textStyle,
-                    text = "Entities created: ${entities.size}",
-                    topLeft = Offset(6f, 0f)
-                )
+                    }
+                },
+        ) {
+            drawText(
+                textMeasurer = textMeasurer,
+                style = textStyle,
+                text = "Entities created: ${entities.size}",
+                topLeft = Offset(6f, 0f)
+            )
 
-                for (entity in entities) {
-                    drawCircle(
-                        color = entity.color,
-                        radius = entity.size,
-                        center = entity.position
-                    )
-                }
+            for (entity in entities) {
+                drawCircle(
+                    color = entity.color,
+                    radius = entity.size,
+                    center = entity.position
+                )
             }
         }
     }
@@ -232,11 +236,6 @@ class DrawingTest {
     // Disabled by default
     @Test
     fun `run drawing example`() {
-        Timeline.initializeTimeline(
-            scope = CoroutineScope(Dispatchers.Default),
-            debug = true
-        )
-
         // Open a window with the view.
         application {
             val state = rememberWindowState(

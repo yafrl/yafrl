@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.FlowCollector
 open class State<out A> internal constructor(
     internal val node: Node<A>
 ): Behavior<A> {
+    val label = node.label ?: node.id.toString()
+
     /**
      * Launches a handler that asynchronously listens to updates
      *  on the state.

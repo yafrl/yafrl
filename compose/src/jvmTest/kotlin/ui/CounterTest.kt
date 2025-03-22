@@ -16,10 +16,8 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlin.test.Test
 
 object CounterComponent {
@@ -32,49 +30,49 @@ object CounterComponent {
     }
 
     @Composable
-    fun View() {
+    fun View() = YafrlCompose(
+        timeTravelDebugger = true
+    ) {
         val clicks = remember { broadcastEvent<Unit>() }
         val viewModel = remember { ViewModel(clicks) }
 
-        val count by viewModel.count.composeState()
+        val count by remember { viewModel.count.composeState() }
 
-        TimeTravel {
-            Column {
-                Row(
+        Column {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "Increment: ",
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "Increment: ",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                    )
+                        .align(Alignment.CenterVertically)
+                )
 
-                    Button(
-                        content = { Text("Click me!") },
-                        onClick = {
-                            clicks.send(Unit)
-                        },
-                        modifier = Modifier
-                            .padding(start = 6.dp)
-                            .align(Alignment.CenterVertically)
-                    )
-                }
-
-                Row(
+                Button(
+                    content = { Text("Click me!") },
+                    onClick = {
+                        clicks.send(Unit)
+                    },
                     modifier = Modifier
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "Count: ",
-                        fontWeight = FontWeight.Bold
-                    )
+                        .padding(start = 6.dp)
+                        .align(Alignment.CenterVertically)
+                )
+            }
 
-                    Text(
-                        "$count"
-                    )
-                }
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "Count: ",
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "$count"
+                )
             }
         }
     }
@@ -84,16 +82,11 @@ class CounterTest {
     // Disabled by default
     @Test
     fun `run counter example`() {
-        Timeline.initializeTimeline(
-            scope = CoroutineScope(Dispatchers.Default),
-            debug = true
-        )
-
         // Open a window with the view.
         application {
             val state = rememberWindowState(
-                width = 230.dp,
-                height = 170.dp
+                width = 330.dp,
+                height = 270.dp
             )
 
             Window(

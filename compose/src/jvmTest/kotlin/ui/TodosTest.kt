@@ -27,6 +27,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,7 +84,7 @@ object TodosComponent {
     }
 
     @Composable
-    fun view() {
+    fun view() = YafrlCompose {
         val clicks = remember { broadcastEvent<Unit>() }
 
         val textChanged = remember { broadcastEvent<TodoState>()}
@@ -129,12 +130,8 @@ object TodosComponent {
 
 class TodosTest {
     // Disabled by default
-    //@Test
+    @Test
     fun `run todo list example`() {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
-        )
-
         // Open a window with the view.
         application {
             val state = rememberWindowState(
