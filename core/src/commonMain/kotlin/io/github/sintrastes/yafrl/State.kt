@@ -270,6 +270,10 @@ open class State<out A> internal constructor(
     }
 }
 
+operator fun State<Float>.plus(other: State<Float>): State<Float> {
+    return combineWith(other) { x, y -> x + y }
+}
+
 @OptIn(FragileYafrlAPI::class)
 fun <A> State<State<A>>.flatten(): State<A> {
     var currentState = value

@@ -17,13 +17,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Behavior.Companion.integral
+import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.State.Companion.const
-import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.composeState
-import io.github.sintrastes.yafrl.sequenceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -63,7 +61,7 @@ object DrawingComponent {
             clicked + listOf(
                 ball(
                     click,
-                    accelerating(120f, 150f),
+                    accelerating(120f, 350f),
                     35f,
                     newBallColor
                 )
@@ -78,16 +76,7 @@ object DrawingComponent {
         /**
          * Creates a speed [v] that is accelerating by [dv]
          **/
-        fun accelerating(
-            v: Float,
-            dv: Float
-        ) = State.fold(v, deltaTime) { v, dt ->
-            val dt = dt.inWholeMilliseconds / 1000.0f
-
-            val result = v + dv * dt
-
-            result
-        }
+        fun accelerating(v: Float, dv: Float) = const(v) + integral(const(dv))
 
         fun entities() = State.combineAll(
             ball(
@@ -171,8 +160,6 @@ object DrawingComponent {
                 .entities()
                 .composeState()
         }
-
-        println("Recomposing ${entities.first().position.y}.")
 
         Canvas(
             modifier = Modifier
