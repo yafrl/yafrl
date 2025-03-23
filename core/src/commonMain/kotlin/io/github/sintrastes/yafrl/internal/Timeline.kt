@@ -29,7 +29,9 @@ import kotlin.time.measureTime
  **/
 class Timeline(
     val scope: CoroutineScope,
-    private val debug: Boolean,
+    private val timeTravelEnabled: Boolean,
+    private val debugLogging: Boolean,
+    private val lazy: Boolean,
     initClock: (State<Boolean>) -> Event<Duration>
 ) : SynchronizedObject() {
     // Needs to be internal because we can't undo a "pause" event.
@@ -67,7 +69,7 @@ class Timeline(
     )
 
     fun persistState() {
-        if (debug) {
+        if (timeTravelEnabled) {
             previousStates[latestFrame] = GraphState(
                 nodes
                     .mapValues { it.value._rawValue }
@@ -79,7 +81,7 @@ class Timeline(
 
     fun resetState(frame: Long) = synchronized(this) {
         val time = measureTime {
-            if (debug) println("Resetting to frame ${frame}, event was: ${eventTrace[frame.toInt()]}")
+            if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventTrace.getOrNull(frame.toInt())}")
             val nodeValues = previousStates[frame]
                 ?.nodeValues ?: return@synchronized
 
@@ -95,7 +97,7 @@ class Timeline(
             latestFrame = frame
         }
 
-        if (debug) println("Reset state in ${time}")
+        if (debugLogging) println("Reset state in ${time}")
     }
 
     fun rollbackState() {
@@ -121,7 +123,7 @@ class Timeline(
     /**
      * Log of all external events that have been emitted into the timeline.
      *
-     * Only works if [debug] is enabled
+     * Only works if [timeTravelEnabled]
      **/
     internal val eventTrace = mutableListOf<ExternalEvent>()
 
@@ -146,7 +148,7 @@ class Timeline(
             id,
             { onUpdate(newNode!!) },
             onNextFrame,
-            label
+            label ?: id.toString()
         )
 
         nodes.put(id, newNode)
@@ -276,15 +278,6 @@ class Timeline(
         node: Node<Any?>,
         newValue: Any?
     ) = synchronized(this) {
-        if (debug && externalNodes.contains(node.id)) {
-            latestFrame++
-            currentFrame++
-
-            eventTrace += ExternalEvent(node.id, node.rawValue)
-
-            println("${latestFrame}: Updating node ${node.label} to $newValue")
-        }
-
         for (listener in onNextFrameListeners) {
             listener()
         }
@@ -292,6 +285,15 @@ class Timeline(
         onNextFrameListeners.clear()
 
         node.rawValue = newValue
+
+        if (timeTravelEnabled && externalNodes.contains(node.id)) {
+            latestFrame++
+            currentFrame++
+
+            eventTrace += ExternalEvent(node.id, node.rawValue)
+
+            println("${latestFrame}: Updating node ${node.label} to $newValue")
+        }
 
         for (listener in node.syncOnValueChangedListeners) {
             listener.invoke(newValue)
@@ -320,13 +322,20 @@ class Timeline(
         for (childID in childNodes) {
             val child = nodes[childID]!!
 
-            if (child.onValueChangedListeners.size == 0 &&
+            if (debugLogging) println("Updating child node of ${node.label}")
+
+            if (lazy && child.onValueChangedListeners.size == 0 &&
                 child.syncOnValueChangedListeners.size == 0) {
+                if (debugLogging) println("Marking child ${child.label} dirty")
                 // If not listening, we can mark the node dirty
                 child.dirty = true
             } else {
                 // Otherwise, we are forced to calculate the node's value
-                child.rawValue = child.recompute()
+                val newValue = child.recompute()
+
+                if(debugLogging) println("Recomputing child ${child.label} := $newValue")
+
+                child.rawValue = newValue
 
                 // As well as invoking any listeners on the child.
                 for (listener in child.syncOnValueChangedListeners) {
@@ -361,13 +370,15 @@ class Timeline(
 
         fun initializeTimeline(
             scope: CoroutineScope,
+            timeTravel: Boolean = false,
             debug: Boolean = false,
+            lazy: Boolean = true,
             // Use a trivial (discrete) clock by default.
             initClock: (State<Boolean>) -> Event<Duration> = {
                 broadcastEvent<Duration>("clock")
             }
         ) {
-            _timeline = Timeline(scope, debug, initClock)
+            _timeline = Timeline(scope, timeTravel, debug, lazy, initClock)
         }
 
         fun currentTimeline(): Timeline {

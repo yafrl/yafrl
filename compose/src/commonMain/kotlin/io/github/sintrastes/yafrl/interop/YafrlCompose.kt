@@ -33,6 +33,7 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun YafrlCompose(
     timeTravelDebugger: Boolean = false,
+    debugLogs: Boolean = false,
     showFPS: Boolean = false,
     body: @Composable () -> Unit
 ) {
@@ -43,7 +44,8 @@ fun YafrlCompose(
     remember {
         Timeline.initializeTimeline(
             scope = CoroutineScope(Dispatchers.Default),
-            debug = timeTravelDebugger,
+            debug = debugLogs,
+            timeTravel = timeTravelDebugger,
             initClock = { pausedState ->
                 scope.launch {
                     clockInitialized = true
