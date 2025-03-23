@@ -15,8 +15,12 @@ open class Node<out A> internal constructor(
     internal val id: NodeID,
     internal val recompute: () -> A,
     internal val onNextFrame: ((Node<@UnsafeVariance A>) -> Unit)? = null,
-    internal val label: String? = null,
+    internal var label: String = id.toString(),
 ) : Flow<A> {
+    override fun toString(): String {
+        return label
+    }
+
     internal val onValueChangedListeners: MutableList<FlowCollector<@UnsafeVariance A>> = mutableListOf()
 
     internal val syncOnValueChangedListeners: MutableList<(@UnsafeVariance A) -> Unit> = mutableListOf()
@@ -48,4 +52,8 @@ open class Node<out A> internal constructor(
 }
 
 @JvmInline
-value class NodeID(private val rawValue: Int)
+value class NodeID(private val rawValue: Int) {
+    override fun toString(): String {
+        return "node#${rawValue}"
+    }
+}
