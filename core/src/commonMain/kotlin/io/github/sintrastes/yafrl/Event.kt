@@ -50,6 +50,13 @@ open class Event<out A> internal constructor(
     }
 
     /**
+     * Method version of [State.fold], for easier use in method chains.
+     **/
+    fun <B> scan(initial: B, reducer: (B, A) -> B): State<B> {
+        return State.fold(initial, this, reducer)
+    }
+
+    /**
      * Applies the passed function [f] to each event that is emitted,
      *  producing a new transformed [Event] stream.
      *

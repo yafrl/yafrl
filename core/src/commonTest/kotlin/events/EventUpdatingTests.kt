@@ -189,7 +189,7 @@ class EventUpdatingTests {
 
         val enabled = bindingState<Boolean>(true)
 
-        val count = State.fold(0, clicks.gate(!enabled)) { count, _click ->
+        val count = clicks.gate(!enabled).scan(0) { count, _click ->
             count + 1
         }
 
