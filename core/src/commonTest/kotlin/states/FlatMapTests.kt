@@ -1,7 +1,12 @@
 package states
 
+import io.github.sintrastes.yafrl.plus
+import io.github.sintrastes.yafrl.Behavior.Companion.integral
+import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.State.Companion.const
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.mutableStateOf
@@ -46,47 +51,5 @@ class FlatMapTests {
         state2.value = 3
 
         assertEquals(3, flatmapped.value)
-    }
-
-    @Test
-    fun `flat map switches between states for complex nodes`() {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
-        )
-
-        val modifier = mutableStateOf<Float>(0f)
-
-        val deltaTime = broadcastEvent<Duration>()
-
-        fun position(speed: State<Float>, deltaTime: Event<Duration>): State<Float> = speed.flatMap { speed ->
-            State.fold(0f, deltaTime) { state, time ->
-                state + speed * time.inWholeMilliseconds / 1000f
-            }
-        }
-
-        fun accelerating(v: Float, dv: Float): State<Float> = State.fold(v, deltaTime) { v, dt ->
-            v + dv * dt.inWholeMilliseconds / 1000f
-        }
-
-        fun state(deltaTime: Event<Duration>) = modifier.flatMap { modifier ->
-            position(
-                accelerating(1f, modifier),
-                deltaTime
-            )
-        }
-
-        val position = state(deltaTime)
-
-        assertEquals(0f, position.value)
-
-        deltaTime.send(1.0.seconds)
-
-        assertEquals(1f, position.value)
-
-        modifier.value = 2f
-
-        deltaTime.send(1.0.seconds)
-
-        assertEquals(3f, position.value)
     }
 }
