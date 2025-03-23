@@ -14,8 +14,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
-import io.github.sintrastes.yafrl.mutableStateOf
-import kotlin.test.Test
+import io.github.sintrastes.yafrl.bindingState
 
 class NavigationComponent {
     sealed class ScreenData {
@@ -48,7 +47,7 @@ class NavigationComponent {
 
         val clicks2 = remember { broadcastEvent<Unit>() }
 
-        val tabIndexState = remember { mutableStateOf(0) }
+        val tabIndexState = remember { bindingState(0) }
 
         val tabs = remember { listOf("Screen 1", "Screen 2") }
 

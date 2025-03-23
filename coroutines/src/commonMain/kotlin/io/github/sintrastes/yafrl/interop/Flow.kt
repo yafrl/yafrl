@@ -4,7 +4,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.mutableStateOf
+import io.github.sintrastes.yafrl.bindingState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
@@ -33,7 +33,7 @@ fun <A> Flow<A>.asEvent(): Event<A> {
  *  with the same values and update behavior of the passed [kotlinx.coroutines.flow.StateFlow].
  **/
 fun <A> StateFlow<A>.asState(): State<A> {
-    val state = mutableStateOf(value)
+    val state = bindingState(value)
 
     val scope = Timeline.currentTimeline().scope
 

@@ -21,7 +21,7 @@ class MapUpdatingTests {
 
     @Test
     fun `Build node`() {
-        val node = mutableStateOf(0)
+        val node = bindingState(0)
 
         assertEquals(0, node.value)
     }
@@ -41,7 +41,7 @@ class MapUpdatingTests {
 
     @Test
     fun `Build map node`() {
-        val node = mutableStateOf(0)
+        val node = bindingState(0)
 
         val mapped = node
             .map { it + 2 }
@@ -51,7 +51,7 @@ class MapUpdatingTests {
 
     @Test
     fun `Map node updates immediately`() {
-        val node = mutableStateOf(0)
+        val node = bindingState(0)
 
         val mapped = node
             .map { it + 2 }
@@ -66,7 +66,7 @@ class MapUpdatingTests {
     fun `Map does not update unless queried`() {
         var mapEvaluated = false
 
-        val node = mutableStateOf(0)
+        val node = bindingState(0)
 
         node.map {
             mapEvaluated = true
@@ -84,7 +84,7 @@ class MapUpdatingTests {
         runTest {
             var mapEvaluated = false
 
-            val node = mutableStateOf(0)
+            val node = bindingState(0)
 
             val mapped = node.map {
                 mapEvaluated = true

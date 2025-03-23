@@ -1,7 +1,7 @@
 package states
 
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.mutableStateOf
+import io.github.sintrastes.yafrl.bindingState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.experimental.ExperimentalNativeApi
@@ -20,9 +20,9 @@ class CombineUpdatingTests {
 
     @Test
     fun `Combined state updates when parents update`() {
-        val x = mutableStateOf(0)
+        val x = bindingState(0)
 
-        val y = mutableStateOf(0)
+        val y = bindingState(0)
 
         val sum = x.combineWith(y) { x, y -> x + y }
 
@@ -40,9 +40,9 @@ class CombineUpdatingTests {
     @Test
     @OptIn(ExperimentalNativeApi::class)
     fun `Combined does not update unless queried`() {
-        val x = mutableStateOf(0)
+        val x = bindingState(0)
 
-        val y = mutableStateOf(0)
+        val y = bindingState(0)
 
         var evaluated = false
 
@@ -58,11 +58,11 @@ class CombineUpdatingTests {
 
     @Test
     fun `Combined state 3-arg updates when parents update`() {
-        val x = mutableStateOf(0)
+        val x = bindingState(0)
 
-        val y = mutableStateOf(0)
+        val y = bindingState(0)
 
-        val z = mutableStateOf(0)
+        val z = bindingState(0)
 
         val sum = x.combineWith(y, z) { x, y, z -> x + y + z }
 
@@ -83,13 +83,13 @@ class CombineUpdatingTests {
 
     @Test
     fun `Combined state 4-arg updates when parents update`() {
-        val x = mutableStateOf(0)
+        val x = bindingState(0)
 
-        val y = mutableStateOf(0)
+        val y = bindingState(0)
 
-        val z = mutableStateOf(0)
+        val z = bindingState(0)
 
-        val w = mutableStateOf(0)
+        val w = bindingState(0)
 
         val sum = x.combineWith(y, z, w) { x, y, z, w -> x + y + z + w }
 
@@ -114,15 +114,15 @@ class CombineUpdatingTests {
 
     @Test
     fun `Combined state 5-arg updates when parents update`() {
-        val x = mutableStateOf(0)
+        val x = bindingState(0)
 
-        val y = mutableStateOf(0)
+        val y = bindingState(0)
 
-        val z = mutableStateOf(0)
+        val z = bindingState(0)
 
-        val w = mutableStateOf(0)
+        val w = bindingState(0)
 
-        val q = mutableStateOf(0)
+        val q = bindingState(0)
 
         val sum = x.combineWith(y, z, w, q) { x, y, z, w, q -> x + y + z + w + q }
 

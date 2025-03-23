@@ -7,7 +7,7 @@ import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.mutableStateOf
+import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.plus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +27,7 @@ class IntegrationTests {
             }
         )
 
-        val modifier = mutableStateOf<Float>(0f)
+        val modifier = bindingState<Float>(0f)
 
         val deltaTime = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
 

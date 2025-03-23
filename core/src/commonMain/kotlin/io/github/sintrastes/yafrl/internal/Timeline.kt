@@ -5,7 +5,7 @@ import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.internalMutableStateOf
+import io.github.sintrastes.yafrl.internalBindingState
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.collections.immutable.PersistentList
@@ -36,7 +36,7 @@ class Timeline(
 ) : SynchronizedObject() {
     // Needs to be internal because we can't undo a "pause" event.
     @OptIn(FragileYafrlAPI::class)
-    val pausedState by lazy { internalMutableStateOf(false, "paused_state") }
+    val pausedState by lazy { internalBindingState(false, "paused_state") }
 
     // The clock is lazily initialized so that if an explicit clock is not used,
     //  it will not start ticking.

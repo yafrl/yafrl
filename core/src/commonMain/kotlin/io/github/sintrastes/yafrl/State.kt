@@ -211,7 +211,7 @@ open class State<out A> internal constructor(
     companion object {
         @OptIn(FragileYafrlAPI::class)
         fun <A> const(value: A): State<A> {
-            return internalMutableStateOf(value)
+            return internalBindingState(value)
         }
 
         /**
@@ -267,7 +267,7 @@ open class State<out A> internal constructor(
          */
         @OptIn(FragileYafrlAPI::class)
         fun <A> hold(initial: A, update: Event<A>): State<A> {
-            val state = internalMutableStateOf(initial)
+            val state = internalBindingState(initial)
 
             update.node.collectSync { updated ->
                 if (updated is EventState.Fired<A>) {
@@ -288,7 +288,7 @@ operator fun State<Float>.plus(other: State<Float>): State<Float> {
 fun <A> State<State<A>>.flatten(): State<A> {
     var currentState = value
 
-    val flattened = internalMutableStateOf(currentState.value)
+    val flattened = internalBindingState(currentState.value)
 
     var collector: ((A) -> Unit)? = null
 
@@ -318,7 +318,7 @@ fun <A> State<State<A>>.flatten(): State<A> {
 fun <A> List<State<A>>.sequenceState(): State<List<A>> {
     val initialValues = map { it.value }
 
-    val result = internalMutableStateOf(initialValues)
+    val result = internalBindingState(initialValues)
 
     mapIndexed { i, state ->
         state.collectSync { newValue ->
@@ -337,9 +337,9 @@ fun <A> List<State<A>>.sequenceState(): State<List<A>> {
 /**
  * Variant of [State] that can be [setTo] a new value.
  *
- * Constructed with the [mutableStateOf] function.
+ * Constructed with the [bindingState] function.
  **/
-class MutableState<A> internal constructor(
+class BindingState<A> internal constructor(
     node: Node<A>
 ): State<A>(node) {
     override var value: A
@@ -352,10 +352,10 @@ class MutableState<A> internal constructor(
 }
 
 @OptIn(FragileYafrlAPI::class)
-fun <A> mutableStateOf(value: A, label: String? = null): MutableState<A> {
+fun <A> bindingState(value: A, label: String? = null): BindingState<A> {
     val timeline = Timeline.currentTimeline()
 
-    val state = internalMutableStateOf(value, label)
+    val state = internalBindingState(value, label)
 
     timeline.externalNodes[state.node.id] = state.node
 
@@ -363,14 +363,14 @@ fun <A> mutableStateOf(value: A, label: String? = null): MutableState<A> {
 }
 
 /**
- * Internal version of [mutableStateOf] used for states which should be considered
+ * Internal version of [bindingState] used for states which should be considered
  * "internal" implementation details of the graph.
  **/
 @FragileYafrlAPI
-fun <A> internalMutableStateOf(value: A, label: String? = null): MutableState<A> {
+fun <A> internalBindingState(value: A, label: String? = null): BindingState<A> {
     val graph = Timeline.currentTimeline()
 
-    return MutableState(
+    return BindingState(
         graph.createNode(
             value = lazy { value },
             label = label
