@@ -221,7 +221,7 @@ class DrawingTest {
     }
 
     // Disabled by default
-    @Test
+    // @Test
     fun `run drawing example`() {
         // Open a window with the view.
         application {

@@ -130,7 +130,7 @@ object TodosComponent {
 
 class TodosTest {
     // Disabled by default
-    @Test
+    // @Test
     fun `run todo list example`() {
         // Open a window with the view.
         application {

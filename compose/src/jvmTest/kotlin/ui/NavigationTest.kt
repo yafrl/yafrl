@@ -105,7 +105,8 @@ class NavigationComponent {
 }
 
 class NavigationTest {
-    @Test
+    // Disabled by default
+    // @Test
     fun `Run navigation test`() {
         application {
             val state = rememberWindowState(

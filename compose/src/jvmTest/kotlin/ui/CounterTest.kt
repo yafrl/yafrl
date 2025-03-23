@@ -80,7 +80,7 @@ object CounterComponent {
 
 class CounterTest {
     // Disabled by default
-    @Test
+    // @Test
     fun `run counter example`() {
         // Open a window with the view.
         application {
