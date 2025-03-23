@@ -37,7 +37,17 @@ import kotlinx.coroutines.flow.FlowCollector
 open class State<out A> internal constructor(
     internal val node: Node<A>
 ): Behavior<A> {
-    val label = node.label ?: node.id.toString()
+    override fun toString(): String {
+        return "State($node)"
+    }
+
+    val label get() = node.label
+
+    @FragileYafrlAPI
+    fun labeled(label: String): State<A> {
+        node.label = label
+        return this
+    }
 
     /**
      * Launches a handler that asynchronously listens to updates
