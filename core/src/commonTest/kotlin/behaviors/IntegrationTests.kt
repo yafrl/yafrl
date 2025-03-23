@@ -17,9 +17,10 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class IntegrationTests {
+
     @OptIn(FragileYafrlAPI::class)
     @Test
-    fun `flat map switches between states for complex nodes`() {
+    fun `Integration can be used to compute variable velocity`() {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default),
             initClock = {

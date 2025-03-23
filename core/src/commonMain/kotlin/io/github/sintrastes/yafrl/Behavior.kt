@@ -56,6 +56,14 @@ interface Behavior<out A> {
         }
     }
 
+    fun <B> map(f: (A) -> B): Behavior<B> {
+        val original = this
+
+        return object: Behavior<B> {
+            override val value: B get() = f(original.value)
+        }
+    }
+
     /**
      * Sample a [Behavior] to produce a [State].
      *
@@ -96,6 +104,10 @@ interface Behavior<out A> {
             return f.integrate()
         }
     }
+}
+
+operator fun Behavior<Boolean>.not(): Behavior<Boolean> {
+    return map { !it }
 }
 
 /**

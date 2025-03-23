@@ -78,7 +78,7 @@ open class State<out A> internal constructor(
      *
      * Note: [f] should be a pure function.
      **/
-    fun <B> map(f: (A) -> B): State<B> {
+    override fun <B> map(f: (A) -> B): State<B> {
         val graph = Timeline.currentTimeline()
 
         return State(graph.createMappedNode(node, f))

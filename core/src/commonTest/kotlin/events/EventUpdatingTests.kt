@@ -182,4 +182,31 @@ class EventUpdatingTests {
             graph.fetchNodeValue(fizzbuzz.node)
         )
     }
+
+    @Test
+    fun `Event does not fire if gated`() {
+        val clicks = broadcastEvent<Unit>()
+
+        val enabled = bindingState<Boolean>(true)
+
+        val count = State.fold(0, clicks.gate(!enabled)) { count, _click ->
+            count + 1
+        }
+
+        clicks.send(Unit)
+
+        assertEquals(1, count.value)
+
+        enabled.value = false
+
+        clicks.send(Unit)
+
+        assertEquals(1, count.value)
+
+        enabled.value = true
+
+        clicks.send(Unit)
+
+        assertEquals(2, count.value)
+    }
 }
