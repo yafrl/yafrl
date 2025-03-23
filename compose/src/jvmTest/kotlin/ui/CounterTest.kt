@@ -16,9 +16,13 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 object CounterComponent {
     class ViewModel(
@@ -79,6 +83,57 @@ object CounterComponent {
 }
 
 class CounterTest {
+    @Test
+    fun `Counter resets state after two events with timetravel debugger`() {
+        Timeline.initializeTimeline(
+            CoroutineScope(Dispatchers.Default),
+            debug = true
+        )
+
+        val clicks = broadcastEvent<Unit>()
+
+        val viewModel = CounterComponent.ViewModel(clicks)
+
+        assertEquals(0, viewModel.count.value)
+
+        clicks.send(Unit)
+
+        // Note: Shouldn't have to do this to get the click to register.
+        viewModel.count.value
+
+        clicks.send(Unit)
+
+        assertEquals(2, viewModel.count.value)
+
+        Timeline.currentTimeline()
+            .rollbackState()
+
+        assertEquals(1, viewModel.count.value)
+    }
+
+    @Test
+    fun `Counter resets state with timetravel debugger`() {
+        Timeline.initializeTimeline(
+            CoroutineScope(Dispatchers.Default),
+            debug = true
+        )
+
+        val clicks = broadcastEvent<Unit>()
+
+        val viewModel = CounterComponent.ViewModel(clicks)
+
+        assertEquals(0, viewModel.count.value)
+
+        clicks.send(Unit)
+
+        assertEquals(1, viewModel.count.value)
+
+        Timeline.currentTimeline()
+            .rollbackState()
+
+        assertEquals(0, viewModel.count.value)
+    }
+
     // Disabled by default
     // @Test
     fun `run counter example`() {
