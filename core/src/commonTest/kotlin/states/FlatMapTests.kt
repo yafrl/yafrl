@@ -1,5 +1,6 @@
 package states
 
+import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
 import kotlinx.coroutines.CoroutineScope
@@ -41,5 +42,32 @@ class FlatMapTests {
         state2.value = 3
 
         assertEquals(3, flatmapped.value)
+    }
+
+    @Test
+    fun `flat map updates when either state updates`() {
+        Timeline.initializeTimeline(
+            CoroutineScope(Dispatchers.Default)
+        )
+
+        val state1 = bindingState(0)
+
+        val state2 = bindingState(0)
+
+        val flatmapped = state1.flatMap { x ->
+            state2.flatMap { y ->
+                const(x + y)
+            }
+        }
+
+        assertEquals(0, flatmapped.value)
+
+        state1.value = 2
+
+        assertEquals(2, flatmapped.value)
+
+        state2.value = 3
+
+        assertEquals(5, flatmapped.value)
     }
 }
