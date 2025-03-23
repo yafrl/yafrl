@@ -102,34 +102,6 @@ interface Behavior<out A> {
  * Note: [T] must have a [VectorSpace] instance -- otherwise the function will throw an
  *  [IllegalArgumentException] at runtime.
  **/
-inline fun <reified T> Behavior<T>.integrateTrapezoidal(): State<T> {
-    var previousValue = value
-
-    val clock = Timeline.currentTimeline().clock
-
-    return with (VectorSpace.instance<T>()) {
-        State.fold(zero, clock) { integral, dt ->
-            val newValue = value
-
-            // Convert the duration difference to seconds (using whole milliseconds)
-            val dt = dt.inWholeMilliseconds / 1000f
-
-            // Trapezoidal rule: add the area of the trapezoid between samples.
-            val result = 0.5f * (previousValue + newValue) * dt
-
-            previousValue = newValue
-
-            integral + result
-        }
-    }
-}
-
-/**
- * Integrate the behavior with respect to the current [Timeline]'s clock time.
- *
- * Note: [T] must have a [VectorSpace] instance -- otherwise the function will throw an
- *  [IllegalArgumentException] at runtime.
- **/
 inline fun <reified T> Behavior<T>.integrate(): State<T> {
     val clock = Timeline.currentTimeline().clock
 
