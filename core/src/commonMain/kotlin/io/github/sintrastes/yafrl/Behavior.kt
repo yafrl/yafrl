@@ -48,7 +48,9 @@ interface Behavior<out A> {
      *
      * Compare with [tag](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#v:tag) from Reflex.
      **/
-    fun sample(times: Event<Any?>): Event<A> {
+    fun sample(
+        times: Event<Any?> = Timeline.currentTimeline().clock
+    ): Event<A> {
         return times.map {
             value
         }
