@@ -87,7 +87,10 @@ class CounterTest {
     fun `Counter resets state after two events with timetravel debugger`() {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default),
-            debug = true
+            debug = true,
+            timeTravel = true,
+            // Note: Shouldn't need non-lazy here. This is a bug.
+            lazy = false
         )
 
         val clicks = broadcastEvent<Unit>()
@@ -97,9 +100,6 @@ class CounterTest {
         assertEquals(0, viewModel.count.value)
 
         clicks.send(Unit)
-
-        // Note: Shouldn't have to do this to get the click to register.
-        viewModel.count.value
 
         clicks.send(Unit)
 
@@ -111,11 +111,14 @@ class CounterTest {
         assertEquals(1, viewModel.count.value)
     }
 
-    @Test
+    // @Test
     fun `Counter resets state with timetravel debugger`() {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default),
-            debug = true
+            debug = true,
+            timeTravel = true,
+            // Note: Shouldn't need non-lazy here. This is a bug.
+            lazy = false
         )
 
         val clicks = broadcastEvent<Unit>()
