@@ -14,7 +14,7 @@ class EventLoggingWorks {
     fun `test event logging`() {
         Timeline.initializeTimeline(
             scope = CoroutineScope(Dispatchers.Default),
-            debug = true
+            timeTravel = true
         )
 
         val externalEvent = broadcastEvent<Int>()
@@ -27,11 +27,11 @@ class EventLoggingWorks {
         externalEvent.send(2)
 
         assertEquals(
-            Timeline.currentTimeline().eventTrace.toList(),
             listOf(
                 Timeline.ExternalEvent(NodeID(0), Fired(1)),
                 Timeline.ExternalEvent(NodeID(0), Fired(2))
-            )
+            ),
+            Timeline.currentTimeline().eventTrace.toList()
         )
     }
 }
