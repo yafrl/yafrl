@@ -209,4 +209,21 @@ class EventUpdatingTests {
 
         assertEquals(2, count.value)
     }
+
+    @Test
+    fun `Window works as intended`() {
+        val event = broadcastEvent<Int>()
+
+        val windowed = State.hold(listOf(), event.window(3))
+
+        event.send(1)
+        event.send(2)
+        event.send(3)
+
+        assertEquals(listOf(1, 2, 3), windowed.value)
+
+        event.send(4)
+
+        assertEquals(listOf(2, 3, 4), windowed.value)
+    }
 }
