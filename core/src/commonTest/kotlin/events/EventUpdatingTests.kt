@@ -6,10 +6,14 @@ import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
 class EventUpdatingTests {
     @BeforeTest
@@ -225,5 +229,25 @@ class EventUpdatingTests {
         event.send(4)
 
         assertEquals(listOf(2, 3, 4), windowed.value)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `Debounce only emits last event`() {
+        val event = broadcastEvent<Int>()
+
+        val debounced = event.debounced(1.seconds).hold(0)
+
+        runTest {
+            event.send(1)
+            event.send(2)
+            event.send(3)
+
+            advanceUntilIdle()
+            advanceTimeBy(1.seconds)
+            advanceUntilIdle()
+
+            assertEquals(3, debounced.value)
+        }
     }
 }

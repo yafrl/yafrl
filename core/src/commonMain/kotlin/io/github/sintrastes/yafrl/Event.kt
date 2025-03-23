@@ -3,6 +3,8 @@ package io.github.sintrastes.yafrl
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.internal.currentTime
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.isActive
@@ -77,6 +79,11 @@ open class Event<out A> internal constructor(
                 }
             )
         )
+    }
+
+    /** Method version of [State.hold].  */
+    fun hold(initial: @UnsafeVariance A): State<A> {
+        return State.hold(initial, this)
     }
 
     /**
@@ -157,16 +164,28 @@ open class Event<out A> internal constructor(
         var lastTime: Instant? = null
         var lastEvent: A? = null
 
+        var job: Job? = null
+
         scope.launch {
             collect { event ->
-                val currentTime = Clock.System.now()
+                job?.cancel()
+                job = scope.launch {
+                    val currentTime = coroutineContext.currentTime
 
-                if (lastTime != null && currentTime - lastTime!! > window) {
-                    debounced.send(lastEvent!!)
+                    if (lastTime != null) {
+                        val elapsed = currentTime - lastTime!!
+
+                        if (elapsed > window) {
+                            debounced.send(lastEvent!!)
+                        } else {
+                            delay(window - elapsed)
+                            debounced.send(lastEvent!!)
+                        }
+                    }
+
+                    lastTime = currentTime
+                    lastEvent = event
                 }
-
-                lastTime = currentTime
-                lastEvent = event
             }
         }
 
