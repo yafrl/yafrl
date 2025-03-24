@@ -104,8 +104,7 @@ class NegativeResults {
             flow.value = 3
 
             // Have to put in some kind of pause to get this to work
-            // If not using runTest this would be a `delay`.
-            advanceUntilIdle()
+            withContext(Dispatchers.Default) { delay(15) }
 
             val result = mapped.value
 

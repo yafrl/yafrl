@@ -271,6 +271,7 @@ open class State<out A> internal constructor(
 
             update.node.collectSync { updated ->
                 if (updated is EventState.Fired<A>) {
+                    println("Updating state to $updated")
                     state.value = updated.event
                 }
             }

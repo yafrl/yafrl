@@ -7,13 +7,15 @@ import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 class EventUpdatingTests {
     @BeforeTest
@@ -236,18 +238,17 @@ class EventUpdatingTests {
     fun `Debounce only emits last event`() {
         val event = broadcastEvent<Int>()
 
-        val debounced = event.debounced(1.seconds).hold(0)
+        val debounced = event.debounced(100.milliseconds).hold(0)
 
-        runTest {
-            event.send(1)
-            event.send(2)
-            event.send(3)
+         runTest {
+             event.send(1)
+             event.send(2)
+             event.send(3)
 
-            advanceUntilIdle()
-            advanceTimeBy(1.seconds)
-            advanceUntilIdle()
+             withContext(Dispatchers.Default) { delay(110.milliseconds) }
+             advanceUntilIdle()
 
-            assertEquals(3, debounced.value)
-        }
+             assertEquals(3, debounced.value)
+         }
     }
 }

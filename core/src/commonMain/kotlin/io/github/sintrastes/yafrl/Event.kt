@@ -9,6 +9,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -166,25 +168,32 @@ open class Event<out A> internal constructor(
 
         var job: Job? = null
 
+        val mutex = Mutex()
+
         scope.launch {
-            collect { event ->
-                job?.cancel()
-                job = scope.launch {
-                    val currentTime = coroutineContext.currentTime
+            node.collectSync { event ->
+                if (event is EventState.Fired) {
+                    job?.cancel()
+                    job = scope.launch {
+                        mutex.lock()
+                        val currentTime = coroutineContext.currentTime
 
-                    if (lastTime != null) {
-                        val elapsed = currentTime - lastTime!!
+                        lastEvent = event.event
 
-                        if (elapsed > window) {
-                            debounced.send(lastEvent!!)
-                        } else {
-                            delay(window - elapsed)
-                            debounced.send(lastEvent!!)
+                        if (lastTime != null) {
+                            val elapsed = currentTime - lastTime!!
+
+                            if (elapsed > window) {
+                                debounced.send(lastEvent!!)
+                            } else {
+                                delay(window - elapsed)
+                                debounced.send(lastEvent!!)
+                            }
                         }
-                    }
 
-                    lastTime = currentTime
-                    lastEvent = event
+                        lastTime = currentTime
+                        mutex.unlock()
+                    }
                 }
             }
         }
