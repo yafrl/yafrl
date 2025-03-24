@@ -251,4 +251,24 @@ class EventUpdatingTests {
              assertEquals(3, debounced.value)
          }
     }
+
+    @Test
+    fun `Tick emits events at specified intervals`() {
+        runTest {
+            val ticks = Event
+                .tick(50.milliseconds)
+                .scan(0) { ticks, _ -> ticks + 1 }
+
+            withContext(Dispatchers.Default) {
+                repeat(5) {
+                    delay(50.milliseconds)
+
+                    // TODO: This should not be required. Laziness bug.
+                    ticks.value
+                }
+            }
+
+            assertEquals(5, ticks.value)
+        }
+    }
 }
