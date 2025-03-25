@@ -3,6 +3,7 @@ package states
 import io.github.sintrastes.yafrl.State.Companion.combineAll
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.sequenceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.experimental.ExperimentalNativeApi
@@ -192,5 +193,22 @@ class CombineUpdatingTests {
         r.value = 1
 
         assertEquals(6, sum.value)
+    }
+
+    @Test
+    fun `sequenceState combines all states into list`() {
+        val x = bindingState(0)
+        val y = bindingState(1)
+
+        val sequenced = listOf(x, y)
+            .sequenceState()
+
+        assertEquals(listOf(0, 1), sequenced.value)
+
+        x.value = 1
+        assertEquals(listOf(1, 1), sequenced.value)
+
+        y.value = 2
+        assertEquals(listOf(1, 2), sequenced.value)
     }
 }
