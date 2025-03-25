@@ -1,5 +1,6 @@
 package states
 
+import io.github.sintrastes.yafrl.State.Companion.combineAll
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
 import kotlinx.coroutines.CoroutineScope
@@ -147,5 +148,49 @@ class CombineUpdatingTests {
         q.value = 1
 
         assertEquals(5, sum.value)
+    }
+
+    @Test
+    fun `Combine all updates when parents update`() {
+        val x = bindingState(0)
+
+        val y = bindingState(0)
+
+        val z = bindingState(0)
+
+        val w = bindingState(0)
+
+        val q = bindingState(0)
+
+        val r = bindingState(0)
+
+        val sum = combineAll(x, y, z, w, q, r)
+            .map { it.sum() }
+
+        assertEquals(0, sum.value)
+
+        x.value = 1
+
+        assertEquals(1, sum.value)
+
+        y.value = 1
+
+        assertEquals(2, sum.value)
+
+        z.value = 1
+
+        assertEquals(3, sum.value)
+
+        w.value = 1
+
+        assertEquals(4, sum.value)
+
+        q.value = 1
+
+        assertEquals(5, sum.value)
+
+        r.value = 1
+
+        assertEquals(6, sum.value)
     }
 }
