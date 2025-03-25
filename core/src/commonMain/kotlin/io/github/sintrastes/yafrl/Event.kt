@@ -202,8 +202,8 @@ open class Event<out A> internal constructor(
     }
 
     /**
-     * Creates a modified [Event] that only emits the latest value after the
-     *  [duration] specified
+     * Creates a modified [Event] that emits events at a frequency of at most
+     *  [duration].
      **/
     @OptIn(FragileYafrlAPI::class)
     fun throttled(duration: Duration): Event<A> {
@@ -213,6 +213,8 @@ open class Event<out A> internal constructor(
 
         var lastTime: Instant? = null
         var latestEvent: A? = null
+
+        var firstEvent = true
 
         scope.launch {
             collect { event ->
@@ -224,7 +226,10 @@ open class Event<out A> internal constructor(
         scope.launch {
             while (isActive) {
                 if (latestEvent != null) {
-                    delay(duration)
+                    if (!firstEvent) {
+                        delay(duration)
+                    }
+                    firstEvent = false
                     throttled.send(latestEvent!!)
                 }
             }

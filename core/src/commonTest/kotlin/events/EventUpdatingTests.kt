@@ -4,6 +4,7 @@ import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.internal.current
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -273,6 +274,24 @@ class EventUpdatingTests {
 
                 assertEquals(10, ticks.value)
             }
+        }
+    }
+
+    @Test
+    fun `Throttled event emits immediately`() {
+        runTest {
+            val event = broadcastEvent<Unit>()
+
+            val throttled = event
+                .throttled(100.milliseconds)
+
+            event.send(Unit)
+
+            withContext(Dispatchers.Default) {
+                delay(10.milliseconds)
+            }
+
+            assertEquals(EventState.Fired(Unit), throttled.node.current())
         }
     }
 }
