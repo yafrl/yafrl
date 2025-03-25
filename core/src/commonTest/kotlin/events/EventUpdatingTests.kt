@@ -269,6 +269,8 @@ class EventUpdatingTests {
                     ticks.value
                 }
 
+                delay(10.milliseconds)
+
                 assertEquals(10, ticks.value)
             }
         }
