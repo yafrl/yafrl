@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/version-0.1-purple)
 ![](https://img.shields.io/badge/kotlin-2.1.10-blue)
-[![codecov](https://codecov.io/github/Sintrastes/ef3r/graph/badge.svg?token=2A1XMWGOSH)](https://codecov.io/github/Sintrastes/yafrl)
+[![codecov](https://codecov.io/github/Sintrastes/yafrl/graph/badge.svg?token=2A1XMWGOSH)](https://codecov.io/github/Sintrastes/yafrl)
 [![Build](https://github.com/Sintrastes/yafrl/actions/workflows/gradle.yml/badge.svg)](https://github.com/Sintrastes/yafrl/actions/workflows/gradle.yml)
 [![](https://img.shields.io/badge/Documentation-2403fc)](https://sintrastes.github.io/yafrl/)
 
