@@ -17,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class EventUpdatingTests {
     @BeforeTest
@@ -257,21 +258,19 @@ class EventUpdatingTests {
     fun `Tick emits events at specified intervals`() {
         runTest {
             val ticks = Event
-                .tick(10.milliseconds)
+                .tick(50.milliseconds)
                 .scan(0) { ticks, _ -> ticks + 1 }
 
             withContext(Dispatchers.Default) {
                 repeat(10) {
-                    delay(10.milliseconds)
+                    delay(50.milliseconds)
 
                     // TODO: This should not be required. Laziness bug.
                     ticks.value
                 }
-            }
 
-            // With corutines, the exact timing can be very sensitive,
-            // So we'll accept either 10 or 11.
-            assertTrue(ticks.value >= 10 || ticks.value == 11)
+                assertEquals(10, ticks.value)
+            }
         }
     }
 }

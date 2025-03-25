@@ -360,6 +360,7 @@ class Timeline(
             return node.rawValue
         } else {
             node.rawValue = node.recompute()
+            node.dirty = false
         }
 
         return node.rawValue
