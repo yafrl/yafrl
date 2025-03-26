@@ -10,6 +10,8 @@ import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.sintrastes.yafrl.Behavior
 import io.github.sintrastes.yafrl.Event
@@ -19,6 +21,7 @@ import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -86,7 +89,8 @@ fun YafrlCompose(
                 Button(
                     modifier = Modifier
                         .padding(6.dp)
-                        .width(120.dp),
+                        .width(120.dp)
+                        .semantics { contentDescription = "Pause button" },
                     enabled = clockInitialized,
                     content = {
                         if (!paused) {
@@ -180,7 +184,7 @@ fun newComposeFrameClock(
     scope.launch {
         var lastTime: Long = -1
 
-        while (true) {
+        while (isActive) {
             withFrameNanos { time ->
                 if (lastTime > 0 && !paused.value) {
                     clock.send((time - lastTime).nanoseconds)
