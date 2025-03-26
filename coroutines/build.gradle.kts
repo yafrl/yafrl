@@ -8,6 +8,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.10"
     id("org.jetbrains.compose") version "1.7.3"
     id("com.vanniktech.maven.publish") version "0.31.0"
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
     id("org.jetbrains.dokka") version "2.0.0"
 }
 
