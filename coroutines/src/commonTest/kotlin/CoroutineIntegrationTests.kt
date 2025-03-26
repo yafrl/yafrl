@@ -30,7 +30,7 @@ class CoroutineIntegrationTests {
 
             flow.emit(Unit)
 
-            advanceUntilIdle()
+            withContext(Dispatchers.Default) { delay(25) }
 
             events.value.size shouldBe 1
         }
