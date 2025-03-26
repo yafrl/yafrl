@@ -11,7 +11,6 @@ import io.github.sintrastes.yafrl.interop.composeState
 import org.junit.Rule
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.time.Duration.Companion.seconds
 
 class YafrlComposeTests {
     @get:Rule
@@ -61,9 +60,9 @@ class YafrlComposeTests {
         assertEquals(true, pausedState.value)
 
         // Simulate button click to resume clock
-        //composeTestRule.onNodeWithText("Un-pause").performClick()
+        composeTestRule.onNodeWithText("Un-pause").performClick()
 
         // Verify resumed state
-        //assertEquals(false, pausedState.value)
+        assertEquals(false, pausedState.value)
     }
 }
