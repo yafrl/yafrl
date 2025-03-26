@@ -10,10 +10,15 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.31.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
     id("org.jetbrains.dokka") version "2.0.0"
+    id("io.kotest.multiplatform") version "5.9.1"
 }
 
 repositories {
     mavenCentral()
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
 
 kotlin {
@@ -34,6 +39,19 @@ kotlin {
             dependencies {
                 implementation("app.cash.molecule:molecule-runtime:2.0.0")
                 implementation(kotlin("test"))
+                implementation("io.kotest:kotest-runner-junit5:5.9.1")
+            }
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(project(":yafrl-core"))
+                implementation(kotlin("test"))
+                implementation(kotlin("test-annotations-common"))
+                implementation("io.kotest:kotest-framework-engine:5.9.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
             }
         }
     }
