@@ -1,3 +1,6 @@
+@file:OptIn(ExperimentalComposeLibrary::class)
+
+import org.jetbrains.compose.ExperimentalComposeLibrary
 
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - Jetpack Compose integration."
@@ -33,6 +36,9 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation(compose.uiTest)
+                implementation(compose.material)
+                implementation(compose.uiTestJUnit4)
                 implementation("app.cash.molecule:molecule-runtime:2.0.0")
                 implementation(kotlin("test"))
             }
