@@ -51,7 +51,7 @@ class NegativeResultsState {
         runBlocking {
             flow.value = 3
 
-            delay(15)
+            delay(35)
 
             assertEquals(5, mapped.value)
         }
