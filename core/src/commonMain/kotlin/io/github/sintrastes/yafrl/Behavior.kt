@@ -117,9 +117,13 @@ operator fun Behavior<Boolean>.not(): Behavior<Boolean> {
  *  [IllegalArgumentException] at runtime.
  **/
 inline fun <reified T> Behavior<T>.integrate(): State<T> {
+    return integrate(VectorSpace.instance<T>())
+}
+
+fun <T> Behavior<T>.integrate(vectorSpace: VectorSpace<T>): State<T> {
     val clock = Timeline.currentTimeline().clock
 
-    return with (VectorSpace.instance<T>()) {
+    return with (vectorSpace) {
         State.fold(zero, clock) { integral, dt ->
             val newValue = value
 
