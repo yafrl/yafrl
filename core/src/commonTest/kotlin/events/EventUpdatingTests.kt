@@ -291,4 +291,23 @@ class EventUpdatingTests {
             assertEquals(EventState.Fired(Unit), throttled.node.current())
         }
     }
+
+    @Test
+    fun `Async events eventually emit`() {
+        val clicks = broadcastEvent<Unit>()
+
+        val response = onEvent(clicks) {
+            delay(100.milliseconds)
+            42
+        }
+            .hold(0)
+
+        runTest {
+            clicks.send(Unit)
+
+            withContext(Dispatchers.Default) { delay(125.milliseconds) }
+
+            assertEquals(42, response.value)
+        }
+    }
 }
