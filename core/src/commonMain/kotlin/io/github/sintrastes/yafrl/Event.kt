@@ -3,7 +3,6 @@ package io.github.sintrastes.yafrl
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.internal.currentTime
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.FlowCollector
@@ -176,7 +175,7 @@ open class Event<out A> internal constructor(
                     job?.cancel()
                     job = scope.launch {
                         mutex.lock()
-                        val currentTime = coroutineContext.currentTime
+                        val currentTime = Clock.System.now()
 
                         lastEvent = event.event
 

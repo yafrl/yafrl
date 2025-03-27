@@ -53,7 +53,7 @@ class VectorTests {
     }
 
     @Test
-    fun `Gravity simulation works (3D)`() {
+    fun `Gravity simulation works 3D`() {
         val clock by lazy { broadcastEvent<Duration>() }
 
         Timeline.initializeTimeline(
