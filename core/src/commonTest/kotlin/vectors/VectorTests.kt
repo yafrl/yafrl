@@ -7,6 +7,7 @@ import io.github.sintrastes.yafrl.vector.Double2
 import io.github.sintrastes.yafrl.vector.Double3
 import io.github.sintrastes.yafrl.vector.Float2
 import io.github.sintrastes.yafrl.vector.Float3
+import io.github.sintrastes.yafrl.vector.ScalarSpace
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlin.math.abs
 import kotlin.test.Test
@@ -96,6 +97,8 @@ class VectorTests {
             val z = 2.0 * x + y
 
             assertEquals(Double2(5.0, 8.0), z)
+
+            assertEquals(Double2(2.5, 4.0), z / 2.0)
         }
     }
 
@@ -109,6 +112,22 @@ class VectorTests {
             val z = 2.0 * x + y
 
             assertEquals(Double3(6.0, 9.0, 12.0), z)
+
+            assertEquals(Double3(2.5, 3.5, 4.5), (x + y) / 2.0)
+
+            assertEquals(Double3(-3.0, -3.0, -3.0), x - y)
+        }
+    }
+
+    @Test
+    fun `Float vector arithmetic works`() {
+        val x = 1f
+        val y = 2f
+
+        with (ScalarSpace.float()) {
+            val z = 2f * x + y
+
+            assertEquals(4f, z)
         }
     }
 }
