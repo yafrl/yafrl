@@ -5,6 +5,7 @@ import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
 import io.github.sintrastes.yafrl.vector.Float2
+import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
 import kotlin.jvm.JvmName
@@ -290,6 +291,13 @@ operator fun State<Float>.plus(other: State<Float>): State<Float> {
 
 @JvmName("plusFloat2")
 operator fun State<Float2>.plus(other: State<Float2>): State<Float2> = with(VectorSpace.float2()) {
+    return combineWith(other) { x, y ->
+        x + y
+    }
+}
+
+@JvmName("plusFloat23")
+operator fun State<Float3>.plus(other: State<Float3>): State<Float3> = with(VectorSpace.float3()) {
     return combineWith(other) { x, y ->
         x + y
     }
