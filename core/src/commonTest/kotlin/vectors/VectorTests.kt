@@ -125,9 +125,9 @@ class VectorTests {
         val y = 2f
 
         with (ScalarSpace.float()) {
-            val z = 1 * 2f * x + y * 1
+            val z = 1 * 2f * x + y * 1 - 1f
 
-            assertEquals(4f, z / 1)
+            assertEquals(3f, z / 1)
         }
     }
 
@@ -137,9 +137,9 @@ class VectorTests {
         val y = 2.0
 
         with (ScalarSpace.float()) {
-            val z = 1 * 2.0 * x + y * 1
+            val z = 1 * 2.0 * x + y * 1 - 1.0
 
-            assertEquals(4.0, z / 1)
+            assertEquals(3.0, z / 1)
         }
     }
 }
