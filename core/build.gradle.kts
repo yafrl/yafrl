@@ -9,13 +9,26 @@ plugins {
     id("org.jetbrains.dokka") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
     id("com.vanniktech.maven.publish") version "0.31.0"
+    id("io.kotest.multiplatform") version "6.0.0.M2"
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
 
 kotlin {
     jvm()
     iosArm64()
     macosX64()
-    js().browser()
+    js(IR) {
+        browser {
+            testTask {
+                // useMocha()
+                // Hanging indefinitely right now for some reason.
+                enabled = false
+            }
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -30,8 +43,17 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-annotations-common"))
+                implementation("io.kotest:kotest-framework-engine:6.0.0.M2")
+                implementation("io.kotest:kotest-property:6.0.0.M2")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+            }
+        }
+
+        val jvmTest by getting {
+            dependencies {
+                implementation("io.kotest:kotest-runner-junit5:6.0.0.M2")
             }
         }
     }

@@ -9,16 +9,23 @@ import io.github.sintrastes.yafrl.vector.Float2
 import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.ScalarSpace
 import io.github.sintrastes.yafrl.vector.VectorSpace
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.arbitrary
+import io.kotest.property.arbitrary.filterNot
+import io.kotest.property.arbitrary.numericDouble
+import io.kotest.property.arbitrary.numericFloat
+import io.kotest.property.checkAll
+
 import kotlin.math.abs
-import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class VectorTests {
-    @Test
-    fun `Gravity simulation works`() {
+class VectorTests : FunSpec({
+    test("Gravity simulation works") {
         val clock by lazy { broadcastEvent<Duration>() }
 
         Timeline.initializeTimeline(
@@ -52,8 +59,7 @@ class VectorTests {
         )
     }
 
-    @Test
-    fun `Gravity simulation works 3D`() {
+    test("Gravity simulation works 3D") {
         val clock by lazy { broadcastEvent<Duration>() }
 
         Timeline.initializeTimeline(
@@ -87,59 +93,60 @@ class VectorTests {
         )
     }
 
-    @Test
-    fun `Double vector arithmetic works`() {
-        val x = Double2(1.0, 2.0)
-
-        val y = Double2(3.0, 4.0)
-
-        with (VectorSpace.double2()) {
-            val z = 2.0 * x + y
-
-            assertEquals(Double2(5.0, 8.0), z)
-
-            assertEquals(Double2(2.5, 4.0), z / 2.0)
-        }
+    test("Double vector arithmetic works") {
+        testVectorSpace(VectorSpace.double2(), Arb.double2())
     }
 
-    @Test
-    fun `3D Double vector arithmetic works`() {
-        val x = Double3(1.0, 2.0, 3.0)
-
-        val y = Double3(4.0, 5.0, 6.0)
-
-        with (VectorSpace.double3()) {
-            val z = 2.0 * x + y
-
-            assertEquals(Double3(6.0, 9.0, 12.0), z)
-
-            assertEquals(Double3(2.5, 3.5, 4.5), (x + y) / 2.0)
-
-            assertEquals(Double3(-3.0, -3.0, -3.0), x - y)
-        }
+    test("3D Double vector arithmetic works") {
+        testVectorSpace(VectorSpace.double3(), Arb.double3())
     }
 
-    @Test
-    fun `Float scalar arithmetic works`() {
-        val x = 1f
-        val y = 2f
-
-        with (ScalarSpace.float()) {
-            val z = 1 * 2f * x + y * 1 - 1f
-
-            assertEquals(3f, z / 1)
-        }
+    test("Float scalar arithmetic works") {
+        testVectorSpace(
+            ScalarSpace.float(),
+            Arb.numericFloat().filterNot { it == -0f }
+        )
     }
 
-    @Test
-    fun `Double scalar arithmetic works`() {
-        val x = 1.0
-        val y = 2.0
+    test("Double scalar arithmetic works") {
+        testVectorSpace(
+            ScalarSpace.double(),
+            Arb.numericDouble().filterNot { it == -0.0 }
+        )
+    }
+})
 
-        with (ScalarSpace.double()) {
-            val z = 1 * 2.0 * x + y * 1 - 1.0
+fun Arb.Companion.double3() = arbitrary {
+    Double3(
+        Arb.numericDouble().filterNot { it == -0.0 }.bind(),
+        Arb.numericDouble().filterNot { it == -0.0 }.bind(),
+        Arb.numericDouble().filterNot { it == -0.0 }.bind()
+    )
+}
 
-            assertEquals(3.0, z / 1)
-        }
+fun Arb.Companion.double2() = arbitrary {
+    Double2(
+        Arb.numericDouble().filterNot { it == -0.0 }.bind(),
+        Arb.numericDouble().filterNot { it == -0.0 }.bind()
+    )
+}
+
+suspend fun <A> testVectorSpace(space: VectorSpace<A>, arb: Arb<A>) = with(space) {
+    checkAll(arb, arb) { x, y ->
+        x + y shouldBe y + x
+    }
+
+    checkAll(arb) { x ->
+        x + zero shouldBe x
+
+        zero + x shouldBe x
+
+        x - x shouldBe zero
+
+        x / 1 shouldBe x
+
+        1 * x shouldBe x
+
+        x * 1 shouldBe x
     }
 }

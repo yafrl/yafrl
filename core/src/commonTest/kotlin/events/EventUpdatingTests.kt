@@ -5,6 +5,7 @@ import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
+import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,16 +18,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
 
-class EventUpdatingTests {
-    @BeforeTest
-    fun `init timeline`() {
+class EventUpdatingTests : FunSpec({
+    beforeTest {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default)
         )
     }
 
-    @Test
-    fun `Event updates immediately`() {
+    test("Event updates immediately") {
         val timeline = Timeline.currentTimeline()
 
         val events = broadcastEvent<Int>()
@@ -40,8 +39,7 @@ class EventUpdatingTests {
     }
 
     @OptIn(FragileYafrlAPI::class)
-    @Test
-    fun `Mapped event updates if collected`() {
+    test("Mapped event updates if collected") {
         runTest {
             val timeline = Timeline.currentTimeline()
 
@@ -63,8 +61,7 @@ class EventUpdatingTests {
         }
     }
 
-    @Test
-    fun `Mapped event is lazy`() {
+    test("Mapped event is lazy") {
         val events = broadcastEvent<Int>()
 
         val mappedEvents = events
@@ -78,8 +75,7 @@ class EventUpdatingTests {
         )
     }
 
-    @Test
-    fun `filtered event does not emit on filtered elements`() {
+    test("filtered event does not emit on filtered elements") {
         val events = broadcastEvent<Int>()
 
         // Should only let event events through.
@@ -91,8 +87,7 @@ class EventUpdatingTests {
         assertEquals(EventState.None, filtered.node.rawValue)
     }
 
-    @Test
-    fun `Event should not be fired on next tick`() {
+    test("Event should not be fired on next tick") {
         val event1 = broadcastEvent<Unit>()
 
         val event2 = broadcastEvent<Unit>()
@@ -111,8 +106,7 @@ class EventUpdatingTests {
     }
 
 
-    @Test
-    fun `Default merge handling is Leftmost`() {
+    test("Default merge handling is Leftmost") {
         val graph = Timeline.currentTimeline()
 
         val count = broadcastEvent<Int>()
@@ -146,8 +140,7 @@ class EventUpdatingTests {
         )
     }
 
-    @Test
-    fun `Custom merge works for fizzbuzz`() {
+    test("Custom merge works for fizzbuzz") {
         val graph = Timeline.currentTimeline()
 
         val count = broadcastEvent<Int>()
@@ -189,8 +182,7 @@ class EventUpdatingTests {
         )
     }
 
-    @Test
-    fun `Event does not fire if gated`() {
+    test("Event does not fire if gated") {
         val clicks = broadcastEvent<Unit>()
 
         val enabled = bindingState<Boolean>(true)
@@ -216,8 +208,7 @@ class EventUpdatingTests {
         assertEquals(2, count.value)
     }
 
-    @Test
-    fun `Window works as intended`() {
+    test("Window works as intended") {
         val event = broadcastEvent<Int>()
 
         val windowed = State.hold(listOf(), event.window(3))
@@ -233,28 +224,25 @@ class EventUpdatingTests {
         assertEquals(listOf(2, 3, 4), windowed.value)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `Debounce only emits last event`() {
+    test("Debounce only emits last event") {
         val event = broadcastEvent<Int>()
 
         val debounced = event.debounced(100.milliseconds).hold(0)
 
-         runTest {
-             event.send(1)
-             event.send(2)
-             event.send(3)
+        runTest {
+            event.send(1)
+            event.send(2)
+            event.send(3)
 
-             withContext(Dispatchers.Default) { delay(110.milliseconds) }
-             advanceUntilIdle()
+            withContext(Dispatchers.Default) { delay(110.milliseconds) }
+            advanceUntilIdle()
 
-             assertEquals(3, debounced.value)
-         }
+            assertEquals(3, debounced.value)
+        }
     }
 
-    @Test
-    fun `Tick emits events at specified intervals`() {
-        runTest {
+    test("Tick emits events at specified intervals") {
+
             val ticks = Event
                 .tick(50.milliseconds)
                 .scan(0) { ticks, _ -> ticks + 1 }
@@ -271,29 +259,25 @@ class EventUpdatingTests {
 
                 assertEquals(10, ticks.value)
             }
-        }
+
     }
 
-    @Test
-    fun `Throttled event emits immediately`() {
-        runTest {
-            val event = broadcastEvent<Unit>()
+    test("Throttled event emits immediately") {
+        val event = broadcastEvent<Unit>()
 
-            val throttled = event
-                .throttled(100.milliseconds)
+        val throttled = event
+            .throttled(100.milliseconds)
 
-            event.send(Unit)
+        event.send(Unit)
 
-            withContext(Dispatchers.Default) {
-                delay(10.milliseconds)
-            }
-
-            assertEquals(EventState.Fired(Unit), throttled.node.current())
+        withContext(Dispatchers.Default) {
+            delay(10.milliseconds)
         }
+
+        assertEquals(EventState.Fired(Unit), throttled.node.current())
     }
 
-    @Test
-    fun `Async events eventually emit`() {
+    test("Async events eventually emit") {
         val clicks = broadcastEvent<Unit>()
 
         val response = onEvent(clicks) {
@@ -310,4 +294,4 @@ class EventUpdatingTests {
             assertEquals(42, response.value)
         }
     }
-}
+})
