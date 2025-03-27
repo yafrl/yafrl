@@ -93,6 +93,14 @@ class VectorTests : FunSpec({
         )
     }
 
+    test("Float vector arithmetic works") {
+        testVectorSpace(VectorSpace.float2(), Arb.float2())
+    }
+
+    test("3D float vector arithmetic works") {
+        testVectorSpace(VectorSpace.float3(), Arb.float3())
+    }
+
     test("Double vector arithmetic works") {
         testVectorSpace(VectorSpace.double2(), Arb.double2())
     }
@@ -128,6 +136,21 @@ fun Arb.Companion.double2() = arbitrary {
     Double2(
         Arb.numericDouble().filterNot { it == -0.0 }.bind(),
         Arb.numericDouble().filterNot { it == -0.0 }.bind()
+    )
+}
+
+fun Arb.Companion.float3() = arbitrary {
+    Float3(
+        Arb.numericFloat().filterNot { it == -0f }.bind(),
+        Arb.numericFloat().filterNot { it == -0f }.bind(),
+        Arb.numericFloat().filterNot { it == -0f }.bind()
+    )
+}
+
+fun Arb.Companion.float2() = arbitrary {
+    Float2(
+        Arb.numericFloat().filterNot { it == -0f }.bind(),
+        Arb.numericFloat().filterNot { it == -0f }.bind()
     )
 }
 
