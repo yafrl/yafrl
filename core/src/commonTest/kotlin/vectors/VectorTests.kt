@@ -120,14 +120,26 @@ class VectorTests {
     }
 
     @Test
-    fun `Float vector arithmetic works`() {
+    fun `Float scalar arithmetic works`() {
         val x = 1f
         val y = 2f
 
         with (ScalarSpace.float()) {
-            val z = 2f * x + y
+            val z = 1 * 2f * x + y * 1
 
-            assertEquals(4f, z)
+            assertEquals(4f, z / 1)
+        }
+    }
+
+    @Test
+    fun `Double scalar arithmetic works`() {
+        val x = 1.0
+        val y = 2.0
+
+        with (ScalarSpace.float()) {
+            val z = 1 * 2.0 * x + y * 1
+
+            assertEquals(4.0, z / 1)
         }
     }
 }
