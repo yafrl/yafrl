@@ -136,7 +136,7 @@ class VectorTests {
         val x = 1.0
         val y = 2.0
 
-        with (ScalarSpace.float()) {
+        with (ScalarSpace.double()) {
             val z = 1 * 2.0 * x + y * 1 - 1.0
 
             assertEquals(3.0, z / 1)
