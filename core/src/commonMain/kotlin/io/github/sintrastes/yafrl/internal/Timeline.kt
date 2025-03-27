@@ -71,9 +71,10 @@ class Timeline(
 
     fun persistState() {
         if (timeTravelEnabled) {
+            if (debugLogging) println("Persisting state in frame ${latestFrame}, ${nodes.size} nodes")
             previousStates[latestFrame] = GraphState(
                 nodes
-                    .mapValues { it.value._rawValue }
+                    .mapValues { it.value.rawValue }
                     .toPersistentMap(),
                 children
             )
@@ -84,10 +85,17 @@ class Timeline(
         val time = measureTime {
             if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventTrace.getOrNull(frame.toInt())}")
             val nodeValues = previousStates[frame]
-                ?.nodeValues ?: return@synchronized
+                ?.nodeValues ?: run {
+                    if (debugLogging) println("No previous state found for frame ${frame}")
+                    return@synchronized
+                }
+
+            println("Resetting to frame ${frame}, ${nodeValues.size} nodes")
 
             nodes.values.forEach { node ->
                 val resetValue = nodeValues[node.id]
+
+                println("Resetting node ${node.label} to $resetValue")
 
                 if (resetValue != null) {
                     updateNodeValue(node, resetValue)
@@ -152,7 +160,7 @@ class Timeline(
             label ?: id.toString()
         )
 
-        nodes.put(id, newNode)
+        nodes = nodes.put(id, newNode)
 
         persistState()
 

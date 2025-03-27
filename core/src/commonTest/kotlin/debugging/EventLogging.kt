@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class EventLoggingWorks {
+class EventLogging {
     @Test
     fun `test event logging`() {
         Timeline.initializeTimeline(
