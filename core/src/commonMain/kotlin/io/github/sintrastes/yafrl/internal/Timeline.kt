@@ -14,6 +14,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 import kotlin.time.measureTime
@@ -370,7 +371,7 @@ class Timeline(
         private var _timeline: Timeline? = null
 
         fun initializeTimeline(
-            scope: CoroutineScope,
+            scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
             timeTravel: Boolean = false,
             debug: Boolean = false,
             lazy: Boolean = true,

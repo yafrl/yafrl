@@ -4,7 +4,10 @@ import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
+import io.github.sintrastes.yafrl.vector.Float2
+import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
+import kotlin.jvm.JvmName
 
 /**
  * A flow can be thought of as a combination of a [Behavior] and an
@@ -283,6 +286,13 @@ open class State<out A> internal constructor(
 
 operator fun State<Float>.plus(other: State<Float>): State<Float> {
     return combineWith(other) { x, y -> x + y }
+}
+
+@JvmName("plusFloat2")
+operator fun State<Float2>.plus(other: State<Float2>): State<Float2> = with(VectorSpace.float2()) {
+    return combineWith(other) { x, y ->
+        x + y
+    }
 }
 
 @OptIn(FragileYafrlAPI::class)
