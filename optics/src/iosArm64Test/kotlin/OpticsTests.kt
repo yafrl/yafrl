@@ -37,6 +37,10 @@ class OpticsTests {
         state.value = 1 to 2
 
         assertEquals(1, focused.value)
+
+        focused.value = 3
+
+        assertEquals(3 to 2, state.value)
     }
 
     @Test
