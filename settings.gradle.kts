@@ -20,3 +20,6 @@ project(":coroutines").name = "yafrl-coroutines"
 
 include("compose")
 project(":compose").name = "yafrl-compose"
+
+include("optics")
+project(":optics").name = "yafrl-optics"
