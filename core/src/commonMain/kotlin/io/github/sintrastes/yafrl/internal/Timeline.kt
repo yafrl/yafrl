@@ -16,6 +16,7 @@ import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.reflect.KType
 import kotlin.time.Duration
 import kotlin.time.measureTime
 
@@ -69,6 +70,7 @@ class Timeline(
         val children: PersistentMap<NodeID, PersistentList<NodeID>>
     )
 
+    @OptIn(FragileYafrlAPI::class)
     fun persistState() {
         if (timeTravelEnabled) {
             if (debugLogging) println("Persisting state in frame ${latestFrame}, ${nodes.size} nodes")
@@ -81,6 +83,7 @@ class Timeline(
         }
     }
 
+    @OptIn(FragileYafrlAPI::class)
     fun resetState(frame: Long) = synchronized(this) {
         val time = measureTime {
             if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventTrace.getOrNull(frame.toInt())}")
@@ -138,10 +141,17 @@ class Timeline(
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
 
-    /** Keep track of any external (or "input") nodes to the system. */
-    internal val externalNodes = mutableMapOf<NodeID, Node<Any?>>()
+    data class ExternalNode(
+        val type: KType,
+        val node: Node<*>
+    )
 
-    internal fun <A> createNode(
+    /** Keep track of any external (or "input") nodes to the system. */
+    @FragileYafrlAPI
+    val externalNodes = mutableMapOf<NodeID, ExternalNode>()
+
+    @FragileYafrlAPI
+    fun <A> createNode(
         value: Lazy<A>,
         onUpdate: (Node<A>) -> A = { it -> it.rawValue },
         onNextFrame: ((Node<A>) -> Unit)? = null,
@@ -167,6 +177,7 @@ class Timeline(
         return newNode
     }
 
+    @OptIn(FragileYafrlAPI::class)
     internal fun <A, B> createMappedNode(
         parent: Node<A>,
         f: (A) -> B,
@@ -206,6 +217,7 @@ class Timeline(
         return mappedNode
     }
 
+    @OptIn(FragileYafrlAPI::class)
     internal fun <A, B> createFoldNode(
         initialValue: A,
         eventNode: Node<EventState<B>>,
@@ -245,6 +257,7 @@ class Timeline(
         return foldNode
     }
 
+    @OptIn(FragileYafrlAPI::class)
     internal fun <A> createCombinedNode(
         parentNodes: List<Node<Any?>>,
         combine: (List<Any?>) -> A,
@@ -283,7 +296,8 @@ class Timeline(
     }
 
     // Note: This is the entrypoint for a new "frame" in the timeline.
-    internal fun updateNodeValue(
+    @FragileYafrlAPI
+    fun updateNodeValue(
         node: Node<Any?>,
         newValue: Any?
     ) = synchronized(this) {
@@ -323,6 +337,7 @@ class Timeline(
         persistState()
     }
 
+    @OptIn(FragileYafrlAPI::class)
     private fun updateChildNodes(
         node: Node<Any?>
     ) {
@@ -362,6 +377,7 @@ class Timeline(
         }
     }
 
+    @OptIn(FragileYafrlAPI::class)
     internal fun fetchNodeValue(
         node: Node<Any?>
     ): Any? = synchronized(this) {

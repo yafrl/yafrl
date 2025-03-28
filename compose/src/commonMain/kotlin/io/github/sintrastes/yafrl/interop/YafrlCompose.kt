@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import io.github.sintrastes.yafrl.Behavior
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.throttled
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline

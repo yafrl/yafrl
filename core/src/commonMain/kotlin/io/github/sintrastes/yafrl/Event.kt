@@ -1,5 +1,6 @@
 package io.github.sintrastes.yafrl
 
+import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -12,6 +13,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.reflect.typeOf
 import kotlin.time.Duration
 
 /**
@@ -40,8 +42,9 @@ import kotlin.time.Duration
  *  necessary for your application -- and if necessary, [collect] should only be used
  *  at the "edges" of your application.
  **/
-open class Event<out A> internal constructor(
-    internal val node: Node<EventState<A>>
+open class Event<out A> @OptIn(FragileYafrlAPI::class)
+internal constructor(
+    @property:FragileYafrlAPI val node: Node<EventState<A>>
 ) {
     @FragileYafrlAPI
     suspend fun collect(collector: FlowCollector<A>) {
@@ -65,6 +68,7 @@ open class Event<out A> internal constructor(
      *
      * Note: [f] should be a pure function.
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun <B> map(f: (A) -> B): Event<B> {
         val graph = Timeline.currentTimeline()
 
@@ -92,6 +96,7 @@ open class Event<out A> internal constructor(
      *  [Event], and produces an event that only emits if
      *  the function evaluates to true.
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun filter(f: (A) -> Boolean): Event<A> {
         val graph = Timeline.currentTimeline()
 
@@ -116,6 +121,7 @@ open class Event<out A> internal constructor(
      * Returns an [Event] that only fires if the [condition]
      * does not hold at a particular time.
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun gate(condition: Behavior<Boolean>): Event<A> {
         val graph = Timeline.currentTimeline()
 
@@ -152,91 +158,6 @@ open class Event<out A> internal constructor(
     }
         .updated()
 
-    /**
-     * Blocks occurrence of events until the [window] of time has passed,
-     *  after which the latest event will be emitted.
-     **/
-    @OptIn(FragileYafrlAPI::class)
-    fun debounced(window: Duration): Event<A> {
-        val debounced = internalBroadcastEvent<A>()
-
-        val scope = Timeline.currentTimeline().scope
-
-        var lastTime: Instant? = null
-        var lastEvent: A? = null
-
-        var job: Job? = null
-
-        val mutex = Mutex()
-
-        scope.launch {
-            node.collectSync { event ->
-                if (event is EventState.Fired) {
-                    job?.cancel()
-                    job = scope.launch {
-                        mutex.lock()
-                        val currentTime = Clock.System.now()
-
-                        lastEvent = event.event
-
-                        if (lastTime != null) {
-                            val elapsed = currentTime - lastTime!!
-
-                            if (elapsed > window) {
-                                debounced.send(lastEvent!!)
-                            } else {
-                                delay(window - elapsed)
-                                debounced.send(lastEvent!!)
-                            }
-                        }
-
-                        lastTime = currentTime
-                        mutex.unlock()
-                    }
-                }
-            }
-        }
-
-        return debounced
-    }
-
-    /**
-     * Creates a modified [Event] that emits events at a frequency of at most
-     *  [duration].
-     **/
-    @OptIn(FragileYafrlAPI::class)
-    fun throttled(duration: Duration): Event<A> {
-        val throttled = internalBroadcastEvent<A>()
-
-        val scope = Timeline.currentTimeline().scope
-
-        var lastTime: Instant? = null
-        var latestEvent: A? = null
-
-        var firstEvent = true
-
-        scope.launch {
-            collect { event ->
-                lastTime = Clock.System.now()
-                latestEvent = event
-            }
-        }
-
-        scope.launch {
-            while (isActive) {
-                if (latestEvent != null) {
-                    if (!firstEvent) {
-                        delay(duration)
-                    }
-                    firstEvent = false
-                    throttled.send(latestEvent!!)
-                }
-            }
-        }
-
-        return throttled
-    }
-
     companion object {
         /**
          * Create an event that triggers every [delayTime].
@@ -272,6 +193,7 @@ open class Event<out A> internal constructor(
          * Merges [Event]s using the supplied [MergeStrategy] to handle
          *  the case of simultaneous events.
          **/
+        @OptIn(FragileYafrlAPI::class)
         fun <A> mergedWith(
             strategy: MergeStrategy<A>,
             vararg events: Event<A>
@@ -309,15 +231,102 @@ open class Event<out A> internal constructor(
 }
 
 /**
+ * Blocks occurrence of events until the [window] of time has passed,
+ *  after which the latest event will be emitted.
+ **/
+@OptIn(FragileYafrlAPI::class)
+inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
+    val debounced = internalBroadcastEvent<A>()
+
+    val scope = Timeline.currentTimeline().scope
+
+    var lastTime: Instant? = null
+    var lastEvent: A? = null
+
+    var job: Job? = null
+
+    val mutex = Mutex()
+
+    scope.launch {
+        node.collectSync { event ->
+            if (event is EventState.Fired) {
+                job?.cancel()
+                job = scope.launch {
+                    mutex.lock()
+                    val currentTime = Clock.System.now()
+
+                    lastEvent = event.event
+
+                    if (lastTime != null) {
+                        val elapsed = currentTime - lastTime!!
+
+                        if (elapsed > window) {
+                            debounced.send(lastEvent!!)
+                        } else {
+                            delay(window - elapsed)
+                            debounced.send(lastEvent!!)
+                        }
+                    }
+
+                    lastTime = currentTime
+                    mutex.unlock()
+                }
+            }
+        }
+    }
+
+    return debounced
+}
+
+/**
+ * Creates a modified [Event] that emits events at a frequency of at most
+ *  [duration].
+ **/
+@OptIn(FragileYafrlAPI::class)
+inline fun <reified A> Event<A>.throttled(duration: Duration): Event<A> {
+    val throttled = internalBroadcastEvent<A>()
+
+    val scope = Timeline.currentTimeline().scope
+
+    var lastTime: Instant? = null
+    var latestEvent: A? = null
+
+    var firstEvent = true
+
+    scope.launch {
+        collect { event ->
+            lastTime = Clock.System.now()
+            latestEvent = event
+        }
+    }
+
+    scope.launch {
+        while (isActive) {
+            if (latestEvent != null) {
+                if (!firstEvent) {
+                    delay(duration)
+                }
+                firstEvent = false
+                throttled.send(latestEvent!!)
+            }
+        }
+    }
+
+    return throttled
+}
+
+/**
  * A [BroadcastEvent] is an [Event] that can have new values emitted to it.
  *
  * Usually used as an internal API to build up a new [Event].
  *
  * Created with the [broadcastEvent] function.
  **/
-open class BroadcastEvent<A> internal constructor(
+open class BroadcastEvent<A> @OptIn(FragileYafrlAPI::class)
+@FragileYafrlAPI constructor(
     node: Node<EventState<A>>
 ) : Event<A>(node) {
+    @OptIn(FragileYafrlAPI::class)
     fun send(value: A) {
         val timeline = Timeline.currentTimeline()
 
@@ -326,7 +335,8 @@ open class BroadcastEvent<A> internal constructor(
 }
 
 /** Creates a [BroadcastEvent] for internal implementation purposes. */
-internal fun <A> internalBroadcastEvent(
+@OptIn(FragileYafrlAPI::class)
+inline fun <reified A> internalBroadcastEvent(
     label: String? = null
 ): BroadcastEvent<A> {
     val timeline = Timeline.currentTimeline()
@@ -347,7 +357,8 @@ internal fun <A> internalBroadcastEvent(
 /**
  * Constructs a new [BroadcastEvent].
  **/
-fun <A> broadcastEvent(
+@OptIn(FragileYafrlAPI::class)
+inline fun <reified A> broadcastEvent(
     label: String? = null
 ): BroadcastEvent<A> {
     val timeline = Timeline.currentTimeline()
@@ -356,7 +367,10 @@ fun <A> broadcastEvent(
 
     // If the user creates a broadcast event, assume it is an "external"
     //  input to the system.
-    timeline.externalNodes[event.node.id] = event.node
+    timeline.externalNodes[event.node.id] = Timeline.ExternalNode(
+        typeOf<EventState<A>>(),
+        event.node
+    )
 
     return event
 }
@@ -383,7 +397,10 @@ fun <A> broadcastEvent(
  * ```
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A, B> onEvent(trigger: Event<A>, perform: suspend (A) -> B): Event<B> {
+inline fun <A, reified B> onEvent(
+    trigger: Event<A>,
+    crossinline perform: suspend (A) -> B
+): Event<B> {
     // Note: For now treat this as an external event, since the result from
     // perform could be nondeterministic.
     val responseEvent = broadcastEvent<B>()
@@ -407,7 +424,8 @@ fun <A, B> onEvent(trigger: Event<A>, perform: suspend (A) -> B): Event<B> {
  * At each time an event is either [EventState.Fired],
  *  or there is [EventState.None].
  **/
-internal sealed interface EventState<out A> {
+@FragileYafrlAPI
+sealed interface EventState<out A> {
     fun <B> map(f: (A) -> B): EventState<B>
 
     data class Fired<A>(val event: A) : EventState<A> {

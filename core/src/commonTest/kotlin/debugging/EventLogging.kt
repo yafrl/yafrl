@@ -1,6 +1,7 @@
 package debugging
 
 import io.github.sintrastes.yafrl.EventState.Fired
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.NodeID
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -10,6 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class EventLogging {
+    @OptIn(FragileYafrlAPI::class)
     @Test
     fun `test event logging`() {
         Timeline.initializeTimeline(
