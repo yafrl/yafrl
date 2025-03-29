@@ -9,6 +9,7 @@ import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
 import kotlin.jvm.JvmName
+import kotlin.reflect.typeOf
 
 /**
  * A flow can be thought of as a combination of a [Behavior] and an
@@ -38,13 +39,15 @@ import kotlin.jvm.JvmName
  *
  * They are very similar to [kotlinx.coroutines.flow.StateFlow]s in this sense -- only better.
  **/
-open class State<out A> internal constructor(
-    internal val node: Node<A>
+open class State<out A> @FragileYafrlAPI constructor(
+    @property:FragileYafrlAPI val node: Node<A>
 ): Behavior<A> {
+    @OptIn(FragileYafrlAPI::class)
     override fun toString(): String {
         return "State($node)"
     }
 
+    @OptIn(FragileYafrlAPI::class)
     val label get() = node.label
 
     @FragileYafrlAPI
@@ -72,6 +75,7 @@ open class State<out A> internal constructor(
     /**
      * Return the current value of the state.
      **/
+    @OptIn(FragileYafrlAPI::class)
     override val value: A get() {
         return node.current()
     }
@@ -82,6 +86,7 @@ open class State<out A> internal constructor(
      *
      * Note: [f] should be a pure function.
      **/
+    @OptIn(FragileYafrlAPI::class)
     override fun <B> map(f: (A) -> B): State<B> {
         val graph = Timeline.currentTimeline()
 
@@ -106,6 +111,7 @@ open class State<out A> internal constructor(
     /**
      * Get the [Event] with just the updates associated with a [State].
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun updated(): Event<A> {
         val graph = Timeline.currentTimeline()
 
@@ -131,6 +137,7 @@ open class State<out A> internal constructor(
      * val sum = countA.combineWith(countB) { x, y -> x + y }
      * ```
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun <B, C> combineWith(state2: State<B>, op: (A, B) -> C): State<C> {
         val timeline = Timeline.currentTimeline()
 
@@ -147,6 +154,7 @@ open class State<out A> internal constructor(
         return State(combined)
     }
 
+    @OptIn(FragileYafrlAPI::class)
     fun <B, C, D> combineWith(state2: State<B>, state3: State<C>, op: (A, B, C) -> D): State<D> {
         val timeline = Timeline.currentTimeline()
 
@@ -164,6 +172,7 @@ open class State<out A> internal constructor(
         return State(combined)
     }
 
+    @OptIn(FragileYafrlAPI::class)
     fun <B, C, D, E> combineWith(
         state2: State<B>,
         state3: State<C>,
@@ -187,6 +196,7 @@ open class State<out A> internal constructor(
         return State(combined)
     }
 
+    @OptIn(FragileYafrlAPI::class)
     fun <B, C, D, E, F> combineWith(
         state2: State<B>,
         state3: State<C>,
@@ -241,6 +251,7 @@ open class State<out A> internal constructor(
          * }
          * ```
          **/
+        @OptIn(FragileYafrlAPI::class)
         fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): State<A> {
             val graph = Timeline.currentTimeline()
 
@@ -249,6 +260,7 @@ open class State<out A> internal constructor(
             )
         }
 
+        @OptIn(FragileYafrlAPI::class)
         fun <A> combineAll(
             vararg states: State<A>
         ): State<List<A>> {
@@ -361,6 +373,7 @@ fun <A> List<State<A>>.sequenceState(): State<List<A>> {
 class BindingState<A> internal constructor(
     node: Node<A>
 ): State<A>(node) {
+    @OptIn(FragileYafrlAPI::class)
     override var value: A
         get() = super.value
         set(value) {
@@ -371,12 +384,12 @@ class BindingState<A> internal constructor(
 }
 
 @OptIn(FragileYafrlAPI::class)
-fun <A> bindingState(value: A, label: String? = null): BindingState<A> {
+inline fun <reified A> bindingState(value: A, label: String? = null): BindingState<A> {
     val timeline = Timeline.currentTimeline()
 
     val state = internalBindingState(value, label)
 
-    timeline.externalNodes[state.node.id] = state.node
+    timeline.externalNodes[state.node.id] = Timeline.ExternalNode(typeOf<A>(), state.node)
 
     return state
 }

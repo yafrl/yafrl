@@ -1,5 +1,6 @@
 package io.github.sintrastes.yafrl.internal
 
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlin.jvm.JvmInline
@@ -12,7 +13,8 @@ import kotlin.jvm.JvmInline
  **/
 open class Node<out A> internal constructor(
     private val initialValue: Lazy<A>,
-    internal val id: NodeID,
+    @property:FragileYafrlAPI
+    val id: NodeID,
     internal val recompute: () -> A,
     internal val onNextFrame: ((Node<@UnsafeVariance A>) -> Unit)? = null,
     internal var label: String = id.toString(),
@@ -27,7 +29,8 @@ open class Node<out A> internal constructor(
 
     internal var _rawValue: @UnsafeVariance A? = null
 
-    internal var rawValue: @UnsafeVariance A
+    @property:FragileYafrlAPI
+    var rawValue: @UnsafeVariance A
         get() {
             if (_rawValue == null) _rawValue = initialValue.value
             return _rawValue!!

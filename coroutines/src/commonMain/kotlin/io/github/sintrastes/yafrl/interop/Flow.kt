@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
  * Construct an [io.github.sintrastes.yafrl.Event] at the edge of the FRP network by
  *  emitting a frame whenever the passed [kotlinx.coroutines.flow.Flow] updates.
  **/
-fun <A> Flow<A>.asEvent(): Event<A> {
+inline fun <reified A> Flow<A>.asEvent(): Event<A> {
     val event = broadcastEvent<A>()
 
     val scope = Timeline.currentTimeline().scope
@@ -32,7 +32,7 @@ fun <A> Flow<A>.asEvent(): Event<A> {
  * Construct a [io.github.sintrastes.yafrl.State] at the edge of the FRP network
  *  with the same values and update behavior of the passed [kotlinx.coroutines.flow.StateFlow].
  **/
-fun <A> StateFlow<A>.asState(): State<A> {
+inline fun <reified A> StateFlow<A>.asState(): State<A> {
     val state = bindingState(value)
 
     val scope = Timeline.currentTimeline().scope

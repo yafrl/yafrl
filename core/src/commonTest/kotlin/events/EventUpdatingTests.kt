@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(FragileYafrlAPI::class)
 class EventUpdatingTests : FunSpec({
     beforeTest {
         Timeline.initializeTimeline(
