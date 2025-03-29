@@ -26,7 +26,7 @@ fun <A, B> State<A>.focus(lens: Lens<A, B>): State<B> {
  * Focus on a smaller part of a [BindingState] by applying a [Lens]
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A, B> BindingState<A>.focus(lens: Lens<A, B>): BindingState<B> {
+inline fun <A, reified B> BindingState<A>.focus(lens: Lens<A, B>): BindingState<B> {
     val state = bindingState(lens.get(value))
 
     this.collectSync { newValue ->

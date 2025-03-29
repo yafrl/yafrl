@@ -4,6 +4,7 @@ import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.FlowCollector
@@ -247,12 +248,11 @@ inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
 
     val mutex = Mutex()
 
-    scope.launch {
-        node.collectSync { event ->
-            if (event is EventState.Fired) {
-                job?.cancel()
-                job = scope.launch {
-                    mutex.lock()
+    node.collectSync { event ->
+        if (event is EventState.Fired) {
+            job?.cancel()
+            job = scope.launch(Dispatchers.Default) {
+                mutex.withLock {
                     val currentTime = Clock.System.now()
 
                     lastEvent = event.event
@@ -269,7 +269,6 @@ inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
                     }
 
                     lastTime = currentTime
-                    mutex.unlock()
                 }
             }
         }
@@ -293,10 +292,14 @@ inline fun <reified A> Event<A>.throttled(duration: Duration): Event<A> {
 
     var firstEvent = true
 
-    scope.launch {
-        collect { event ->
+    node.collectSync { event ->
+        if (event is EventState.Fired) {
             lastTime = Clock.System.now()
-            latestEvent = event
+            latestEvent = event.event
+            if (firstEvent) {
+                throttled.send(latestEvent!!)
+                firstEvent = false
+            }
         }
     }
 
@@ -305,9 +308,9 @@ inline fun <reified A> Event<A>.throttled(duration: Duration): Event<A> {
             if (latestEvent != null) {
                 if (!firstEvent) {
                     delay(duration)
+
+                    throttled.send(latestEvent!!)
                 }
-                firstEvent = false
-                throttled.send(latestEvent!!)
             }
         }
     }
@@ -407,13 +410,17 @@ inline fun <A, reified B> onEvent(
 
     val scope = Timeline.currentTimeline().scope
 
-    scope.launch {
-        trigger.collect { event ->
-            val result = perform(event)
 
-            responseEvent.send(result)
+    trigger.node.collectSync { event ->
+        if (event is EventState.Fired<A>) {
+            scope.launch {
+                val result = perform(event.event)
+
+                responseEvent.send(result)
+            }
         }
     }
+
 
     return responseEvent
 }

@@ -24,7 +24,8 @@ kotlin {
         browser {
             testTask {
                 // useMocha()
-                // Hanging indefinitely right now for some reason.
+
+                // Currently failing `Tick emits events at specified intervals` for some reason.
                 enabled = false
             }
         }
@@ -43,6 +44,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-annotations-common"))
+                implementation("io.kotest:kotest-assertions-core:6.0.0.M2")
                 implementation("io.kotest:kotest-framework-engine:6.0.0.M2")
                 implementation("io.kotest:kotest-property:6.0.0.M2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")

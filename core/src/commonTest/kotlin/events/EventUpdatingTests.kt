@@ -5,16 +5,13 @@ import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlin.test.BeforeTest
-import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -254,32 +251,29 @@ class EventUpdatingTests : FunSpec({
             event.send(2)
             event.send(3)
 
-            withContext(Dispatchers.Default) { delay(110.milliseconds) }
-            advanceUntilIdle()
+            withContext(Dispatchers.Default) { delay(100.milliseconds) }
 
-            assertEquals(3, debounced.value)
+            eventually {
+                assertEquals(3, debounced.value)
+            }
         }
     }
 
     test("Tick emits events at specified intervals") {
+        val ticks = Event
+            .tick(50.milliseconds)
+            .scan(0) { ticks, _ -> ticks + 1 }
 
-            val ticks = Event
-                .tick(50.milliseconds)
-                .scan(0) { ticks, _ -> ticks + 1 }
+        repeat(10) {
+            delay(50.milliseconds)
 
-            withContext(Dispatchers.Default) {
-                repeat(10) {
-                    delay(50.milliseconds)
+            // TODO: This should not be required. Laziness bug.
+            ticks.value
+        }
 
-                    // TODO: This should not be required. Laziness bug.
-                    ticks.value
-                }
-
-                delay(10.milliseconds)
-
-                assertEquals(10, ticks.value)
-            }
-
+        eventually {
+            assertEquals(10, ticks.value)
+        }
     }
 
     test("Throttled event emits immediately") {
@@ -289,10 +283,6 @@ class EventUpdatingTests : FunSpec({
             .throttled(100.milliseconds)
 
         event.send(Unit)
-
-        withContext(Dispatchers.Default) {
-            delay(10.milliseconds)
-        }
 
         assertEquals(EventState.Fired(Unit), throttled.node.current())
     }
@@ -309,9 +299,9 @@ class EventUpdatingTests : FunSpec({
         runTest {
             clicks.send(Unit)
 
-            withContext(Dispatchers.Default) { delay(125.milliseconds) }
-
-            assertEquals(42, response.value)
+            eventually {
+                assertEquals(42, response.value)
+            }
         }
     }
 })
