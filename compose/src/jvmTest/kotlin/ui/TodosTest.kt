@@ -4,10 +4,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Button
+import androidx.compose.material.Checkbox
+import androidx.compose.material.ModalDrawer
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -25,69 +28,105 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlin.collections.plus
+import kotlin.collections.set
 import kotlin.test.Test
 
 object TodosComponent {
     data class TodoState(
+        val completed: Boolean,
         val number: Int,
         val contents: String
     )
 
     class ViewModel(
-        clicks: Event<Unit>,
-        textUpdates: Event<TodoState>
+        val clicks: Event<Unit>,
+        val textUpdates: BroadcastEvent<TodoState>
     ) {
-        val items = State
-            .fold(listOf<TodoState>(), clicks) { items, _click ->
-                items + listOf(TodoState(items.size, ""))
-            }
-            .fold(textUpdates) { items, update ->
-                val newItems = items.toMutableList()
+        val markComplete = broadcastEvent<Int>()
 
-                if (update.number < newItems.size) {
-                    newItems[update.number] = update
+        private val actions = Event.merged(
+            clicks.map {
+                { items: List<TodoState> ->
+                    items + listOf(TodoState(false, items.size, ""))
                 }
+            },
+            textUpdates.map { update ->
+                { items ->
+                    val newItems = items.toMutableList()
 
-                newItems
+                    if (update.number < newItems.size) {
+                        newItems[update.number] = update
+                    }
+
+                    newItems
+                }
+            },
+            markComplete.map { index ->
+                { items ->
+                    val newItems = items.toMutableList()
+
+                    val item = newItems[index]
+
+                    newItems[index] = item.copy(completed = true)
+
+                    newItems
+                }
             }
-    }
+        )
 
-    @Composable
-    fun TodoItem(
-        updated: BroadcastEvent<TodoState>,
-        number: Int,
-        contents: String
-    ) {
-        Row(
-            Modifier
-                .padding(8.dp)
-        ) {
-            Text(
-                "${number + 1}. ",
-                fontWeight = FontWeight.Bold
-            )
-
-            BasicTextField(
-                value = contents,
-                onValueChange = { newValue ->
-                updated.send(
-                    TodoState(number, newValue)
-                )
-            })
+        val items = State.fold(listOf<TodoState>(), actions) { state, action ->
+            action(state)
         }
     }
 
     @Composable
-    fun view() = YafrlCompose {
+    fun TodoItem(
+        item: TodoState,
+        viewModel: ViewModel,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(8.dp)
+        ) {
+            Text(
+                modifier = Modifier
+                    .padding(8.dp),
+                text = "${item.number + 1}. ",
+                fontWeight = FontWeight.Bold
+            )
+
+            TextField(
+                modifier = Modifier
+                    .width(500.dp),
+                enabled = !item.completed,
+                value = item.contents,
+                onValueChange = { newValue ->
+                    viewModel.textUpdates.send(
+                        item.copy(contents = newValue)
+                    )
+                })
+
+            Checkbox(
+                checked = item.completed,
+                onCheckedChange = {
+                    viewModel.markComplete
+                        .send(item.number)
+                }
+            )
+        }
+    }
+
+    @Composable
+    fun view() = YafrlCompose(debugLogs = true) {
         val clicks = remember { broadcastEvent<Unit>() }
 
-        val textChanged = remember { broadcastEvent<TodoState>()}
+        val textChanged = remember { broadcastEvent<TodoState>() }
 
         val viewModel = remember { ViewModel(clicks, textChanged) }
 
@@ -98,15 +137,8 @@ object TodosComponent {
                 modifier = Modifier
                     .padding(8.dp)
             ) {
-                Text(
-                    "Create TODO: ",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                )
-
                 Button(
-                    content = { Text("Click me!") },
+                    content = { Text("New TODO") },
                     onClick = {
                         clicks.send(Unit)
                     },
@@ -120,8 +152,8 @@ object TodosComponent {
                 modifier = Modifier
                     .padding(16.dp)
             ) {
-                items (todoItems) { item ->
-                    TodoItem(textChanged, item.number, item.contents)
+                items(todoItems) { item ->
+                    TodoItem(item, viewModel)
                 }
             }
         }
@@ -130,7 +162,7 @@ object TodosComponent {
 
 class TodosTest {
     // Disabled by default
-    // @Test
+    //@Test
     fun `run todo list example`() {
         // Open a window with the view.
         application {
