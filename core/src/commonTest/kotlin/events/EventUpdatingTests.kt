@@ -106,6 +106,25 @@ class EventUpdatingTests : FunSpec({
         assertEquals(EventState.None, event1.node.rawValue)
     }
 
+    xtest("Mapped event should not be fired on next tick") {
+        val event1 = broadcastEvent<Unit>()
+
+        val mapped = event1.map { "test" }
+
+        val event2 = broadcastEvent<Unit>()
+
+        // Emit an event
+        event1.send(Unit)
+
+        // In this frame, we should see the event has fired.
+        assertEquals(EventState.Fired("test"), mapped.node.rawValue)
+
+        // Simulate a new frame by emitting a second event
+        event2.send(Unit)
+
+        // The first event should no longer be "fired" in this frame.
+        assertEquals(EventState.None, mapped.node.rawValue)
+    }
 
     test("Default merge handling is Leftmost") {
         val graph = Timeline.currentTimeline()
