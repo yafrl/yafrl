@@ -23,3 +23,6 @@ project(":compose").name = "yafrl-compose"
 
 include("testing")
 project(":testing").name = "yafrl-testing"
+
+include("optics")
+project(":optics").name = "yafrl-optics"
