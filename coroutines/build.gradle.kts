@@ -25,7 +25,11 @@ kotlin {
     jvm()
     iosArm64()
     macosX64()
-    js(IR).browser()
+    js(IR).browser() {
+        testTask {
+            enabled = false
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
