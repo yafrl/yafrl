@@ -19,21 +19,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
-import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
 import kotlin.collections.plus
-import kotlin.collections.set
 import kotlin.test.Test
 
 object TodosComponent {
@@ -43,10 +39,9 @@ object TodosComponent {
         val contents: String
     )
 
-    class ViewModel(
-        val clicks: Event<Unit>,
-        val textUpdates: BroadcastEvent<TodoState>
-    ) {
+    class ViewModel() {
+        val clicks = broadcastEvent<Unit>()
+        val textUpdates = broadcastEvent<TodoState>()
         val markComplete = broadcastEvent<Int>()
 
         private val actions = Event.merged(
@@ -123,12 +118,8 @@ object TodosComponent {
     }
 
     @Composable
-    fun view() = YafrlCompose(debugLogs = true) {
-        val clicks = remember { broadcastEvent<Unit>() }
-
-        val textChanged = remember { broadcastEvent<TodoState>() }
-
-        val viewModel = remember { ViewModel(clicks, textChanged) }
+    fun view() = YafrlCompose(lazy = false) {
+        val viewModel = remember { ViewModel() }
 
         val todoItems by remember { viewModel.items.composeState() }
 
@@ -140,7 +131,7 @@ object TodosComponent {
                 Button(
                     content = { Text("New TODO") },
                     onClick = {
-                        clicks.send(Unit)
+                        viewModel.clicks.send(Unit)
                     },
                     modifier = Modifier
                         .padding(start = 8.dp)
@@ -162,13 +153,13 @@ object TodosComponent {
 
 class TodosTest {
     // Disabled by default
-    //@Test
+    // @Test
     fun `run todo list example`() {
         // Open a window with the view.
         application {
             val state = rememberWindowState(
-                width = 630.dp,
-                height = 370.dp
+                width = 626.dp,
+                height = 1028.dp
             )
 
             Window(

@@ -302,6 +302,7 @@ class Timeline(
         newValue: Any?
     ) = synchronized(this) {
         for (listener in onNextFrameListeners) {
+            if (debugLogging) println("Invoking on next frame listener for ${node.label}")
             listener()
         }
 
@@ -328,11 +329,12 @@ class Timeline(
             }
         }
 
-        updateChildNodes(node)
-
         if (node.onNextFrame != null) {
+            if (debugLogging) println("Adding on next frame listener for ${node.label}")
             onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
         }
+
+        updateChildNodes(node)
 
         persistState()
     }
@@ -345,6 +347,11 @@ class Timeline(
 
         for (childID in childNodes) {
             val child = nodes[childID]!!
+
+            if (child.onNextFrame != null) {
+                println("Adding on next frame listener for ${child.label}")
+                onNextFrameListeners.add { child.onNextFrame!!.invoke(child) }
+            }
 
             if (debugLogging) println("Updating child node of ${node.label}")
 
