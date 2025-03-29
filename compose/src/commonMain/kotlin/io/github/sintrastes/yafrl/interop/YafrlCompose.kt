@@ -39,6 +39,7 @@ fun YafrlCompose(
     timeTravelDebugger: Boolean = false,
     debugLogs: Boolean = false,
     showFPS: Boolean = false,
+    lazy: Boolean = true,
     body: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -50,6 +51,7 @@ fun YafrlCompose(
             scope = CoroutineScope(Dispatchers.Default),
             debug = debugLogs,
             timeTravel = timeTravelDebugger,
+            lazy = lazy,
             initClock = { pausedState ->
                 scope.launch {
                     clockInitialized = true
@@ -154,14 +156,9 @@ fun YafrlCompose(
 fun <A> State<A>.composeState(): androidx.compose.runtime.State<A> {
     val state = mutableStateOf(value = value)
 
-    val scope = Timeline.currentTimeline().scope
-
-    scope.launch {
-        collectAsync { updatedState ->
-            if (updatedState != state.value) {
-                println("Updating state of ${hashCode()}, ${label}: $updatedState")
-                state.value = updatedState
-            }
+    collectSync { updatedState ->
+        if (updatedState != state.value) {
+            state.value = updatedState
         }
     }
 
