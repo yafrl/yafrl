@@ -128,7 +128,8 @@ object DrawingComponent {
 
     @Composable
     fun view() = YafrlCompose(
-        timeTravelDebugger = true
+        showFPS = true
+        //timeTravelDebugger = true
     ) {
         val spacePressed = remember {
             broadcastEvent<Unit>("space_pressed")
@@ -219,7 +220,7 @@ class DrawingTest {
     }
 
     // Disabled by default
-    // @Test
+    @Test
     fun `run drawing example`() {
         // Open a window with the view.
         application {
