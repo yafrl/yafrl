@@ -118,7 +118,7 @@ object TodosComponent {
     }
 
     @Composable
-    fun view() = YafrlCompose(lazy = false) {
+    fun view() = YafrlCompose {
         val viewModel = remember { ViewModel() }
 
         val todoItems by remember { viewModel.items.composeState() }
