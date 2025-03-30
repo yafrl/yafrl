@@ -40,7 +40,12 @@ object TodosComponent {
     )
 
     class ViewModel() {
-        val clicks = broadcastEvent<Unit>()
+        fun addNew() = clicks.send(Unit)
+
+        fun dismissCompleted() = dismissEvent.send(Unit)
+
+        private val dismissEvent = broadcastEvent<Unit>()
+        private val clicks = broadcastEvent<Unit>()
         val textUpdates = broadcastEvent<TodoState>()
         val markComplete = broadcastEvent<Int>()
 
@@ -70,6 +75,15 @@ object TodosComponent {
                     newItems[index] = item.copy(completed = true)
 
                     newItems
+                }
+            },
+            dismissEvent.map {
+                { items ->
+                    items
+                        // Remove any completed items
+                        .filterNot(TodoState::completed)
+                        // Update numberings
+                        .mapIndexed { i, item -> item.copy(number = i) }
                 }
             }
         )
@@ -130,12 +144,15 @@ object TodosComponent {
             ) {
                 Button(
                     content = { Text("New TODO") },
-                    onClick = {
-                        viewModel.clicks.send(Unit)
-                    },
+                    onClick = viewModel::addNew,
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .align(Alignment.CenterVertically)
+                )
+
+                Button(
+                    content = { Text("Dismiss Completed") },
+                    onClick = viewModel::dismissCompleted
                 )
             }
 
