@@ -228,6 +228,38 @@ internal constructor(
 
             return Event(node)
         }
+
+        @OptIn(FragileYafrlAPI::class)
+        fun <A> mergeAll(
+            vararg events: Event<A>
+        ): Event<List<A>> {
+            val graph = Timeline.currentTimeline()
+
+            val parentNodes = events.map {
+                it.node
+            }
+
+            var node: Node<EventState<List<A>>>? = null
+            node = graph.createCombinedNode(
+                parentNodes,
+                { values ->
+                    val selected = values
+                        .filterIsInstance<EventState.Fired<A>>()
+                        .map { it.event }
+
+                    if (selected.isNotEmpty()) {
+                        EventState.Fired(selected)
+                    } else {
+                        EventState.None
+                    }
+                },
+                {
+                    node!!.rawValue = EventState.None
+                }
+            )
+
+            return Event(node)
+        }
     }
 }
 
@@ -349,6 +381,7 @@ inline fun <reified A> internalBroadcastEvent(
     val node = timeline.createNode(
         value = initialValue,
         onNextFrame = { node ->
+            // NOTE: This seems to cause an issue with clock ticks.
             node.rawValue = EventState.None
         },
         label = label
