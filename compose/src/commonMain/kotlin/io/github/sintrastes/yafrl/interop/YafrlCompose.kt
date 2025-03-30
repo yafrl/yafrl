@@ -87,8 +87,6 @@ fun YafrlCompose(
                     }
                 )
 
-                println("Clock initialized: ${clockInitialized}")
-
                 Button(
                     modifier = Modifier
                         .padding(6.dp)
