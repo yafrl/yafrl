@@ -116,30 +116,30 @@ fun YafrlCompose(
                     }
                 )
             }
+        }
 
-            if (showFPS && clockInitialized) {
-                val runningAverage = remember {
-                    Timeline.currentTimeline().clock
-                        .window(10)
-                        .map {
-                            if (it.isNotEmpty()) it.sumOf { it.inWholeMilliseconds } / it.size else null
-                        }
-                        .throttled(0.5.seconds)
-                }
-
-                val fps by remember {
-                    State.fold("--", runningAverage) { _, avgFrameTime ->
-                        if (avgFrameTime != null) {
-                            (1000f / avgFrameTime).roundToInt().toString()
-                        } else {
-                            "--"
-                        }
+        if (showFPS && clockInitialized) {
+            val runningAverage = remember {
+                Timeline.currentTimeline().clock
+                    .window(10)
+                    .map {
+                        if (it.isNotEmpty()) it.sumOf { it.inWholeMilliseconds } / it.size else null
                     }
-                        .composeState()
-                }
-
-                Text(text = "FPS: $fps")
+                    .throttled(0.5.seconds)
             }
+
+            val fps by remember {
+                State.fold("--", runningAverage) { _, avgFrameTime ->
+                    if (avgFrameTime != null) {
+                        (1000f / avgFrameTime).roundToInt().toString()
+                    } else {
+                        "--"
+                    }
+                }
+                    .composeState()
+            }
+
+            Text(text = "FPS: $fps")
         }
 
         body()
