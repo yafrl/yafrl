@@ -172,7 +172,8 @@ class Timeline(
 
         nodes = nodes.put(id, newNode)
 
-        persistState()
+        // This persist state causes a stack overflow in drawing test with time travel enabled
+        //persistState()
 
         return newNode
     }
@@ -181,7 +182,9 @@ class Timeline(
     internal fun <A, B> createMappedNode(
         parent: Node<A>,
         f: (A) -> B,
-        initialValue: Lazy<B> = lazy { f(fetchNodeValue(parent) as A) },
+        initialValue: Lazy<B> = lazy {
+            f(fetchNodeValue(parent) as A)
+        },
         onNextFrame: ((Node<B>) -> Unit)? = null
     ): Node<B> = synchronized(this) {
         //frameNumber++
@@ -290,7 +293,8 @@ class Timeline(
             }
         }
 
-        persistState()
+        // This persist state causes a stack overflow in drawing test with time travel enabled
+        // persistState()
 
         return combinedNode
     }
@@ -299,24 +303,27 @@ class Timeline(
     @FragileYafrlAPI
     fun updateNodeValue(
         node: Node<Any?>,
-        newValue: Any?
+        newValue: Any?,
+        internal: Boolean = false
     ) = synchronized(this) {
-        for (listener in onNextFrameListeners) {
-            if (debugLogging) println("Invoking on next frame listener for ${node.label}")
-            listener()
+        if (!internal) {
+            for (listener in onNextFrameListeners) {
+                if (debugLogging) println("Invoking on next frame listener for ${node.label}")
+                listener()
+            }
         }
 
         onNextFrameListeners.clear()
 
         node.rawValue = newValue
 
-        if (timeTravelEnabled && externalNodes.contains(node.id)) {
+        if (!internal && timeTravelEnabled && externalNodes.contains(node.id)) {
             latestFrame++
             currentFrame++
 
             eventTrace += ExternalEvent(node.id, node.rawValue)
 
-            println("${latestFrame}: Updating node ${node.label} to $newValue")
+            if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
         }
 
         for (listener in node.syncOnValueChangedListeners) {
@@ -329,7 +336,7 @@ class Timeline(
             }
         }
 
-        if (node.onNextFrame != null) {
+        if (!internal && node.onNextFrame != null) {
             if (debugLogging) println("Adding on next frame listener for ${node.label}")
             onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
         }
@@ -349,7 +356,7 @@ class Timeline(
             val child = nodes[childID]!!
 
             if (child.onNextFrame != null) {
-                println("Adding on next frame listener for ${child.label}")
+                if (debugLogging) println("Adding on next frame listener for ${child.label}")
                 onNextFrameListeners.add { child.onNextFrame!!.invoke(child) }
             }
 
