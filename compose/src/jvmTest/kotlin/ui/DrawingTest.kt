@@ -58,13 +58,11 @@ object DrawingComponent {
         }
 
         val clicks = State.fold(listOf<State<Entity>>(), clicked) { clicked, click ->
-            clicked + listOf(
-                ball(
-                    click,
-                    accelerating(120f, 350f),
-                    35f,
-                    newBallColor
-                )
+            clicked + ball(
+                click,
+                accelerating(120f, 350f),
+                35f,
+                newBallColor
             )
         }
 
