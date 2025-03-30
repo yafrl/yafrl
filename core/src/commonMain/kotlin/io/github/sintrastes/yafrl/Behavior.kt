@@ -69,7 +69,7 @@ interface Behavior<out A> {
      *
      * See [sample].
      **/
-    fun sampleState(times: Event<Any?>): State<A> {
+    fun sampleState(times: Event<Any?> = Timeline.currentTimeline().clock): State<A> {
         return State.hold(value, sample(times))
     }
 
