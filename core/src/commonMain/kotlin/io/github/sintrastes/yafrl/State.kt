@@ -317,6 +317,8 @@ operator fun State<Float3>.plus(other: State<Float3>): State<Float3> = with(Vect
 
 @OptIn(FragileYafrlAPI::class)
 fun <A> State<State<A>>.flatten(): State<A> {
+    val timeline = Timeline.currentTimeline()
+
     var currentState = value
 
     val flattened = internalBindingState(currentState.value)
@@ -331,15 +333,21 @@ fun <A> State<State<A>>.flatten(): State<A> {
 
         // Update the current value to the new state's current value.
         currentState = newState
-        flattened.value = currentState.value
+
+        // Note: Needs to be updates to the raw value so we don't invoke a new frame.
+        timeline.updateNodeValue(flattened.node, currentState.node.rawValue, internal = true)
 
         // Collect on value updates to the new state
-        collector = { newValue -> flattened.value = newValue }
+        collector = { newValue ->
+            timeline.updateNodeValue(flattened.node, newValue, internal = true)
+        }
         currentState.collectSync(collector!!)
     }
 
     // Collect on value updates to the initial state.
-    collector = { newValue -> flattened.value = newValue }
+    collector = { newValue ->
+        timeline.updateNodeValue(flattened.node, newValue, internal = true)
+    }
     currentState.collectSync(collector)
 
     return flattened
@@ -347,22 +355,9 @@ fun <A> State<State<A>>.flatten(): State<A> {
 
 @OptIn(FragileYafrlAPI::class)
 fun <A> List<State<A>>.sequenceState(): State<List<A>> {
-    val initialValues = map { it.value }
-
-    val result = internalBindingState(initialValues)
-
-    mapIndexed { i, state ->
-        state.collectSync { newValue ->
-            val newValues = result.value
-                .toMutableList()
-
-            newValues[i] = newValue
-
-            result.value = newValues
-        }
-    }
-
-    return result
+    return State.combineAll(
+        *this.toTypedArray()
+    )
 }
 
 /**
