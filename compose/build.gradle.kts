@@ -39,6 +39,7 @@ kotlin {
                 implementation(compose.uiTest)
                 implementation(compose.material)
                 implementation(compose.uiTestJUnit4)
+                implementation("io.mockk:mockk:1.13.17")
                 implementation("app.cash.molecule:molecule-runtime:2.0.0")
                 implementation(kotlin("test"))
             }
