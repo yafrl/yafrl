@@ -6,13 +6,13 @@ extra["projectDescription"] =
     "Yet Another Functional Reactive Library - Jetpack Compose integration."
 
 plugins {
-    kotlin("multiplatform") version "2.1.10"
-    id("org.jetbrains.kotlinx.atomicfu") version "0.27.0"
-    id("org.jetbrains.kotlin.plugin.compose") version "2.1.10"
-    id("org.jetbrains.compose") version "1.7.3"
-    id("com.vanniktech.maven.publish") version "0.31.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
-    id("org.jetbrains.dokka") version "2.0.0"
+    kotlin("multiplatform") version libs.versions.kotlin.get()
+    alias(libs.plugins.atomicfu)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.compose.plugin)
+    alias(libs.plugins.maven)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.dokka)
 }
 
 repositories {
@@ -29,7 +29,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":yafrl-core"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+                implementation(libs.kotlin.coroutines)
                 implementation(compose.material)
             }
         }
@@ -39,8 +39,8 @@ kotlin {
                 implementation(compose.uiTest)
                 implementation(compose.material)
                 implementation(compose.uiTestJUnit4)
-                implementation("io.mockk:mockk:1.13.17")
-                implementation("app.cash.molecule:molecule-runtime:2.0.0")
+                implementation(libs.mockk)
+                implementation(libs.molecule)
                 implementation(kotlin("test"))
             }
         }

@@ -2,12 +2,12 @@ extra["projectDescription"] =
     "Yet Another Functional Reactive Library - Arrow optics integrations."
 
 plugins {
-    kotlin("multiplatform") version "2.1.10"
-    id("com.google.devtools.ksp") version "2.1.10-1.0.30"
-    id("org.jetbrains.kotlinx.atomicfu") version "0.27.0"
-    id("com.vanniktech.maven.publish") version "0.31.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
-    id("org.jetbrains.dokka") version "2.0.0"
+    kotlin("multiplatform") version libs.versions.kotlin.get()
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.atomicfu)
+    alias(libs.plugins.maven)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.dokka)
 }
 
 repositories {
@@ -24,7 +24,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":yafrl-core"))
-                implementation("io.arrow-kt:arrow-optics:2.0.1")
+                implementation(libs.arrow.optics)
             }
         }
         val commonTest by getting {

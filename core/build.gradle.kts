@@ -4,12 +4,12 @@ extra["projectDescription"] =
     "Yet Another Functional Reactive Library - core library"
 
 plugins {
-    kotlin("multiplatform") version "2.1.10"
-    id("org.jetbrains.kotlinx.atomicfu") version "0.27.0"
-    id("org.jetbrains.dokka") version "2.0.0"
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
-    id("com.vanniktech.maven.publish") version "0.31.0"
-    id("io.kotest.multiplatform") version "6.0.0.M2"
+    kotlin("multiplatform") version libs.versions.kotlin.get()
+    alias(libs.plugins.atomicfu)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.maven)
+    alias(libs.plugins.kotest)
 }
 
 tasks.withType<Test>().configureEach {
@@ -34,28 +34,28 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.8")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                implementation(libs.kotlin.collections.immutable)
+                implementation(libs.kotlin.coroutines)
+                implementation(libs.kotlin.coroutines.test)
+                implementation(libs.kotlin.datetime)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("io.kotest:kotest-assertions-core:6.0.0.M2")
-                implementation("io.kotest:kotest-framework-engine:6.0.0.M2")
-                implementation("io.kotest:kotest-property:6.0.0.M2")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+                implementation(libs.kotest.assertions)
+                implementation(libs.kotest.engine)
+                implementation(libs.kotest.property)
+                implementation(libs.kotlin.datetime)
+                implementation(libs.kotlin.coroutines)
+                implementation(libs.kotlin.coroutines.test)
             }
         }
 
         val jvmTest by getting {
             dependencies {
-                implementation("io.kotest:kotest-runner-junit5:6.0.0.M2")
+                implementation(libs.kotest.runner)
             }
         }
     }
