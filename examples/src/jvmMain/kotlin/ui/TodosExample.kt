@@ -1,17 +1,13 @@
 package ui
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Button
 import androidx.compose.material.Checkbox
-import androidx.compose.material.ModalDrawer
-import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
@@ -30,7 +26,6 @@ import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
 import kotlin.collections.plus
-import kotlin.test.Test
 
 object TodosComponent {
     data class TodoState(
@@ -168,24 +163,20 @@ object TodosComponent {
     }
 }
 
-class TodosTest {
-    // Disabled by default
-    // @Test
-    fun `run todo list example`() {
-        // Open a window with the view.
-        application {
-            val state = rememberWindowState(
-                width = 626.dp,
-                height = 1028.dp
-            )
+fun main(args: Array<String>) {
+    // Open a window with the view.
+    application {
+        val state = rememberWindowState(
+            width = 626.dp,
+            height = 1028.dp
+        )
 
-            Window(
-                onCloseRequest = ::exitApplication,
-                state = state,
-                title = "TODOs"
-            ) {
-                TodosComponent.view()
-            }
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = state,
+            title = "TODOs"
+        ) {
+            TodosComponent.view()
         }
     }
 }

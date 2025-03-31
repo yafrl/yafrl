@@ -26,3 +26,5 @@ project(":testing").name = "yafrl-testing"
 
 include("optics")
 project(":optics").name = "yafrl-optics"
+
+include("examples")

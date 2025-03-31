@@ -41,6 +41,7 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotest.runner)
             }
         }
 
@@ -49,6 +50,7 @@ kotlin {
                 implementation(project(":yafrl-core"))
                 implementation(kotlin("test"))
                 implementation(kotlin("test-annotations-common"))
+                implementation(libs.kotest.engine)
             }
         }
     }

@@ -1,3 +1,5 @@
+package ui
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
@@ -8,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
@@ -34,19 +35,12 @@ import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.composeState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.isActive
 import io.github.sintrastes.yafrl.interop.YafrlCompose
-import io.mockk.mockk
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 val tileSize = 42.dp
 
@@ -57,7 +51,7 @@ val height = 800f.dp
 @Composable
 fun size() = with(LocalDensity.current) { Size(width.toPx(), height.toPx()) }
 
-object DrawingComponent {
+object PlatformerComponent {
     data class Entity(
         val position: Offset,
         val size: Float,
@@ -255,6 +249,7 @@ object DrawingComponent {
                     size.width.roundToInt(),
                     size.height.roundToInt()
                 ),
+                filterQuality = FilterQuality.None
             )
 
             for (entity in entities) {
@@ -271,50 +266,21 @@ object DrawingComponent {
     }
 }
 
-class DrawingTest {
-    @Test
-    fun `Test view model`() {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
+fun main(args: Array<String>) {
+    // Open a window with the view.
+    application {
+        val state = rememberWindowState(
+            width = width,
+            height = height + 100f.dp
         )
 
-        val deltaTime = broadcastEvent<Duration>()
-
-        val viewModel = DrawingComponent.ViewModel(
-            Size(100f, 100f),
-            deltaTime,
-            35f,
-            mockk(),
-            mockk()
-        )
-
-        viewModel.entities()
-
-        deltaTime.send(1.0.seconds)
-
-        assertTrue(
-            Timeline.currentTimeline().scope.isActive
-        )
-    }
-
-    // Disabled by default
-    // @Test
-    fun `run drawing example`() {
-        // Open a window with the view.
-        application {
-            val state = rememberWindowState(
-                width = width,
-                height = height + 100f.dp
-            )
-
-            Window(
-                onCloseRequest = ::exitApplication,
-                resizable = true,
-                state = state,
-                title = "Drawing"
-            ) {
-                DrawingComponent.view()
-            }
+        Window(
+            onCloseRequest = ::exitApplication,
+            resizable = true,
+            state = state,
+            title = "Drawing"
+        ) {
+            PlatformerComponent.view()
         }
     }
 }

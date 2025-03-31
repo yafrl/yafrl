@@ -2,12 +2,11 @@ package debugging
 
 import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.internal.Timeline
-import kotlin.test.Test
+import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertEquals
 
-class TimeTravel {
-    @Test
-    fun `Time travel resets state`() {
+class TimeTravel: FunSpec({
+    test("Time travel resets state") {
         Timeline.initializeTimeline(
             timeTravel = true
         )
@@ -28,4 +27,4 @@ class TimeTravel {
 
         assertEquals(1, count.value)
     }
-}
+})

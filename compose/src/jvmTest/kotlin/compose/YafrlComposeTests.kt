@@ -9,17 +9,23 @@ import androidx.compose.runtime.*
 import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.interop.composeState
 import org.junit.Rule
-import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
+// Note: Have to run with JUnit4, not currently working in kotest or JUnit5.
+@RunWith(JUnit4::class)
 class YafrlComposeTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
     @Test
     fun `clicking pause should pause the clock`() {
+        println("In test")
         composeTestRule.mainClock.autoAdvance = false
 
+        println("Setting content")
         composeTestRule.setContent {
             YafrlCompose(
                 timeTravelDebugger = true,
@@ -38,6 +44,7 @@ class YafrlComposeTests {
                 Text("Value: $value")
             }
         }
+        println("Got content")
 
         // Ensure clock is active
         Timeline.currentTimeline().clock

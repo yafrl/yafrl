@@ -3,6 +3,7 @@ package states
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import kotlin.experimental.ExperimentalNativeApi
@@ -11,23 +12,20 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class MapUpdatingTests {
-    @BeforeTest
-    fun `init timeline`() {
+class MapUpdatingTests: FunSpec({
+    beforeTest {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default)
         )
     }
 
-    @Test
-    fun `Build node`() {
+    test("Build node") {
         val node = bindingState(0)
 
         assertEquals(0, node.value)
     }
 
-    @Test
-    fun `Build held node`() {
+    test("Build held node") {
         val updates = broadcastEvent<Int>()
 
         val state = State.hold(0, updates)
@@ -39,8 +37,7 @@ class MapUpdatingTests {
         assertEquals(1, state.value)
     }
 
-    @Test
-    fun `Build map node`() {
+    test("Build map node") {
         val node = bindingState(0)
 
         val mapped = node
@@ -49,8 +46,7 @@ class MapUpdatingTests {
         assertEquals(2, mapped.value)
     }
 
-    @Test
-    fun `Map node updates immediately`() {
+    test("Map node updates immediately") {
         val node = bindingState(0)
 
         val mapped = node
@@ -61,9 +57,8 @@ class MapUpdatingTests {
         assertEquals(5, mapped.value)
     }
 
-    @Test
     @OptIn(ExperimentalNativeApi::class)
-    fun `Map does not update unless queried`() {
+    test("Map does not update unless queried") {
         var mapEvaluated = false
 
         val node = bindingState(0)
@@ -79,8 +74,7 @@ class MapUpdatingTests {
     }
 
     @OptIn(FragileYafrlAPI::class, ExperimentalNativeApi::class)
-    @Test
-    fun `Map updates if listened to`() {
+    test("Map updates if listened to") {
         runTest {
             var mapEvaluated = false
 
@@ -100,4 +94,4 @@ class MapUpdatingTests {
             assertTrue(mapEvaluated)
         }
     }
-}
+})

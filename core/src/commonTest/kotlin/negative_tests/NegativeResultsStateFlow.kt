@@ -1,5 +1,6 @@
 package negative_tests
 
+import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.TestScope
@@ -21,9 +22,8 @@ import kotlin.test.assertNotSame
  *    - Windows XP
  * ```
  **/
-class NegativeResults {
-    @Test
-    fun `Mapping state flow fails`() {
+class NegativeResults : FunSpec({
+    test("Mapping state flow fails") {
         val scope = CoroutineScope(Dispatchers.Default)
 
         runTest {
@@ -39,8 +39,7 @@ class NegativeResults {
         }
     }
 
-    @Test
-    fun `Mapping state flow with 3-arg stateIn fails`() {
+    test("Mapping state flow with 3-arg stateIn fails") {
         val scope = CoroutineScope(Dispatchers.Default)
 
         runTest {
@@ -62,8 +61,7 @@ class NegativeResults {
         }
     }
 
-    @Test
-    fun `Mapping state flow with 3-arg stateIn fails even with test scope`() {
+    test("Mapping state flow with 3-arg stateIn fails even with test scope") {
         val scope = TestScope()
 
         runTest {
@@ -86,8 +84,7 @@ class NegativeResults {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `You have to put a delay to get this to work`() {
+    test("You have to put a delay to get this to work") {
         val scope = CoroutineScope(Dispatchers.Default)
 
         runTest {
@@ -114,8 +111,7 @@ class NegativeResults {
 
     // Example from https://qfpl.io/posts/reflex/basics/events/
     @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `Does not handle simultaneous events`() {
+    test("Does not handle simultaneous events") {
         val clicks = MutableSharedFlow<Unit>()
 
         val ones = clicks.scan(0) { x, _ -> x + 1 }
@@ -160,4 +156,4 @@ class NegativeResults {
             assertNotSame(sumEmitted, clicksEmitted)
         }
     }
-}
+})

@@ -2,9 +2,7 @@ package ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Button
-import androidx.compose.material.ButtonColors
 import androidx.compose.material.ButtonDefaults.buttonColors
 import androidx.compose.material.Text
 import androidx.compose.runtime.getValue
@@ -29,7 +27,6 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.test.Test
 
 
 /**
@@ -61,46 +58,42 @@ fun toColor(position: Float2): Color {
     return Color.hsv(hue, 1f, luminance)
 }
 
-class BehaviorAnimation {
-
-    fun buttonColor() =
-        angular(velocity = const(1.5f))
+fun buttonColor() =
+    angular(velocity = const(1.5f))
         .map { with(VectorSpace.float2()) { 225f * it } }
         .map(::toColor)
         .sampleState()
 
-    // @Test
-    fun `run behavior animation exmaple`() {
-        // Open a window with the view.
-        application {
-            val state = rememberWindowState(
-                width = 330.dp,
-                height = 270.dp
-            )
+fun main(args: Array<String>) {
+    // Open a window with the view.
+    application {
+        val state = rememberWindowState(
+            width = 330.dp,
+            height = 270.dp
+        )
 
-            Window(
-                onCloseRequest = ::exitApplication,
-                state = state,
-                title = "Behavior Animation"
-            ) {
-                YafrlCompose {
-                    val color by remember {
-                        buttonColor().composeState()
-                    }
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = state,
+            title = "Behavior Animation"
+        ) {
+            YafrlCompose {
+                val color by remember {
+                    buttonColor().composeState()
+                }
 
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxSize()
-                    ) {
-                        Button(
-                            content = { Text("Trippy!") },
-                            onClick = { },
-                            colors = buttonColors(
-                                backgroundColor = color
-                            )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    Button(
+                        content = { Text("Trippy!") },
+                        onClick = { },
+                        colors = buttonColors(
+                            backgroundColor = color
                         )
-                    }
+                    )
                 }
             }
         }

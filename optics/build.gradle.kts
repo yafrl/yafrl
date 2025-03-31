@@ -8,10 +8,15 @@ plugins {
     alias(libs.plugins.maven)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.kotest)
 }
 
 repositories {
     mavenCentral()
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }
 
 kotlin {
@@ -30,6 +35,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotest.engine)
             }
         }
     }

@@ -1,7 +1,8 @@
-import androidx.compose.runtime.DisposableEffect
+
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.asEvent
 import io.github.sintrastes.yafrl.interop.asState
+import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,16 +10,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class CoroutineIntegrationTests {
+class CoroutineIntegrationTests: FunSpec({
     @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `External events are received`() {
+    test("External events are received") {
         Timeline.initializeTimeline(CoroutineScope(Dispatchers.Default))
 
         runTest {
@@ -37,8 +35,7 @@ class CoroutineIntegrationTests {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `External state changes are received`() {
+    test("External state changes are received") {
         Timeline.initializeTimeline(CoroutineScope(Dispatchers.Default))
 
         runTest {
@@ -55,4 +52,4 @@ class CoroutineIntegrationTests {
             assertEquals(1, state.value)
         }
     }
-}
+})

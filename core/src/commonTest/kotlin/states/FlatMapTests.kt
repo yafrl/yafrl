@@ -3,14 +3,13 @@ package states
 import io.github.sintrastes.yafrl.State.Companion.const
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
+import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class FlatMapTests {
-    @Test
-    fun `flat map switches between states properly`() {
+class FlatMapTests: FunSpec({
+    test("flat map switches between states properly") {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default)
         )
@@ -44,8 +43,7 @@ class FlatMapTests {
         assertEquals(3, flatmapped.value)
     }
 
-    @Test
-    fun `flat map updates when either state updates`() {
+    test("flat map updates when either state updates") {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default)
         )
@@ -70,4 +68,4 @@ class FlatMapTests {
 
         assertEquals(5, flatmapped.value)
     }
-}
+})

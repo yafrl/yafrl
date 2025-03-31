@@ -66,7 +66,8 @@ class NavigationComponent {
             selectedTabIndex = tabIndex,
             tabs = {
                 tabs.forEachIndexed { index, title ->
-                    Tab(text = { Text(title) },
+                    Tab(
+                        text = { Text(title) },
                         selected = tabIndex == index,
                         onClick = { tabIndexState.value = index }
                     )
@@ -87,6 +88,7 @@ class NavigationComponent {
                     )
                 }
             }
+
             is ScreenData.Counter2 -> {
                 Column {
                     Text("Count: ")
@@ -103,23 +105,19 @@ class NavigationComponent {
     }
 }
 
-class NavigationTest {
-    // Disabled by default
-    // @Test
-    fun `Run navigation test`() {
-        application {
-            val state = rememberWindowState(
-                width = 330.dp,
-                height = 270.dp
-            )
+fun main(args: Array<String>) {
+    application {
+        val state = rememberWindowState(
+            width = 330.dp,
+            height = 270.dp
+        )
 
-            Window(
-                onCloseRequest = ::exitApplication,
-                state = state,
-                title = "Navigation Test"
-            ) {
-                NavigationComponent().view()
-            }
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = state,
+            title = "Navigation Test"
+        ) {
+            NavigationComponent().view()
         }
     }
 }

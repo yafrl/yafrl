@@ -4,24 +4,21 @@ import io.github.sintrastes.yafrl.State.Companion.combineAll
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.sequenceState
+import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.experimental.ExperimentalNativeApi
-import kotlin.test.BeforeTest
-import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class CombineUpdatingTests {
-    @BeforeTest
-    fun `init timeline`() {
+class CombineUpdatingTests : FunSpec({
+    beforeTest {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default)
         )
     }
 
-    @Test
-    fun `Combined state updates when parents update`() {
+    test("Combined state updates when parents update") {
         val x = bindingState(0)
 
         val y = bindingState(0)
@@ -39,9 +36,8 @@ class CombineUpdatingTests {
         assertEquals(2, sum.value)
     }
 
-    @Test
     @OptIn(ExperimentalNativeApi::class)
-    fun `Combined does not update unless queried`() {
+    test("Combined does not update unless queried") {
         val x = bindingState(0)
 
         val y = bindingState(0)
@@ -58,8 +54,7 @@ class CombineUpdatingTests {
         assertTrue(!evaluated)
     }
 
-    @Test
-    fun `Combined state 3-arg updates when parents update`() {
+    test("Combined state 3-arg updates when parents update") {
         val x = bindingState(0)
 
         val y = bindingState(0)
@@ -83,8 +78,7 @@ class CombineUpdatingTests {
         assertEquals(3, sum.value)
     }
 
-    @Test
-    fun `Combined state 4-arg updates when parents update`() {
+    test("Combined state 4-arg updates when parents update") {
         val x = bindingState(0)
 
         val y = bindingState(0)
@@ -114,8 +108,7 @@ class CombineUpdatingTests {
         assertEquals(4, sum.value)
     }
 
-    @Test
-    fun `Combined state 5-arg updates when parents update`() {
+    test("Combined state 5-arg updates when parents update") {
         val x = bindingState(0)
 
         val y = bindingState(0)
@@ -151,8 +144,7 @@ class CombineUpdatingTests {
         assertEquals(5, sum.value)
     }
 
-    @Test
-    fun `Combine all updates when parents update`() {
+    test("Combine all updates when parents update") {
         val x = bindingState(0)
 
         val y = bindingState(0)
@@ -195,8 +187,7 @@ class CombineUpdatingTests {
         assertEquals(6, sum.value)
     }
 
-    @Test
-    fun `sequenceState combines all states into list`() {
+    test("sequenceState combines all states into list") {
         val x = bindingState(0)
         val y = bindingState(1)
 
@@ -211,4 +202,4 @@ class CombineUpdatingTests {
         y.value = 2
         assertEquals(listOf(1, 2), sequenced.value)
     }
-}
+})

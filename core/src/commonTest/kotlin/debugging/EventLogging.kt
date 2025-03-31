@@ -5,15 +5,14 @@ import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.NodeID
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class EventLogging {
-    @OptIn(FragileYafrlAPI::class)
-    @Test
-    fun `test event logging`() {
+@OptIn(FragileYafrlAPI::class)
+class EventLogging : FunSpec({
+    test("test event logging") {
         Timeline.initializeTimeline(
             scope = CoroutineScope(Dispatchers.Default),
             timeTravel = true
@@ -36,4 +35,4 @@ class EventLogging {
             Timeline.currentTimeline().eventTrace.toList()
         )
     }
-}
+})
