@@ -1,4 +1,4 @@
-# Module yafrl
+# Module yafrl-core
 
 **Y**et **A**nother **F**unctional **R**eactive **L**ibrary (**yafrl**) 
  is a utility library extending the capabilities of [kotlinx-coroutines](https://github.com/Kotlin/kotlinx.coroutines) by
