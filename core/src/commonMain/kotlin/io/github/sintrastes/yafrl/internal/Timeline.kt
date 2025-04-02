@@ -38,7 +38,12 @@ class Timeline(
 ) : SynchronizedObject() {
     // Needs to be internal because we can't undo a "pause" event.
     @OptIn(FragileYafrlAPI::class)
-    val pausedState by lazy { internalBindingState(false, "paused_state") }
+    val pausedState by lazy {
+        internalBindingState(
+            false,
+            "__internal_paused"
+        )
+    }
 
     // The clock is lazily initialized so that if an explicit clock is not used,
     //  it will not start ticking.
@@ -93,12 +98,10 @@ class Timeline(
                     return@synchronized
                 }
 
-            println("Resetting to frame ${frame}, ${nodeValues.size} nodes")
-
             nodes.values.forEach { node ->
-                val resetValue = nodeValues[node.id]
+                if (node.label == "__internal_paused") return@forEach
 
-                println("Resetting node ${node.label} to $resetValue")
+                val resetValue = nodeValues[node.id]
 
                 if (resetValue != null) {
                     updateNodeValue(node, resetValue)
@@ -239,8 +242,6 @@ class Timeline(
             recompute = {
                 val event = fetchNodeValue(eventNode) as EventState<B>
                 if (event is EventState.Fired) {
-                    println("Recomputing fold node: ${event.event}")
-
                     currentValue = reducer(currentValue, event.event)
 
                     if (timeTravelEnabled) {
@@ -254,8 +255,6 @@ class Timeline(
                 val resetTo = frame - createdFrame
 
                 events = events.take(resetTo.toInt())
-
-                println("Events are now: $events")
 
                 currentValue = events.fold(initialValue, reducer)
 
@@ -411,12 +410,10 @@ class Timeline(
     internal fun fetchNodeValue(
         node: Node<Any?>
     ): Any? = synchronized(this) {
-        println("Getting ${node.label}, dirty: ${node.dirty}")
         if (!node.dirty) {
             return node.rawValue
         } else {
             node.rawValue = node.recompute()
-            println("New value after recomputing is: ${node.rawValue}")
             node.dirty = false
         }
 
