@@ -102,6 +102,7 @@ class Timeline(
 
                 if (resetValue != null) {
                     updateNodeValue(node, resetValue)
+                    node.onRollback?.invoke(node, frame)
                 }
             }
 
@@ -155,10 +156,9 @@ class Timeline(
         value: Lazy<A>,
         onUpdate: (Node<A>) -> A = { it -> it.rawValue },
         onNextFrame: ((Node<A>) -> Unit)? = null,
+        onRollback: ((node: Node<A>, frame: Long) -> Unit)? = null,
         label: String? = null,
     ): Node<A> = synchronized(this) {
-        //frameNumber++
-
         val id = newID()
 
         var newNode: Node<A>? = null
@@ -167,6 +167,7 @@ class Timeline(
             id,
             { onUpdate(newNode!!) },
             onNextFrame,
+            onRollback,
             label ?: id.toString()
         )
 
@@ -187,8 +188,6 @@ class Timeline(
         },
         onNextFrame: ((Node<B>) -> Unit)? = null
     ): Node<B> = synchronized(this) {
-        //frameNumber++
-
         val mapNodeID = newID()
 
         var mappedNode: Node<B>? = null
@@ -226,22 +225,41 @@ class Timeline(
         eventNode: Node<EventState<B>>,
         reducer: (A, B) -> A
     ): Node<A> = synchronized(this) {
-        //frameNumber++
-
         val foldNodeID = newID()
+
+        val createdFrame = currentFrame
+
+        var events = listOf<B>()
 
         var currentValue = initialValue
 
         val foldNode = Node(
-            lazy { initialValue },
-            foldNodeID,
-            {
+            initialValue = lazy { initialValue },
+            id = foldNodeID,
+            recompute = {
                 val event = fetchNodeValue(eventNode) as EventState<B>
                 if (event is EventState.Fired) {
+                    println("Recomputing fold node: ${event.event}")
+
                     currentValue = reducer(currentValue, event.event)
+
+                    if (timeTravelEnabled) {
+                        events += event.event
+                    }
                 }
 
                 currentValue
+            },
+            onRollback = { node, frame ->
+                val resetTo = frame - createdFrame
+
+                events = events.take(resetTo.toInt())
+
+                println("Events are now: $events")
+
+                currentValue = events.fold(initialValue, reducer)
+
+                node.rawValue = currentValue
             }
         )
 
@@ -266,8 +284,6 @@ class Timeline(
         combine: (List<Any?>) -> A,
         onNextFrame: ((Node<A>) -> Unit)? = null
     ): Node<A> = synchronized(this) {
-        //frameNumber++
-
         val combinedNodeID = newID()
 
         val initialValue = lazy { combine(parentNodes.map { it.rawValue }) }
@@ -395,10 +411,12 @@ class Timeline(
     internal fun fetchNodeValue(
         node: Node<Any?>
     ): Any? = synchronized(this) {
+        println("Getting ${node.label}, dirty: ${node.dirty}")
         if (!node.dirty) {
             return node.rawValue
         } else {
             node.rawValue = node.recompute()
+            println("New value after recomputing is: ${node.rawValue}")
             node.dirty = false
         }
 

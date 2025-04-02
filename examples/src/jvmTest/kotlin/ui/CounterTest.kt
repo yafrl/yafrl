@@ -8,7 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlin.test.assertEquals
 
 class CounterTest : FunSpec({
-    xtest("Counter resets state after two events with timetravel debugger") {
+    test("Counter resets state after two events with timetravel debugger") {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default),
             debug = true,
@@ -35,7 +35,7 @@ class CounterTest : FunSpec({
         assertEquals(1, viewModel.count.value)
     }
 
-    xtest("Counter resets state with timetravel debugger") {
+    test("Counter resets state with timetravel debugger") {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default),
             debug = true,

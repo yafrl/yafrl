@@ -13,7 +13,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class PlatformerTest : FunSpec({
-    xtest("Test view model") {
+    test("Test view model") {
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default)
         )

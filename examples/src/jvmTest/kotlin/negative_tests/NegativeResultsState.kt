@@ -3,6 +3,7 @@ package negative_tests
 import androidx.compose.runtime.*
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,7 @@ import kotlin.test.assertNotSame
  *  trying to solve in this library.
  **/
 class NegativeResultsState : FunSpec({
-    xtest("Molecule has the same behavior") {
+    test("Molecule has the same behavior") {
         val scope = CoroutineScope(Dispatchers.Default)
 
         val flow = MutableStateFlow(0)
@@ -34,7 +35,7 @@ class NegativeResultsState : FunSpec({
         assertNotSame(5, mapped.value)
     }
 
-    xtest("Molecule needs delay to pass") {
+    test("Molecule needs delay to pass") {
         val scope = CoroutineScope(Dispatchers.Default)
 
         val flow = MutableStateFlow(0)
@@ -48,9 +49,9 @@ class NegativeResultsState : FunSpec({
         runTest {
             flow.value = 3
 
-            with(Dispatchers.Default) { delay(35) }
-
-            assertEquals(5, mapped.value)
+            eventually {
+                assertEquals(5, mapped.value)
+            }
         }
     }
 })

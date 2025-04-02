@@ -17,6 +17,7 @@ open class Node<out A> internal constructor(
     val id: NodeID,
     internal val recompute: () -> A,
     internal val onNextFrame: ((Node<@UnsafeVariance A>) -> Unit)? = null,
+    internal val onRollback: ((node: Node<@UnsafeVariance A>, frame: Long) -> Unit)? = null,
     internal var label: String = id.toString(),
 ) : Flow<A> {
     override fun toString(): String {

@@ -184,7 +184,7 @@ object PlatformerComponent {
     @Composable
     fun view() = YafrlCompose(
         showFPS = true,
-        //timeTravelDebugger = true
+        timeTravelDebugger = true
     ) {
         val tileset = remember {
             useResource("tileset.png", ::loadImageBitmap)

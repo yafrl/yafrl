@@ -14,6 +14,10 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
+
 kotlin {
     jvm()
     iosArm64()
@@ -41,6 +45,8 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
                 implementation(libs.molecule)
                 implementation(libs.kotest.engine)
+                implementation(libs.kotest.runner)
+                implementation(libs.kotest.assertions)
                 implementation(compose.uiTest)
                 implementation(libs.kotlin.coroutines)
                 implementation(libs.kotlin.coroutines.test)
