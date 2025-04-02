@@ -17,7 +17,20 @@ For non-multiplatform Android / JVM projects:
 
 ```
 dependencies {
-    implementation("io.github.sintrastes:yafrl-jvm:0.1")
+    // Basic functionality of the library
+    implementation("io.github.sintrastes:yafrl-core-jvm:0.2")
+
+    // Optional: kotlinx.coroutines.flow integrations
+    implementation("io.github.sintrastes:yafrl-core-jvm:0.2")
+
+    // Optional: Utilities for testing yafrl programs
+    implementation("io.github.sintrastes:yafrl-testing-jvm:0.2")
+
+    // Optional: Jetpack Compose integrations
+    implementation("io.github.sintrastes:yafrl-compose-jvm:0.2")
+
+    // Optional: Integrations for arrow-optics
+    implementation("io.github.sintrastes:yafrl-optics-jvm:0.2")
 }
 ```
 
@@ -28,7 +41,20 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("io.github.sintrastes:yafrl:0.1")
+                // Basic functionality of the library
+                implementation("io.github.sintrastes:yafrl-core:0.2")
+
+                // Optional: kotlinx.coroutines.flow integrations
+                implementation("io.github.sintrastes:yafrl-core:0.2")
+
+                // Optional: Utilities for testing yafrl programs
+                implementation("io.github.sintrastes:yafrl-testing:0.2")
+
+                // Optional: Jetpack Compose integrations
+                implementation("io.github.sintrastes:yafrl-compose:0.2")
+
+                // Optional: Integrations for arrow-optics
+                implementation("io.github.sintrastes:yafrl-optics:0.2")
             }
         }
     }
