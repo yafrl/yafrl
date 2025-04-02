@@ -11,7 +11,7 @@ plugins {
 }
 
 allprojects {
-    version = "0.2-SNAPSHOT"
+    version = "0.2"
     group = "io.github.sintrastes"
 
     repositories {
