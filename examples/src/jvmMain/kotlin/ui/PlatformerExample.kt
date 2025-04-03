@@ -33,14 +33,15 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Behavior.Companion.integral
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.State.Companion.const
-import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.interop.composeState
 import io.github.sintrastes.yafrl.interop.YafrlCompose
+import io.github.sintrastes.yafrl.vector.Float2
+import io.github.sintrastes.yafrl.vector.VectorSpace
+import ui.Physics.Entity
+import ui.Physics.collisionSummation
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
-import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.time.Duration
 
 val tileSize = 42.dp
 
@@ -51,16 +52,101 @@ val height = 800f.dp
 @Composable
 fun size() = with(LocalDensity.current) { Size(width.toPx(), height.toPx()) }
 
-object PlatformerComponent {
+object Physics {
+    /** Generic render-able entity. */
     data class Entity(
         val position: Offset,
-        val size: Float,
+        val size: Size,
         val render: DrawScope.() -> Unit
     )
 
+    /** Utility to check an entity at [tentativePosition] with size [entitySize] would collide with
+     * an entity [other]. */
+    fun collides(tentativePosition: Float2, entitySize: Size, other: Entity): Boolean {
+        val minX1 = tentativePosition.x
+        val minY1 = tentativePosition.y
+        val maxX1 = tentativePosition.x + entitySize.width
+        val maxY1 = tentativePosition.y + entitySize.height
+
+        val minX2 = other.position.x
+        val minY2 = other.position.y
+        val maxX2 = other.position.x + other.size.width
+        val maxY2 = other.position.y + other.size.height
+
+        return minX1 < maxX2 && maxX1 > minX2 &&
+                minY1 < maxY2 && maxY1 > minY2
+    }
+
+    /**
+     * Vector sum that clips the total summation if it would lead to a collision.
+     **/
+    fun collisionSummation(entitySize: Size, entities: Behavior<List<Entity>>): (Float2, Float2) -> Float2 = with (VectorSpace.float2()) {
+        return { accumulatedPosition, newVelocity ->
+            val tentativePosition = accumulatedPosition + newVelocity
+
+            val others = entities.value // Get current state of other entities
+
+            var clippedPosition = tentativePosition
+            for (other in others) {
+                if (collides(tentativePosition, entitySize, other)) {
+                    clippedPosition = clipPosition(tentativePosition, entitySize, newVelocity, other)
+                }
+            }
+
+            clippedPosition
+        }
+    }
+
+    /**
+     * Utility to calculate the clipped position of an entity that is going to collide with
+     *  an [other] entity.
+     **/
+    fun clipPosition(
+        tentativePosition: Float2,
+        entitySize: Size, // Size of the moving entity
+        velocity: Float2,
+        other: Entity,
+    ): Float2 {
+        var clippedPosition = tentativePosition
+
+        // Horizontal clipping
+        if (velocity.x > 0) { // Moving right
+            // If the right side of our entity overshoots other's left side...
+            if (tentativePosition.x + entitySize.width > other.position.x && tentativePosition.x < other.position.x) {
+                // ...clip so that the right edge aligns with other's left edge.
+                clippedPosition = clippedPosition.copy(x = other.position.x - entitySize.width)
+            }
+        } else if (velocity.x < 0) { // Moving left
+            // If the left side overshoots other's right side...
+            if (tentativePosition.x < other.position.x + other.size.width && tentativePosition.x + entitySize.width > other.position.x + other.size.width) {
+                // ...clip so that the left edge aligns with other's right edge.
+                clippedPosition = clippedPosition.copy(x = other.position.x + other.size.width)
+            }
+        }
+
+        // Vertical clipping
+        if (velocity.y > 0) { // Moving down
+            // If the bottom overshoots other's top...
+            if (tentativePosition.y + entitySize.height > other.position.y && tentativePosition.y < other.position.y) {
+                // ...clip so that the bottom edge aligns with other's top edge.
+                clippedPosition = clippedPosition.copy(y = other.position.y - entitySize.height)
+            }
+        } else if (velocity.y < 0) { // Moving up
+            // If the top overshoots other's bottom...
+            if (tentativePosition.y < other.position.y + other.size.height && tentativePosition.y + entitySize.height > other.position.y + other.size.height) {
+                // ...clip so that the top edge aligns with other's bottom edge.
+                clippedPosition = clippedPosition.copy(y = other.position.y + other.size.height)
+            }
+        }
+
+        return clippedPosition
+    }
+}
+
+/** Implementation of a small platformer game. */
+object PlatformerComponent {
     class ViewModel(
         private val maxSize: Size,
-        private val deltaTime: Event<Duration>,
         private val tileHeight: Float,
         private val tileset: ImageBitmap,
         private val player: ImageBitmap
@@ -70,7 +156,7 @@ object PlatformerComponent {
         val clicks = State.fold(listOf<State<Entity>>(), clicked) { clicked, click ->
             clicked + entity(
                 click,
-                accelerating(220f, 350f),
+                accelerating(Float2(0f, 220f), Float2(0f, 350f)),
             )
         }
 
@@ -98,20 +184,20 @@ object PlatformerComponent {
         /**
          * Creates a speed [v] that is accelerating by [dv]
          **/
-        fun accelerating(v: Float, dv: Float) = const(v) + integral(const(dv))
+        fun accelerating(v: Float2, dv: Float2) = const(v) + integral(const(dv))
 
         fun entities() = State.combineAll(
             entity(
                 Offset(maxSize.width / 2, 0f),
-                accelerating(420f, 350f),
+                accelerating(Float2(0f, 420f), Float2(0f, 350f)),
             ),
             entity(
                 Offset(maxSize.width / 3, 100f),
-                accelerating(430f, 350f),
+                accelerating(Float2(0f, 430f), Float2(0f, 350f)),
             ),
             entity(
                 Offset(2 * maxSize.width / 3, 50f),
-                accelerating(440f, 350f),
+                accelerating(Float2(0f, 440f), Float2(0f, 350f)),
             )
         ).combineWith(spawned) { initial, spawned ->
             initial + spawned
@@ -126,7 +212,7 @@ object PlatformerComponent {
             val targetPosition = Offset(position.x * tileSize.value, position.y * tileSize.value)
             return Entity(
                 position = targetPosition,
-                size = tileHeight,
+                size = Size(tileHeight, tileHeight),
                 render = {
                     drawImage(
                         image = tileset,
@@ -146,24 +232,17 @@ object PlatformerComponent {
         /** Creates a simple entity. */
         fun entity(
             start: Offset,
-            speed: State<Float>
+            speed: State<Float2>
         ): State<Entity> {
-            val height = 4 * 37f
+            val size = Size(4 * 50f, 4 * 36f)
 
-            val position = State.fold(start, deltaTime) { position, dt ->
-                val dt = dt.inWholeMilliseconds / 1000.0f
+            val startVector = Float2(start.x, start.y)
 
-                Offset(
-                    position.x,
-                    min(
-                        position.y + dt * speed.value,
-                        maxSize.height - height
-                    )
-                )
-            }
+            val position = (speed.integrateWith(startVector, collisionSummation(size, tiles)))
+                .map { Offset(it.x, it.y) }
 
             return position.map { position ->
-                Entity(position, height) {
+                Entity(position, size) {
                     drawImage(
                         image = player,
                         srcSize = IntSize(50, 36),
@@ -184,7 +263,7 @@ object PlatformerComponent {
     @Composable
     fun view() = YafrlCompose(
         showFPS = true,
-        timeTravelDebugger = true
+        //timeTravelDebugger = true
     ) {
         val tileset = remember {
             useResource("tileset.png", ::loadImageBitmap)
@@ -217,7 +296,7 @@ object PlatformerComponent {
         val tileHeight = with(LocalDensity.current) { tileSize.toPx() }
 
         val viewModel = remember {
-            ViewModel(size, Timeline.currentTimeline().clock, tileHeight, tileset, player)
+            ViewModel(size, tileHeight, tileset, player)
         }
 
         val entities by remember {

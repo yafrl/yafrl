@@ -134,3 +134,22 @@ fun <T> Behavior<T>.integrate(vectorSpace: VectorSpace<T>): State<T> {
         }
     }
 }
+
+inline fun <reified T> Behavior<T>.integrateWith(initial: T, crossinline accum: (T, T) -> T): State<T> {
+    return integrateWith(VectorSpace.instance<T>(), initial, accum)
+}
+
+inline fun <T> Behavior<T>.integrateWith(vectorSpace: VectorSpace<T>, initial: T, crossinline accum: (T, T) -> T): State<T> {
+    val clock = Timeline.currentTimeline().clock
+
+    return with (vectorSpace) {
+        State.fold(initial, clock) { integral, dt ->
+            val newValue = value
+
+            // Convert the duration difference to seconds (using whole milliseconds)
+            val dt = dt.inWholeMilliseconds / 1000f
+
+            accum(integral, newValue * dt)
+        }
+    }
+}
