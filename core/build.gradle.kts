@@ -1,4 +1,5 @@
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - core library"
@@ -17,7 +18,11 @@ tasks.withType<Test>().configureEach {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        compilations.all {
+            kotlinOptions.jvmTarget = "1.8"
+        }
+    }
     iosArm64()
     macosX64()
     js(IR) {

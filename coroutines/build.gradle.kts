@@ -22,7 +22,11 @@ tasks.withType<Test>().configureEach {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        compilations.all {
+            kotlinOptions.jvmTarget = "1.8"
+        }
+    }
     iosArm64()
     macosX64()
     js(IR).browser() {

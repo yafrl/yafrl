@@ -2,7 +2,6 @@
 
 import org.jetbrains.compose.ExperimentalComposeLibrary
 
-
 plugins {
     kotlin("multiplatform") version libs.versions.kotlin.get()
     alias(libs.plugins.atomicfu)
