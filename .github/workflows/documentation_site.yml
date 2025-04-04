@@ -46,11 +46,11 @@ jobs:
         run: |
           ./gradlew dokkaHtml
           mkdir pages
-          cp core/build/dokka/html pages/core
-          cp coroutines/build/dokka/html pages/coroutines
-          cp compose/build/dokka/html pages/compose
-          cp optics/build/dokka/html pages/optics
-          cp testing/build/dokka/html pages/testing
+          cp -r core/build/dokka/html pages/core
+          cp -r coroutines/build/dokka/html pages/coroutines
+          cp -r compose/build/dokka/html pages/compose
+          cp -r optics/build/dokka/html pages/optics
+          cp -r testing/build/dokka/html pages/testing
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
