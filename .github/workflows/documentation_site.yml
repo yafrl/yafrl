@@ -43,11 +43,18 @@ jobs:
         uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
       - name: Build docs
-        run: ./gradlew dokkaHtml
+        run: >
+          ./gradlew dokkaHtml
+          mkdir pages
+          cp core/build/dokka/html pages/core
+          cp coroutines/build/dokka/html pages/coroutines
+          cp compose/build/dokka/html pages/compose
+          cp optics/build/dokka/html pages/optics
+          cp testing/build/dokka/html pages/testing
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'core/build/dokka/html/'
+          path: 'pages/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
