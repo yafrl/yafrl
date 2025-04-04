@@ -45,7 +45,6 @@ jobs:
       - name: Build docs
         run: |
           ./gradlew dokkaHtml
-          mkdir pages
           cp -r core/build/dokka/html pages/core
           cp -r coroutines/build/dokka/html pages/coroutines
           cp -r compose/build/dokka/html pages/compose
