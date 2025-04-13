@@ -1,9 +1,9 @@
 package behaviors
 
+import io.github.sintrastes.yafrl.Behavior
 import io.github.sintrastes.yafrl.Behavior.Companion.integral
 import io.github.sintrastes.yafrl.BroadcastEvent
-import io.github.sintrastes.yafrl.State
-import io.github.sintrastes.yafrl.State.Companion.const
+import io.github.sintrastes.yafrl.Behavior.Companion.const
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
@@ -28,9 +28,9 @@ class IntegrationTests: FunSpec({
 
         val deltaTime = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
 
-        fun position(speed: State<Float>): State<Float> = integral(speed)
+        fun position(speed: Behavior<Float>): Behavior<Float> = integral(speed)
 
-        fun accelerating(v: Float, dv: State<Float>): State<Float> =
+        fun accelerating(v: Float, dv: Behavior<Float>): Behavior<Float> =
             const(v) + integral(dv)
 
         val position = position(
@@ -47,6 +47,6 @@ class IntegrationTests: FunSpec({
 
         deltaTime.send(1.0.seconds)
 
-        assertEquals(3f, position.value)
+        assertEquals(3f, position.value, "Expected 3 but was ${position.value}")
     }
 })

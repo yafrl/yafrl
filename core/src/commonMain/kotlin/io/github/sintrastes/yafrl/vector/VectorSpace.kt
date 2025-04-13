@@ -21,11 +21,12 @@ interface VectorSpace<V> {
             return when (T::class) {
                 Double::class -> ScalarSpace.double() as VectorSpace<T>
                 Float::class -> ScalarSpace.float() as VectorSpace<T>
+                Int::class -> ScalarSpace.int() as VectorSpace<T>
                 Float2::class -> float2() as VectorSpace<T>
                 Float3::class -> float3() as VectorSpace<T>
                 Double2::class -> double2() as VectorSpace<T>
                 Double3::class -> double3() as VectorSpace<T>
-                else -> throw IllegalArgumentException("")
+                else -> throw IllegalArgumentException("Could not get vector instance for ${T::class}")
             }
         }
 
@@ -128,7 +129,7 @@ interface VectorSpace<V> {
 }
 
 object ScalarSpace {
-    fun float() = object: VectorSpace<Float> {
+    fun float() = object: Algebra<Float> {
         override val zero: Float = 0f
 
         override fun Float.plus(other: Float): Float {
@@ -137,6 +138,10 @@ object ScalarSpace {
 
         override fun Float.minus(other: Float): Float {
             return this - other
+        }
+
+        override fun Float.times(other: Float): Float {
+            return this * other
         }
 
         override fun Number.times(vect: Float): Float {
@@ -152,7 +157,7 @@ object ScalarSpace {
         }
     }
 
-    fun double() = object: VectorSpace<Double> {
+    fun double() = object: Algebra<Double> {
         override val zero: Double = 0.0
 
         override fun Double.plus(other: Double): Double {
@@ -167,12 +172,44 @@ object ScalarSpace {
             return this.toDouble() * vect
         }
 
+        override fun Double.times(other: Double): Double {
+            return this * other
+        }
+
         override fun Double.times(value: Number): Double {
             return value.toDouble() * this
         }
 
         override fun Double.div(value: Number): Double {
             return this / value.toDouble()
+        }
+    }
+
+    fun int() = object: Algebra<Int> {
+        override val zero: Int = 0
+
+        override fun Int.plus(other: Int): Int {
+            return this + other
+        }
+
+        override fun Int.minus(other: Int): Int {
+            return this - other
+        }
+
+        override fun Number.times(vect: Int): Int {
+            return this.toInt() * vect
+        }
+
+        override fun Int.times(other: Number): Int {
+            return this * other
+        }
+
+        override fun Int.times(value: Int): Int {
+            return value.toInt() * this
+        }
+
+        override fun Int.div(value: Number): Int {
+            return this / value.toInt()
         }
     }
 }

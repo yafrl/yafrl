@@ -59,7 +59,7 @@ fun toColor(position: Float2): Color {
 }
 
 fun buttonColor() =
-    angular(velocity = const(1.5f))
+    angular(velocity = const(0.03f))
         .map { with(VectorSpace.float2()) { 225f * it } }
         .map(::toColor)
         .sampleState()

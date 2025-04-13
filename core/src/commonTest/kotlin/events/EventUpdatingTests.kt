@@ -13,7 +13,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(FragileYafrlAPI::class)
 class EventUpdatingTests : FunSpec({
@@ -305,5 +307,93 @@ class EventUpdatingTests : FunSpec({
                 assertEquals(42, response.value)
             }
         }
+    }
+
+    test("Impulse behaves as expected") {
+        val event2 = broadcastEvent<Duration>()
+
+        Timeline.initializeTimeline(initClock = {
+            event2
+        })
+
+        val event1 = broadcastEvent<Unit>()
+
+        val impulse = event1.impulse(0, 1)
+
+        assertEquals(0, impulse.value)
+
+        event1.send(Unit)
+
+        assertEquals(1, impulse.value)
+
+        event2.send(0.1.seconds)
+
+        assertEquals(0, impulse.value)
+
+        event1.send(Unit)
+
+        event1.send(Unit)
+
+        assertEquals(1, impulse.value)
+    }
+
+    test("Combined impulses behaves as expected") {
+        val event3 = broadcastEvent<Duration>()
+
+        Timeline.initializeTimeline(initClock = {
+            event3
+        })
+
+        val event1 = broadcastEvent<Unit>()
+
+        val event2 = broadcastEvent<Unit>()
+
+        val state = event1.impulse(0, 1) +
+            event2.impulse(0, 2)
+
+
+        assertEquals(0, state.value)
+
+        event1.send(Unit)
+
+        assertEquals(1, state.value)
+
+        event3.send(0.1.seconds)
+
+        assertEquals(0, state.value)
+
+        event2.send(Unit)
+
+        assertEquals(2, state.value)
+
+        event3.send(0.1.seconds)
+
+        assertEquals(0, state.value)
+    }
+
+    test("Impulse resets after clock tick") {
+        var clock: BroadcastEvent<Duration>? = null
+        Timeline.initializeTimeline(
+            CoroutineScope(Dispatchers.Default),
+            initClock = {
+                clock!!
+            }
+        )
+
+        clock = broadcastEvent()
+
+        val event = broadcastEvent<Unit>()
+
+        val signal = event.impulse(0, 1)
+
+        assertEquals(0, signal.value)
+
+        event.send(Unit)
+
+        assertEquals(1, signal.value)
+
+        clock.send(1.0.seconds)
+
+        assertEquals(0, signal.value)
     }
 })

@@ -10,6 +10,7 @@ import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
 import kotlin.jvm.JvmName
 import kotlin.reflect.typeOf
+import kotlin.time.Duration
 
 /**
  * A flow can be thought of as a combination of a [Behavior] and an
@@ -41,7 +42,7 @@ import kotlin.reflect.typeOf
  **/
 open class State<out A> @FragileYafrlAPI constructor(
     @property:FragileYafrlAPI val node: Node<A>
-): Behavior<A> {
+): Behavior<A> by (Behavior.sampled { node.current() }) {
     @OptIn(FragileYafrlAPI::class)
     override fun toString(): String {
         return "State($node)"
@@ -70,14 +71,6 @@ open class State<out A> @FragileYafrlAPI constructor(
     @FragileYafrlAPI
     fun collectSync(collector: (A) -> Unit) {
         node.collectSync(collector)
-    }
-
-    /**
-     * Return the current value of the state.
-     **/
-    @OptIn(FragileYafrlAPI::class)
-    override val value: A get() {
-        return node.current()
     }
 
     /**

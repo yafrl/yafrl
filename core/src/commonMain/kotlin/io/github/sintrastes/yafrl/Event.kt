@@ -87,10 +87,21 @@ internal constructor(
         )
     }
 
+    fun <B: Any> mapNotNull(f: (A) -> B?): Event<B> {
+        return map { f(it) }.filter { it != null }.map { it!! }
+    }
+
     /** Method version of [State.hold].  */
     fun hold(initial: @UnsafeVariance A): State<A> {
         return State.hold(initial, this)
     }
+
+
+    @OptIn(FragileYafrlAPI::class)
+    fun impulse(zero: @UnsafeVariance A): Behavior<A> = Behavior.impulse(this, zero) { it }
+
+    @OptIn(FragileYafrlAPI::class)
+    fun <B> impulse(zero: B, value: B): Behavior<B> = Behavior.impulse(this, zero) { value }
 
     /**
      * Applies the supplied function to each element of the
@@ -282,6 +293,7 @@ inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
 
     node.collectSync { event ->
         if (event is EventState.Fired) {
+            //println("Got event")
             job?.cancel()
             job = scope.launch(Dispatchers.Default) {
                 mutex.withLock {

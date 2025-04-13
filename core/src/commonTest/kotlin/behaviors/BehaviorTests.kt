@@ -10,10 +10,14 @@ import kotlin.math.sin
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class BehaviorTests : FunSpec({
     test("Mapped behavior works as intended") {
+        Timeline.initializeTimeline(this)
+
         val behavior = Behavior.continuous { time ->
             val seconds = time.inWholeMilliseconds / 1000f
 
@@ -33,9 +37,14 @@ class BehaviorTests : FunSpec({
     }
 
     test("Sample retains value until event") {
-        Timeline.initializeTimeline(this)
+        val event = broadcastEvent<Duration>()
 
-        val event = broadcastEvent<Unit>()
+        Timeline.initializeTimeline(
+            scope = this,
+            initClock = {
+                event
+            }
+        )
 
         val behavior = Behavior.continuous { time ->
             val seconds = time.inWholeMilliseconds / 1000f
@@ -51,7 +60,7 @@ class BehaviorTests : FunSpec({
 
         assertEquals(initial, sampled.value)
 
-        event.send(Unit)
+        event.send(0.1.seconds)
 
         assertNotEquals(initial, sampled.value)
     }

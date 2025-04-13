@@ -1,6 +1,6 @@
 package vectors
 
-import io.github.sintrastes.yafrl.State.Companion.const
+import io.github.sintrastes.yafrl.Behavior.Companion.const
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.vector.Double2
@@ -55,8 +55,10 @@ class VectorTests : FunSpec({
         }
 
         assertTrue(
-            abs(95.1 - position.value.y) <= 0.1
-        )
+            "Value was: ${position.value.y}"
+        ) {
+            abs(95.095 - position.value.y) <= 0.00001
+        }
     }
 
     test("Gravity simulation works 3D") {
@@ -89,7 +91,7 @@ class VectorTests : FunSpec({
         }
 
         assertTrue(
-            abs(95.1 - position.value.z) <= 0.1
+            abs(95.095 - position.value.z) <= 0.00001
         )
     }
 

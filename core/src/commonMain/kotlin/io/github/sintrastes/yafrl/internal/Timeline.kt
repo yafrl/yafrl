@@ -16,8 +16,11 @@ import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.reflect.KType
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
 /**
@@ -36,6 +39,16 @@ class Timeline(
     private val lazy: Boolean,
     initClock: (State<Boolean>) -> Event<Duration>
 ) : SynchronizedObject() {
+    private val initialTime = Clock.System.now()
+
+    @OptIn(FragileYafrlAPI::class)
+    val time: Duration
+        get() = fetchNodeValue(timeBehavior.node) as Duration
+
+    val timeBehavior by lazy {
+        clock.scan(0.0.seconds) { x, y -> x + y }
+    }
+
     // Needs to be internal because we can't undo a "pause" event.
     @OptIn(FragileYafrlAPI::class)
     val pausedState by lazy {
@@ -288,12 +301,12 @@ class Timeline(
         val initialValue = lazy { combine(parentNodes.map { it.rawValue }) }
 
         val combinedNode = Node(
-            initialValue,
-            combinedNodeID,
-            {
+            initialValue = initialValue,
+            id = combinedNodeID,
+            recompute = {
                 combine(parentNodes.map { fetchNodeValue(it) as A })
             },
-            onNextFrame
+            onNextFrame = onNextFrame
         )
 
         nodes = nodes.put(combinedNodeID, combinedNode)
@@ -326,9 +339,9 @@ class Timeline(
                 if (debugLogging) println("Invoking on next frame listener for ${node.label}")
                 listener()
             }
-        }
 
-        onNextFrameListeners.clear()
+            onNextFrameListeners.clear()
+        }
 
         node.rawValue = newValue
 
@@ -345,9 +358,11 @@ class Timeline(
             listener.invoke(newValue)
         }
 
-        scope.launch {
-            for (listener in node.onValueChangedListeners) {
-                listener.emit(newValue)
+        if (node.onValueChangedListeners.isNotEmpty()) {
+            scope.launch {
+                for (listener in node.onValueChangedListeners) {
+                    listener.emit(newValue)
+                }
             }
         }
 
@@ -395,14 +410,26 @@ class Timeline(
                     listener.invoke(child.rawValue)
                 }
 
-                scope.launch {
-                    for (listener in child.onValueChangedListeners) {
-                        listener.emit(child.rawValue)
+                if (child.onValueChangedListeners.isNotEmpty()) {
+                    scope.launch {
+                        for (listener in child.onValueChangedListeners) {
+                            listener.emit(child.rawValue)
+                        }
                     }
                 }
             }
 
             updateChildNodes(child)
+        }
+    }
+
+    @OptIn(FragileYafrlAPI::class)
+    fun markDirty(node: Node<Any?>) {
+        node.dirty = true
+        for (child in children[node.id] ?: listOf()) {
+            val childNode = nodes[child]!!
+
+            markDirty(childNode)
         }
     }
 
