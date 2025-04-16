@@ -96,13 +96,6 @@ internal constructor(
         return State.hold(initial, this)
     }
 
-
-    @OptIn(FragileYafrlAPI::class)
-    fun impulse(zero: @UnsafeVariance A): Behavior<A> = Behavior.impulse(this, zero) { it }
-
-    @OptIn(FragileYafrlAPI::class)
-    fun <B> impulse(zero: B, value: B): Behavior<B> = Behavior.impulse(this, zero) { value }
-
     /**
      * Applies the supplied function to each element of the
      *  [Event], and produces an event that only emits if
@@ -273,6 +266,12 @@ internal constructor(
         }
     }
 }
+
+@OptIn(FragileYafrlAPI::class)
+inline fun <reified A> Event<A>.impulse(zero: @UnsafeVariance A): Behavior<A> = Behavior.impulse(this, zero) { it }
+
+@OptIn(FragileYafrlAPI::class)
+inline fun <A, reified B> Event<A>.impulse(zero: B, value: B): Behavior<B> = Behavior.impulse(this, zero) { value }
 
 /**
  * Blocks occurrence of events until the [window] of time has passed,

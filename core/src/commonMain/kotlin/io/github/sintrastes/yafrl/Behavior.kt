@@ -1,5 +1,6 @@
 package io.github.sintrastes.yafrl
 
+import io.github.sintrastes.yafrl.Behavior.Until
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.vector.Float2
@@ -45,6 +46,59 @@ sealed interface Behavior<out A> {
         get() = sampleValue(Timeline.currentTimeline().time)
 
     /**
+     * Apply a function to the time used to sample the behavior.
+     **/
+    fun transformTime(transform: (Duration) -> Duration): Behavior<A> {
+        return Transformed(transform, this)
+    }
+
+    class Transformed<A>(
+        private val transformation: (Duration) -> Duration,
+        private val behavior: Behavior<A>
+    ) : Behavior<A> {
+        override fun sampleValue(time: Duration): A {
+            return behavior.sampleValue(transformation(time))
+        }
+
+        override fun definiteIntegral(time: Duration, dt: Duration): A {
+            return behavior.definiteIntegral(transformation(time), dt)
+        }
+    }
+
+    /**
+     *
+     **/
+    fun until(event: Event<Behavior<@UnsafeVariance A>>): Behavior<A> {
+        return Until(lazy { this }, event)
+    }
+
+    @OptIn(FragileYafrlAPI::class)
+    class Until<A>(
+        private val initialBehavior: Lazy<Behavior<A>>,
+        private val event: Event<Behavior<A>>
+    ) : Behavior<A> {
+        var current: Behavior<A>? = null
+
+        init {
+            event.node.collectSync { nodeValue ->
+                if (nodeValue is EventState.Fired) {
+                    current = nodeValue.event
+                }
+            }
+        }
+
+        override fun sampleValue(time: Duration): A {
+            return (current ?: initialBehavior.value)
+                .sampleValue(time)
+        }
+
+        override fun definiteIntegral(time: Duration, dt: Duration): A {
+            return (current ?: initialBehavior.value)
+                .definiteIntegral(time, dt)
+        }
+    }
+
+    /**
      * Sample a [Behavior] at the occurrences of [times],
      *  returning a new [Event] with the values of the behavior
      *  at those times.
@@ -68,8 +122,34 @@ sealed interface Behavior<out A> {
         return times.map { value }
     }
 
+    /** Sample the value, but only emit when values have changed. */
+    @OptIn(FragileYafrlAPI::class)
+    fun changes(): State<A> {
+        val behavior = this
+
+        val result = internalBindingState(lazy { behavior.value })
+
+        var previousValue: A? = null
+
+        Timeline.currentTimeline().timeBehavior.node.collectSync { time ->
+            val newValue = behavior.value
+
+            if (newValue != previousValue) {
+                result.value = newValue
+            }
+
+            previousValue = newValue
+        }
+
+        return result
+    }
+
     fun <B> map(f: (A) -> B): Behavior<B> {
         return Mapped(this, f)
+    }
+
+    fun <B> flatMap(f: (A) -> Behavior<B>): Behavior<B>  {
+        return Flattened(Mapped(this, f))
     }
 
     class Mapped<A, B>(
@@ -82,6 +162,22 @@ sealed interface Behavior<out A> {
 
         override fun definiteIntegral(time: Duration, dt: Duration): B {
             return f(original.definiteIntegral(time, dt))
+        }
+    }
+
+    class Flattened<A>(
+        private val original: Behavior<Behavior<A>>
+    ) : Behavior<A> {
+        override fun sampleValue(time: Duration): A {
+            return original
+                .sampleValue(time)
+                .sampleValue(time)
+        }
+
+        override fun definiteIntegral(time: Duration, dt: Duration): A {
+            return original
+                .sampleValue(time)
+                .definiteIntegral(time, dt)
         }
     }
 
@@ -129,7 +225,7 @@ sealed interface Behavior<out A> {
             return f.integrate()
         }
 
-        fun <A, B> impulse(event: Event<A>, zeroValue: B, onEvent: (A) -> B): Behavior<B> {
+        inline fun <A, reified B> impulse(event: Event<A>, zeroValue: B, noinline onEvent: (A) -> B): Behavior<B> {
             return Impulse(zeroValue, event, onEvent)
         }
     }
@@ -161,9 +257,9 @@ sealed interface Behavior<out A> {
             return impulses.get(time)?.let(onEvent) ?: zeroValue
         }
 
-        override fun definiteIntegral(time: Duration, dt: Duration): B {
+        override fun definiteIntegral(time: Duration, dt: Duration): B = run {
             // Return the sum of all occurrences of impulses in the time between time - dt and time.
-            return impulses.entries.sortedBy { it.key }
+            impulses.entries.sortedBy { it.key }
                 .dropWhile { it.key < time - dt }
                 .takeWhile { it.key <= time }
                 .lastOrNull()
@@ -259,6 +355,10 @@ operator fun Behavior<Boolean>.not(): Behavior<Boolean> {
     return map { !it }
 }
 
+fun <A> State<Behavior<A>>.switcher(): Behavior<A> {
+    return Until(lazy { this.value }, this.updated())
+}
+
 /**
  * Integrate the behavior with respect to the current [Timeline]'s clock time.
  *
@@ -297,7 +397,6 @@ inline fun <T> Behavior<T>.integrateWith(vectorSpace: VectorSpace<T>, initial: T
 
     return with (vectorSpace) {
         State.fold(initial, clock) { integral, dt ->
-
             accum(integral, definiteIntegral(timeline.time, dt))
         }
     }
