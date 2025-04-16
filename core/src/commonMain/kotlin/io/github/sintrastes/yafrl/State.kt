@@ -218,7 +218,7 @@ open class State<out A> @FragileYafrlAPI constructor(
     companion object {
         @OptIn(FragileYafrlAPI::class)
         fun <A> const(value: A): State<A> {
-            return internalBindingState(value)
+            return internalBindingState(lazy { value })
         }
 
         /**
@@ -276,7 +276,7 @@ open class State<out A> @FragileYafrlAPI constructor(
          */
         @OptIn(FragileYafrlAPI::class)
         fun <A> hold(initial: A, update: Event<A>): State<A> {
-            val state = internalBindingState(initial)
+            val state = internalBindingState(lazy { initial })
 
             update.node.collectSync { updated ->
                 if (updated is EventState.Fired<A>) {
@@ -313,7 +313,7 @@ fun <A> State<State<A>>.flatten(): State<A> {
 
     var currentState = value
 
-    val flattened = internalBindingState(currentState.value)
+    val flattened = internalBindingState(lazy { currentState.value })
 
     var collector: ((A) -> Unit)? = null
 
@@ -374,7 +374,7 @@ class BindingState<A> internal constructor(
 inline fun <reified A> bindingState(value: A, label: String? = null): BindingState<A> {
     val timeline = Timeline.currentTimeline()
 
-    val state = internalBindingState(value, label)
+    val state = internalBindingState(lazy { value }, label)
 
     timeline.externalNodes[state.node.id] = Timeline.ExternalNode(typeOf<A>(), state.node)
 
@@ -386,12 +386,12 @@ inline fun <reified A> bindingState(value: A, label: String? = null): BindingSta
  * "internal" implementation details of the graph.
  **/
 @FragileYafrlAPI
-fun <A> internalBindingState(value: A, label: String? = null): BindingState<A> {
+fun <A> internalBindingState(value: Lazy<A>, label: String? = null): BindingState<A> {
     val graph = Timeline.currentTimeline()
 
     return BindingState(
         graph.createNode(
-            value = lazy { value },
+            value = value,
             label = label
         )
     )

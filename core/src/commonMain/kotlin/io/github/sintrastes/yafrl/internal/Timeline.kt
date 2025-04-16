@@ -53,7 +53,7 @@ class Timeline(
     @OptIn(FragileYafrlAPI::class)
     val pausedState by lazy {
         internalBindingState(
-            false,
+            lazy { false },
             "__internal_paused"
         )
     }
