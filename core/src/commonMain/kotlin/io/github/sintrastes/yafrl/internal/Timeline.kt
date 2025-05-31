@@ -39,14 +39,14 @@ class Timeline(
     private val lazy: Boolean,
     initClock: (State<Boolean>) -> Event<Duration>
 ) : SynchronizedObject() {
-    private val initialTime = Clock.System.now()
-
     @OptIn(FragileYafrlAPI::class)
     val time: Duration
         get() = fetchNodeValue(timeBehavior.node) as Duration
 
     val timeBehavior by lazy {
-        clock.scan(0.0.seconds) { x, y -> x + y }
+        clock.scan(0.0.seconds) { x, y ->
+            x + y
+        }
     }
 
     // Needs to be internal because we can't undo a "pause" event.
@@ -236,7 +236,7 @@ class Timeline(
     }
 
     @OptIn(FragileYafrlAPI::class)
-    internal fun <A, B> createFoldNode(
+    fun <A, B> createFoldNode(
         initialValue: A,
         eventNode: Node<EventState<B>>,
         reducer: (A, B) -> A
@@ -334,6 +334,8 @@ class Timeline(
         newValue: Any?,
         internal: Boolean = false
     ) = synchronized(this) {
+        if (debugLogging && !internal) println("Updating node ${node.label} to ${newValue}")
+
         if (!internal) {
             for (listener in onNextFrameListeners) {
                 if (debugLogging) println("Invoking on next frame listener for ${node.label}")

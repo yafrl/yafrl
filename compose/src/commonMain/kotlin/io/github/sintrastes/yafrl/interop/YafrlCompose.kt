@@ -13,11 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import io.github.sintrastes.yafrl.Behavior
+import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.throttled
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.CoroutineScope
@@ -57,7 +58,7 @@ fun YafrlCompose(
                     clockInitialized = true
                 }
 
-                newComposeFrameClock(scope, pausedState)
+                newComposeFrameClock(scope, pausedState.asBehavior())
             }
         )
     }

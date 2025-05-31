@@ -16,7 +16,24 @@ interface VectorSpace<V> {
 
     operator fun V.div(value: Number): V
 
+    fun with(accum: (V, V) -> V): VectorSpace<V> {
+        return object: VectorSpace<V> by this {
+            override fun V.plus(other: V): V {
+                return accum(this, other)
+            }
+
+            override fun V.minus(other: V): V {
+                return accum(this, -1 * other)
+            }
+        }
+    }
+
     companion object {
+        /**
+         * Utility to get an instance of a vector space for a type T.
+         *
+         * Throws an [IllegalArgumentException] if no instance is available.
+         **/
         inline fun <reified T> instance(): VectorSpace<T> {
             return when (T::class) {
                 Double::class -> ScalarSpace.double() as VectorSpace<T>
@@ -29,6 +46,9 @@ interface VectorSpace<V> {
                 else -> throw IllegalArgumentException("Could not get vector instance for ${T::class}")
             }
         }
+
+        /** Utility to check if a type [T] has a defined vector space instance. */
+        inline fun <reified T> hasInstance(): Boolean = runCatching { instance<T>() }.isSuccess
 
         fun float2() = object: VectorSpace<Float2> {
             override val zero: Float2 = Float2(0f, 0f)

@@ -1,6 +1,7 @@
 package behaviors
 
-import io.github.sintrastes.yafrl.Behavior
+import io.github.sintrastes.yafrl.BroadcastEvent
+import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
@@ -37,14 +38,14 @@ class BehaviorTests : FunSpec({
     }
 
     test("Sample retains value until event") {
-        val event = broadcastEvent<Duration>()
-
         Timeline.initializeTimeline(
             scope = this,
             initClock = {
-                event
+                broadcastEvent<Duration>("event")
             }
         )
+
+        val event = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
 
         val behavior = Behavior.continuous { time ->
             val seconds = time.inWholeMilliseconds / 1000f

@@ -1,6 +1,8 @@
 package io.github.sintrastes.yafrl
 
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.behaviors.Behavior
+import io.github.sintrastes.yafrl.behaviors.switcher
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
@@ -10,19 +12,18 @@ import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
 import kotlin.jvm.JvmName
 import kotlin.reflect.typeOf
-import kotlin.time.Duration
 
 /**
- * A flow can be thought of as a combination of a [Behavior] and an
+ * A flow can be thought of as a combination of a [io.github.sintrastes.yafrl.behaviors.Behavior] and an
  *  [Event].
  *
- * Like a [Behavior], a [State] has a [current] value which can be
+ * Like a [io.github.sintrastes.yafrl.behaviors.Behavior], a [State] has a [current] value which can be
  *  sampled at any time.
  *
  * Like an [Event], a [State] will automatically influence derived [State]s
  *  when the underlying state changes -- in other words, it is _reactive_.
  *
- * Following our graphical analogies for [Event] and [Behavior], a [State]
+ * Following our graphical analogies for [Event] and [io.github.sintrastes.yafrl.behaviors.Behavior], a [State]
  *  can be thought of as a stepwise function.
  *
  * ```
@@ -42,7 +43,7 @@ import kotlin.time.Duration
  **/
 open class State<out A> @FragileYafrlAPI constructor(
     @property:FragileYafrlAPI val node: Node<A>
-): Behavior<A> by (Behavior.sampled { node.current() }) {
+) {
     @OptIn(FragileYafrlAPI::class)
     override fun toString(): String {
         return "State($node)"
@@ -50,6 +51,9 @@ open class State<out A> @FragileYafrlAPI constructor(
 
     @OptIn(FragileYafrlAPI::class)
     val label get() = node.label
+
+    @OptIn(FragileYafrlAPI::class)
+    open val value get() = node.current()
 
     @FragileYafrlAPI
     fun labeled(label: String): State<A> {
@@ -80,7 +84,7 @@ open class State<out A> @FragileYafrlAPI constructor(
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    override fun <B> map(f: (A) -> B): State<B> {
+    fun <B> map(f: (A) -> B): State<B> {
         val graph = Timeline.currentTimeline()
 
         return State(graph.createMappedNode(node, f))
@@ -276,11 +280,28 @@ open class State<out A> @FragileYafrlAPI constructor(
          */
         @OptIn(FragileYafrlAPI::class)
         fun <A> hold(initial: A, update: Event<A>): State<A> {
+            val timeline = Timeline.currentTimeline()
+
             val state = internalBindingState(lazy { initial })
 
             update.node.collectSync { updated ->
                 if (updated is EventState.Fired<A>) {
-                    state.value = updated.event
+                    timeline.updateNodeValue(state.node, updated.event, internal = true)
+                }
+            }
+
+            return state
+        }
+
+        @OptIn(FragileYafrlAPI::class)
+        fun <A> holdLazy(initial: Lazy<A>, update: Event<A>): State<A> {
+            val timeline = Timeline.currentTimeline()
+
+            val state = internalBindingState(initial)
+
+            update.node.collectSync { updated ->
+                if (updated is EventState.Fired<A>) {
+                    timeline.updateNodeValue(state.node, updated.event, internal = true)
                 }
             }
 
@@ -307,6 +328,28 @@ operator fun State<Float3>.plus(other: State<Float3>): State<Float3> = with(Vect
     }
 }
 
+/**
+ * Utility to convert a [State] into a behavior whose values are interpreted as the
+ *  piecewise function of the values of the [State].
+ **/
+@OptIn(FragileYafrlAPI::class)
+inline fun <reified A> State<A>.asBehavior(): Behavior<A> {
+    if (VectorSpace.hasInstance<A>()) {
+        // Use a switcher so we can get an exact polynomial integral piecewise.
+        return map { Behavior.const(it) }.switcher()
+    } else {
+        // If no instance exists, just use sampled so we do not try to get an
+        // instance that does not exist at runtime.
+        return Behavior.sampled { this.value }
+    }
+}
+
+/**
+ * Construct a `State<A>` from a nested `State<State<A>>` by updating whenever
+ *  either the inner or outer [State] updates.
+ *
+ * Compare with the Monad instance of [Dynamic](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#t:Dynamic) in [reflex-frp](https://reflex-frp.org/).
+ **/
 @OptIn(FragileYafrlAPI::class)
 fun <A> State<State<A>>.flatten(): State<A> {
     val timeline = Timeline.currentTimeline()
@@ -345,6 +388,26 @@ fun <A> State<State<A>>.flatten(): State<A> {
     return flattened
 }
 
+/**
+ * Builds a [State] that updates with a list of all input states
+ *  whenever any of the input states updates.
+ *
+ * Example usage:
+ *
+ * ```
+ * val stateA = bindingState("1")
+ *
+ * val stateB = bindingState("2")
+ *
+ * val combined = listOf(stateA, stateB).sequenceState()
+ *
+ * assert(combined.value == listOf("1", "2")
+ *
+ * stateA.value = "A"
+ *
+ * assert(combined.value == listOf("A", "2")
+ * ```
+ **/
 @OptIn(FragileYafrlAPI::class)
 fun <A> List<State<A>>.sequenceState(): State<List<A>> {
     return State.combineAll(
@@ -370,6 +433,14 @@ class BindingState<A> internal constructor(
         }
 }
 
+/**
+ * Construct a [BindingState] -- which is a [State] whose value can be updated to new
+ *  values arbitrarily.
+ *
+ * [BindingState]s can be thought of (together with [BroadcastEvent]s) as the "inputs"
+ *  to the Yafrl FRP state graph, and thus should typically only be used as a means of
+ *  integrating with external systems -- rather than for business logic.
+ **/
 @OptIn(FragileYafrlAPI::class)
 inline fun <reified A> bindingState(value: A, label: String? = null): BindingState<A> {
     val timeline = Timeline.currentTimeline()

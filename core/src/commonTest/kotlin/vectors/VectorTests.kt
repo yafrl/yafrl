@@ -1,7 +1,9 @@
 package vectors
 
-import io.github.sintrastes.yafrl.Behavior.Companion.const
+import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.const
 import io.github.sintrastes.yafrl.*
+import io.github.sintrastes.yafrl.behaviors.integrate
+import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.vector.Double2
 import io.github.sintrastes.yafrl.vector.Double3
@@ -18,7 +20,6 @@ import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.arbitrary.numericFloat
 import io.kotest.property.checkAll
 
-import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration
@@ -57,7 +58,7 @@ class VectorTests : FunSpec({
         assertTrue(
             "Value was: ${position.value.y}"
         ) {
-            abs(95.095 - position.value.y) <= 0.00001
+            95.095f == position.value.y
         }
     }
 
@@ -91,7 +92,7 @@ class VectorTests : FunSpec({
         }
 
         assertTrue(
-            abs(95.095 - position.value.z) <= 0.00001
+            95.095f == position.value.z
         )
     }
 

@@ -2,7 +2,10 @@ package events
 
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.behaviors.not
+import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
 import io.kotest.assertions.nondeterministic.eventually
@@ -17,7 +20,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(FragileYafrlAPI::class)
+@OptIn(FragileYafrlAPI::class, ExperimentalYafrlAPI::class)
 class EventUpdatingTests : FunSpec({
     beforeTest {
         Timeline.initializeTimeline(
@@ -85,6 +88,32 @@ class EventUpdatingTests : FunSpec({
         events.send(1)
 
         assertEquals(EventState.None, filtered.node.rawValue)
+    }
+
+    test("filtered event using condition") {
+        Timeline.initializeTimeline(debug = true)
+
+        val timeline = Timeline.currentTimeline()
+
+        val events = broadcastEvent<Unit>("events")
+
+        var condition = false
+
+        val filtered = events
+            .filter { condition }
+
+        println("Sending event")
+        events.send(Unit)
+
+        assertEquals(EventState.None, timeline.fetchNodeValue(filtered.node))
+
+        println("Setting condition to true")
+        condition = true
+
+        println("Sending again")
+        events.send(Unit)
+
+        assertEquals(EventState.Fired(Unit), timeline.fetchNodeValue(filtered.node))
     }
 
     test("Event should not be fired on next tick") {
@@ -206,7 +235,9 @@ class EventUpdatingTests : FunSpec({
     test("Event does not fire if gated") {
         val clicks = broadcastEvent<Unit>()
 
-        val enabled = bindingState<Boolean>(true)
+        val enabledState = bindingState<Boolean>(true)
+
+        val enabled = enabledState.asBehavior()
 
         val count = clicks.gate(!enabled).scan(0) { count, _click ->
             count + 1
@@ -216,13 +247,13 @@ class EventUpdatingTests : FunSpec({
 
         assertEquals(1, count.value)
 
-        enabled.value = false
+        enabledState.value = false
 
         clicks.send(Unit)
 
         assertEquals(1, count.value)
 
-        enabled.value = true
+        enabledState.value = true
 
         clicks.send(Unit)
 

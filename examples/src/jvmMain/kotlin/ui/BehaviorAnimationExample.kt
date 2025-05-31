@@ -14,9 +14,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import io.github.sintrastes.yafrl.Behavior
-import io.github.sintrastes.yafrl.Behavior.Companion.integral
-import io.github.sintrastes.yafrl.State.Companion.const
+import io.github.sintrastes.yafrl.behaviors.Behavior
+import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.integral
+import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.const
 import io.github.sintrastes.yafrl.interop.YafrlCompose
 import io.github.sintrastes.yafrl.interop.composeState
 import io.github.sintrastes.yafrl.vector.Float2
@@ -27,7 +27,6 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sin
-
 
 /**
  * Creates a [Float2] vector rotating counter-clockwise at the specified angular [velocity]

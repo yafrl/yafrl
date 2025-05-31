@@ -1,7 +1,8 @@
 package io.github.sintrastes.yafrl
 
-import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.Dispatchers
@@ -267,10 +268,20 @@ internal constructor(
     }
 }
 
+/**
+ * Builds a dirac impulse whose value is equal to the event values when the even has fired,
+ *  and whole value is equal to [zero] otherwise
+ **/
 @OptIn(FragileYafrlAPI::class)
+@ExperimentalYafrlAPI
 inline fun <reified A> Event<A>.impulse(zero: @UnsafeVariance A): Behavior<A> = Behavior.impulse(this, zero) { it }
 
+/**
+ * Builds a dirac impulse whose value is equal to [value] whenever the event fires, and [zero]
+ *  otherwise.
+ **/
 @OptIn(FragileYafrlAPI::class)
+@ExperimentalYafrlAPI
 inline fun <A, reified B> Event<A>.impulse(zero: B, value: B): Behavior<B> = Behavior.impulse(this, zero) { value }
 
 /**
