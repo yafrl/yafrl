@@ -7,8 +7,8 @@
 <p align="center">
 <img src="https://img.shields.io/badge/version-0.1-purple)"/>
 <img src="https://img.shields.io/badge/kotlin-2.1.10-blue"/>
-<a href="https://codecov.io/github/Sintrastes/yafrl">
-  <img src="https://codecov.io/github/Sintrastes/yafrl/graph/badge.svg?token=2A1XMWGOSH"/>
+<a href="https://codecov.io/github/yafrl/yafrl">
+  <img src="https://codecov.io/github/yafrl/yafrl/graph/badge.svg?token=2A1XMWGOSH"/>
 </a>
 <a href="https://github.com/Sintrastes/yafrl/actions/workflows/gradle.yml">
   <img src="https://github.com/Sintrastes/yafrl/actions/workflows/gradle.yml/badge.svg"/>
