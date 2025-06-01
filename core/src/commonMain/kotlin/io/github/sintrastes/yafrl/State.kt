@@ -95,17 +95,6 @@ open class State<out A> @FragileYafrlAPI constructor(
     }
 
     /**
-     * Variant of [State.fold] that rather than constructing a new [State] from scratch,
-     * updates an existing state with a new set of [events] and a [reducer].
-     **/
-    fun <B> fold(events: Event<B>, reducer: (A, B) -> @UnsafeVariance A): State<A> {
-        // There's probably a more efficient way to do this.
-        return flatMap { current ->
-            fold(current, events, reducer)
-        }
-    }
-
-    /**
      * Get the [Event] with just the updates associated with a [State].
      **/
     @OptIn(FragileYafrlAPI::class)
