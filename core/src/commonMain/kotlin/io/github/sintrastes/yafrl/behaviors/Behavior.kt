@@ -118,28 +118,6 @@ sealed interface Behavior<out A> {
         return times.map { value }
     }
 
-    /** Sample the value, but only emit when values have changed. */
-    @OptIn(FragileYafrlAPI::class)
-    fun changes(): State<A> {
-        val behavior = this
-
-        val result = internalBindingState(lazy { behavior.value })
-
-        var previousValue: A? = null
-
-        Timeline.currentTimeline().timeBehavior.node.collectSync { time ->
-            val newValue = behavior.value
-
-            if (newValue != previousValue) {
-                result.value = newValue
-            }
-
-            previousValue = newValue
-        }
-
-        return result
-    }
-
     fun <B> map(f: (A) -> B): Behavior<B> {
         return Mapped(this, f)
     }
@@ -258,7 +236,6 @@ sealed interface Behavior<out A> {
             // fired
             event.node.collectSync { value ->
                 if (value is EventState.Fired) {
-                    println("+++++++++++++++ UPDATING IMPULSE")
                     impulses[timeline.time] = onEvent(value.event)
                 }
             }
