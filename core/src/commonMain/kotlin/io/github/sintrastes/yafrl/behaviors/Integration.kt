@@ -8,6 +8,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Integrate the behavior with respect to the current [Timeline]'s clock time.
@@ -85,7 +86,7 @@ internal class IntegratedBehavior<T>(
         val cached = values[time]
 
         // Check prevents a stack overflow.
-        if (time.inWholeMilliseconds == 0L) {
+        if (time == 0.0.seconds) {
             return initial
         } else if (cached != null) {
             return cached
@@ -127,6 +128,8 @@ internal class IntegratedBehavior<T>(
                 // Also add in anything from definite integrals.
                 val impulses = behavior.measureImpulses(start, dt)
 
+                println("IMPULSES ARE: $impulses")
+
                 // Multiply by h/3
                 val result = lastValue + (h / 3.0) * sum + impulses
 
@@ -140,10 +143,8 @@ internal class IntegratedBehavior<T>(
         }
     }
 
-    private val integrated by lazy { this@IntegratedBehavior.integrate(vectorSpace, initial) }
-
     @OptIn(ExperimentalYafrlAPI::class)
     override fun measureImpulses(time: Duration, dt: Duration): T = with(vectorSpace) {
-        return zero // integrated.sampleValue(time) - integrated.sampleValue(time - dt)
+        return zero
     }
 }
