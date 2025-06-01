@@ -55,7 +55,7 @@ open class State<out A> @FragileYafrlAPI constructor(
     @OptIn(FragileYafrlAPI::class)
     open val value get() = node.current()
 
-    @FragileYafrlAPI
+    @OptIn(FragileYafrlAPI::class)
     fun labeled(label: String): State<A> {
         node.label = label
         return this
