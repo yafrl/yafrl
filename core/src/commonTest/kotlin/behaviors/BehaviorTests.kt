@@ -84,4 +84,25 @@ class BehaviorTests : FunSpec({
 
         assertEquals(6, transformed.value)
     }
+
+    test("FlatMap switches between behaviors") {
+        var selected = true
+        var value1 = 0
+        var value2 = 1
+
+        val selectedBehavior = Behavior.sampled { selected }
+
+        val behavior1 = Behavior.sampled { value1 }
+        val behavior2 = Behavior.sampled { value2 }
+
+        val behavior = selectedBehavior.flatMap { selected ->
+            if (selected) behavior1 else behavior2
+        }
+
+        assertEquals(0, behavior.value)
+
+        selected = false
+
+        assertEquals(1, behavior.value)
+    }
 })
