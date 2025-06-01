@@ -167,7 +167,7 @@ sealed interface Behavior<out A> {
     fun sampleState(
         times: Event<Any?> = Timeline.currentTimeline().timeBehavior.updated()
     ): State<A> {
-        return State.Companion.hold(value, sample(times)) // TODO: Using hold lazy breaks things here, but it may also break platformer to not do it?
+        return State.Companion.hold(value, sample(times))
     }
 
     companion object {
