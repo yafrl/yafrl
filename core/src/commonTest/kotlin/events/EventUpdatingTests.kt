@@ -427,4 +427,38 @@ class EventUpdatingTests : FunSpec({
 
         assertEquals(0, signal.value)
     }
+
+    test("mergeAll updates if either of the events updates") {
+        Timeline.initializeTimeline()
+
+        val timeline = Timeline.currentTimeline()
+
+        val event1 = broadcastEvent<Int>()
+        val event2 = broadcastEvent<Int>()
+
+        val merged = Event.mergeAll(event1, event2)
+
+        event1.send(1)
+
+        assertEquals(listOf(1), timeline.fetchNodeValue(merged.node))
+
+        event2.send(2)
+
+        assertEquals(listOf(2), timeline.fetchNodeValue(merged.node))
+    }
+
+    test("mergeAll updates with all events") {
+        Timeline.initializeTimeline()
+
+        val timeline = Timeline.currentTimeline()
+
+        val event1 = broadcastEvent<Int>()
+        val event2 = event1.map { it + 1 }
+
+        val merged = Event.mergeAll(event1, event2)
+
+        event1.send(1)
+
+        assertEquals(listOf(1, 2), timeline.fetchNodeValue(merged.node))
+    }
 })
