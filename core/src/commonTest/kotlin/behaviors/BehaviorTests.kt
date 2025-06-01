@@ -65,4 +65,23 @@ class BehaviorTests : FunSpec({
 
         assertNotEquals(initial, sampled.value)
     }
+
+    test("Time transformation transforms time") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val behavior = Behavior.continuous { time -> 2 * time.inWholeSeconds }
+
+        val transformed = behavior
+            .transformTime { time -> (3 * time.inWholeMilliseconds).milliseconds }
+
+        assertEquals(0, transformed.value)
+
+        clock.send(1.0.seconds)
+
+        assertEquals(1.0.seconds, Timeline.currentTimeline().time)
+
+        assertEquals(6, transformed.value)
+    }
 })
