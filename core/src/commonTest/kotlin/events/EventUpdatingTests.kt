@@ -440,11 +440,11 @@ class EventUpdatingTests : FunSpec({
 
         event1.send(1)
 
-        assertEquals(listOf(1), timeline.fetchNodeValue(merged.node))
+        assertEquals(EventState.Fired(listOf(1)), timeline.fetchNodeValue(merged.node))
 
         event2.send(2)
 
-        assertEquals(listOf(2), timeline.fetchNodeValue(merged.node))
+        assertEquals(EventState.Fired(listOf(2)), timeline.fetchNodeValue(merged.node))
     }
 
     test("mergeAll updates with all events") {
@@ -459,6 +459,6 @@ class EventUpdatingTests : FunSpec({
 
         event1.send(1)
 
-        assertEquals(listOf(1, 2), timeline.fetchNodeValue(merged.node))
+        assertEquals(EventState.Fired(listOf(1, 2)), timeline.fetchNodeValue(merged.node))
     }
 })
