@@ -281,21 +281,6 @@ open class State<out A> @FragileYafrlAPI constructor(
 
             return state
         }
-
-        @OptIn(FragileYafrlAPI::class)
-        fun <A> holdLazy(initial: Lazy<A>, update: Event<A>): State<A> {
-            val timeline = Timeline.currentTimeline()
-
-            val state = internalBindingState(initial)
-
-            update.node.collectSync { updated ->
-                if (updated is EventState.Fired<A>) {
-                    timeline.updateNodeValue(state.node, updated.event, internal = true)
-                }
-            }
-
-            return state
-        }
     }
 }
 
