@@ -10,9 +10,11 @@ import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.engine.coroutines.coroutineTestScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlin.test.assertEquals
@@ -23,9 +25,7 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(FragileYafrlAPI::class, ExperimentalYafrlAPI::class)
 class EventUpdatingTests : FunSpec({
     beforeTest {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
-        )
+        Timeline.initializeTimeline()
     }
 
     test("Event updates immediately") {
@@ -277,20 +277,20 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Debounce only emits last event") {
+        Timeline.initializeTimeline(debug = true)
+
         val event = broadcastEvent<Int>()
 
         val debounced = event.debounced(100.milliseconds).hold(0)
 
-        runTest {
-            event.send(1)
-            event.send(2)
-            event.send(3)
+        event.send(1)
+        event.send(2)
+        event.send(3)
 
-            withContext(Dispatchers.Default) { delay(100.milliseconds) }
+        delay(100.milliseconds)
 
-            eventually {
-                assertEquals(3, debounced.value)
-            }
+        eventually(1.seconds) {
+            assertEquals(3, debounced.value)
         }
     }
 
@@ -380,8 +380,7 @@ class EventUpdatingTests : FunSpec({
         val event2 = broadcastEvent<Unit>()
 
         val state = event1.impulse(0, 1) +
-            event2.impulse(0, 2)
-
+                event2.impulse(0, 2)
 
         assertEquals(0, state.value)
 

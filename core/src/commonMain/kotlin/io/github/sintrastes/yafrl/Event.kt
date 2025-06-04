@@ -289,7 +289,7 @@ inline fun <A, reified B> Event<A>.impulse(zero: B, value: B): Behavior<B> = Beh
  *  after which the latest event will be emitted.
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
+fun <A> Event<A>.debounced(window: Duration): Event<A> {
     val debounced = internalBroadcastEvent<A>()
 
     val scope = Timeline.currentTimeline().scope
@@ -303,7 +303,6 @@ inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
 
     node.collectSync { event ->
         if (event is EventState.Fired) {
-            //println("Got event")
             job?.cancel()
             job = scope.launch(Dispatchers.Default) {
                 mutex.withLock {
@@ -336,7 +335,7 @@ inline fun <reified A> Event<A>.debounced(window: Duration): Event<A> {
  *  [duration].
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> Event<A>.throttled(duration: Duration): Event<A> {
+fun <A> Event<A>.throttled(duration: Duration): Event<A> {
     val throttled = internalBroadcastEvent<A>()
 
     val scope = Timeline.currentTimeline().scope
@@ -393,7 +392,7 @@ open class BroadcastEvent<A> @OptIn(FragileYafrlAPI::class)
 
 /** Creates a [BroadcastEvent] for internal implementation purposes. */
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> internalBroadcastEvent(
+fun <A> internalBroadcastEvent(
     label: String? = null
 ): BroadcastEvent<A> {
     val timeline = Timeline.currentTimeline()
