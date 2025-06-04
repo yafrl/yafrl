@@ -20,11 +20,7 @@ tasks.withType<Test>().configureEach {
 }
 
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
-        }
-    }
+    jvm()
     iosArm64()
     macosX64()
     js().browser()
