@@ -1,7 +1,7 @@
 
 [versions]
-kotlin = "2.1.10"
-ksp = "2.1.10-1.0.30"
+kotlin = "2.1.20"
+ksp = "2.1.20-1.0.31"
 kotest = "6.0.0.M2"
 kover = "0.9.1"
 immutable_collections = "0.3.8"
@@ -10,7 +10,7 @@ atomicfu = "0.27.0"
 maven_publish = "0.31.0"
 compose = "1.7.3"
 datetime = "0.6.1"
-coroutines = "1.10.1"
+coroutines = "1.10.2"
 arrow = "2.0.1"
 molecule = "2.0.0"
 mockk = "1.13.17"
