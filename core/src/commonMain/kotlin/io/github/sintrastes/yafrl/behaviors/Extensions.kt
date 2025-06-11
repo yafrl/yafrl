@@ -11,6 +11,10 @@ import kotlin.jvm.JvmName
 ///  offer piecewise operations for common numeric and boolean functions.
 ///
 
+@JvmName("plusDouble")
+operator fun Behavior<Double>.plus(other: Behavior<Double>): Behavior<Double> = addBehavior(other)
+
+@JvmName("plusFloat")
 operator fun Behavior<Float>.plus(other: Behavior<Float>): Behavior<Float> = addBehavior(other)
 
 @JvmName("plusInt")

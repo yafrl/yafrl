@@ -4,13 +4,13 @@ import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.behaviors.integrate
+import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.impulse
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.property.Arb
-import io.kotest.property.arbitrary.filter
 import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.checkAll
 import kotlin.math.abs
@@ -89,5 +89,34 @@ class ImpulseTests: FunSpec({
         clock.send(1.0.milliseconds)
 
         assertTrue(abs(2.0 - integrated.value) < 0.01)
+    }
+
+    test("Sampled behavior has no impulses") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+    }
+
+    test("Impulses are maintained when summed") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val impulseEvent1 = broadcastEvent<Unit>("event1")
+        val impulseEvent2 = broadcastEvent<Unit>("event2")
+
+        val impulse1 = impulseEvent1.impulse(0.0, 1.0)
+        val impulse2 = impulseEvent2.impulse(0.0, 1.0)
+
+        val summed = (impulse1 + impulse2).integrate()
+
+        assertEquals(0.0, summed.value)
+
+        impulseEvent1.send(Unit)
+        impulseEvent2.send(Unit)
+
+        clock.send(1.0.milliseconds)
+
+        assertTrue(abs(2.0 - summed.value) < 0.01, "Value was ${summed.value}")
     }
 })
