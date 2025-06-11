@@ -2,7 +2,9 @@ package behaviors
 
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
+import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.behaviors.integrate
+import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.impulse
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -38,5 +40,36 @@ class ImpulseTests: FunSpec({
 
             assertTrue(abs(1.0 -  integral.value) < 0.01, "expected 1.0, but got ${integral.value}")
         }
+    }
+
+    test("Impulses are maintained under flatmap") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val switch = bindingState(true)
+
+        val impulseEvent1 = broadcastEvent<Unit>("event1")
+        val impulseEvent2 = broadcastEvent<Unit>("event2")
+
+        val impulse1 = impulseEvent1.impulse(0.0, 1.0)
+        val impulse2 = impulseEvent2.impulse(0.0, 1.0)
+
+        val behavior = switch.asBehavior()
+            .flatMap { switch -> if (switch) impulse1 else impulse2 }
+
+        val integrated = behavior.integrate()
+
+        assertEquals(0.0, integrated.value)
+
+        impulseEvent1.send(Unit)
+        clock.send(1.0.milliseconds)
+
+        assertTrue(abs(1.0 - integrated.value) < 0.01)
+
+        impulseEvent2.send(Unit)
+        clock.send(1.0.milliseconds)
+
+        assertTrue(abs(2.0 - integrated.value) < 0.01)
     }
 })
