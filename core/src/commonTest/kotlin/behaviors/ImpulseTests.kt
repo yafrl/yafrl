@@ -72,4 +72,22 @@ class ImpulseTests: FunSpec({
 
         assertTrue(abs(2.0 - integrated.value) < 0.01)
     }
+
+    test("Impulses are maintained under map") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val impulseEvent = broadcastEvent<Unit>()
+        val impulse = impulseEvent.impulse(0.0, 1.0)
+
+        val mapped = impulse.map { it * 2 }
+
+        val integrated = mapped.integrate()
+
+        impulseEvent.send(Unit)
+        clock.send(1.0.milliseconds)
+
+        assertTrue(abs(2.0 - integrated.value) < 0.01)
+    }
 })
