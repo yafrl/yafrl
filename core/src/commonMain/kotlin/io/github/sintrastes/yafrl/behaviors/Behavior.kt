@@ -291,9 +291,7 @@ sealed interface Behavior<out A> {
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): A = with(vectorSpace) {
-            //val indefinite = integrated()
-
-            return zero // indefinite.sampleValue(time) - indefinite.sampleValue(time - dt)
+            return zero
         }
     }
 
@@ -309,9 +307,7 @@ sealed interface Behavior<out A> {
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): A = with(vectorSpace.value) {
-            //val integral = this@Continuous.integrate(this)
-
-            return zero // integral.sampleValue(time) - integral.sampleValue(time - dt)
+            return zero
         }
     }
 
@@ -327,7 +323,7 @@ sealed interface Behavior<out A> {
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): A = with(instance()) {
-            return zero // (dt.inWholeMilliseconds / 1000.0) * current()
+            return zero
         }
     }
 
