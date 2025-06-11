@@ -3,6 +3,7 @@ package behaviors
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
+import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.behaviors.integrate
 import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.bindingState
@@ -94,7 +95,9 @@ class ImpulseTests: FunSpec({
     test("Sampled behavior has no impulses") {
         Timeline.initializeTimeline()
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+        val sampledBehavior = Behavior.sampled { 1.0 }.integrate()
+
+       assertEquals(0.0, sampledBehavior.value)
     }
 
     test("Impulses are maintained when summed") {
