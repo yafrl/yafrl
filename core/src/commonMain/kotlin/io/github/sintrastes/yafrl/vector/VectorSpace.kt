@@ -213,7 +213,7 @@ object ScalarSpace {
         }
 
         override fun Int.times(other: Number): Int {
-            return this * other
+            return this * other.toInt()
         }
 
         override fun Int.div(value: Number): Int {
