@@ -100,10 +100,6 @@ internal class IntegratedBehavior<T>(
 
             val subdivisions = max(2, 2 * (dt.inWholeMilliseconds / stepSizeMS).toInt())
 
-            require(subdivisions % 2 == 0) {
-                "subdivisions must be even (2n), but was $subdivisions"
-            }
-
             // Set up endpoints and step
             val start = lastSampled // time - dt
             val stepDur = dt / subdivisions                  // Duration of each sub‐interval
@@ -127,8 +123,6 @@ internal class IntegratedBehavior<T>(
 
                 // Also add in anything from definite integrals.
                 val impulses = behavior.measureImpulses(start, dt)
-
-                println("IMPULSES ARE: $impulses")
 
                 // Multiply by h/3
                 val result = lastValue + (h / 3.0) * sum + impulses

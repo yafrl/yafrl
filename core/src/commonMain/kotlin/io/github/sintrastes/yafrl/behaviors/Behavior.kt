@@ -8,16 +8,9 @@ import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.internalBindingState
-import io.github.sintrastes.yafrl.vector.Float2
-import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.VectorSpace
-import kotlin.jvm.JvmName
-import kotlin.math.abs
-import kotlin.math.max
 import kotlin.math.pow
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * A behavior is a value of type [A] whose value varies over time.

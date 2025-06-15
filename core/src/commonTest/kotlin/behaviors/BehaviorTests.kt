@@ -114,5 +114,11 @@ class BehaviorTests : FunSpec({
         val summed = behavior1 + behavior2 + behavior3
 
         assertTrue(summed is Behavior.Polynomial)
+
+        // Test opposite order
+
+        val summed2 = behavior3 + behavior2 + behavior1
+
+        assertTrue(summed2 is Behavior.Polynomial)
     }
 })

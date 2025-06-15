@@ -62,15 +62,6 @@ internal inline fun <reified A> Behavior<A>.addBehavior(other: Behavior<A>): Beh
                 Behavior.Sum(this@with, this@addBehavior, other)
             }
 
-            else -> when (other) {
-                is Behavior.Impulse<*, *> -> {
-                    Behavior.Sum(this@with, this@addBehavior, other)
-                }
-
-                else -> Behavior.Continuous(
-                    lazy { this@with },
-                    { time -> this@addBehavior.sampleValue(time) + other.sampleValue(time) }
-                )
-            }
+            else -> Behavior.Sum(this@with, this@addBehavior, other)
         }
     }
