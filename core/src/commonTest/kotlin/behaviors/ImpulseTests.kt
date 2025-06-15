@@ -93,6 +93,24 @@ class ImpulseTests: FunSpec({
         assertTrue(abs(2.0 - integrated.value) < 0.01)
     }
 
+    test("Impulses are maintained under transform") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val impulseEvent = broadcastEvent<Unit>()
+        val impulse = impulseEvent.impulse(0.0, 1.0)
+
+        val transformed = impulse.transformTime { it * 2 }
+
+        val integrated = transformed.integrate()
+
+        impulseEvent.send(Unit)
+        clock.send(1.0.milliseconds)
+
+        assertTrue(abs(1.0 - integrated.value) < 0.01, "${integrated.value}")
+    }
+
     test("Sampled behavior has no impulses") {
         Timeline.initializeTimeline()
 

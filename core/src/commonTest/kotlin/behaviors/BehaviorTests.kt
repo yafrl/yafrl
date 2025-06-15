@@ -53,7 +53,7 @@ class BehaviorTests : FunSpec({
             seconds * 2
         }
 
-        val sampled = behavior.sampleState(event)
+        val sampled = behavior.sampleState()
 
         val initial = sampled.value
 
