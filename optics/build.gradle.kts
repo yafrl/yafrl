@@ -38,6 +38,11 @@ kotlin {
                 implementation(libs.kotest.engine)
             }
         }
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.kotest.runner)
+            }
+        }
     }
 }
 
