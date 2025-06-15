@@ -149,7 +149,7 @@ interface VectorSpace<V> {
 }
 
 object ScalarSpace {
-    fun float() = object: Algebra<Float> {
+    fun float() = object: VectorSpace<Float> {
         override val zero: Float = 0f
 
         override fun Float.plus(other: Float): Float {
@@ -158,10 +158,6 @@ object ScalarSpace {
 
         override fun Float.minus(other: Float): Float {
             return this - other
-        }
-
-        override fun Float.times(other: Float): Float {
-            return this * other
         }
 
         override fun Number.times(vect: Float): Float {
@@ -177,7 +173,7 @@ object ScalarSpace {
         }
     }
 
-    fun double() = object: Algebra<Double> {
+    fun double() = object: VectorSpace<Double> {
         override val zero: Double = 0.0
 
         override fun Double.plus(other: Double): Double {
@@ -192,10 +188,6 @@ object ScalarSpace {
             return this.toDouble() * vect
         }
 
-        override fun Double.times(other: Double): Double {
-            return this * other
-        }
-
         override fun Double.times(value: Number): Double {
             return value.toDouble() * this
         }
@@ -205,7 +197,7 @@ object ScalarSpace {
         }
     }
 
-    fun int() = object: Algebra<Int> {
+    fun int() = object: VectorSpace<Int> {
         override val zero: Int = 0
 
         override fun Int.plus(other: Int): Int {
@@ -222,10 +214,6 @@ object ScalarSpace {
 
         override fun Int.times(other: Number): Int {
             return this * other
-        }
-
-        override fun Int.times(value: Int): Int {
-            return value.toInt() * this
         }
 
         override fun Int.div(value: Number): Int {
