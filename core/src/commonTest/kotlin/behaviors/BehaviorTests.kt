@@ -121,4 +121,18 @@ class BehaviorTests : FunSpec({
 
         assertTrue(summed2 is Behavior.Polynomial)
     }
+
+    test("Until switches between behaviors") {
+        val next = broadcastEvent<Behavior<Int>>()
+
+        val initial = Behavior.continuous { 1 }
+
+        val behavior = initial.until(next)
+
+        assertEquals(1, behavior.value)
+
+        next.send(Behavior.continuous { 2 })
+
+        assertEquals(2, behavior.value)
+    }
 })
