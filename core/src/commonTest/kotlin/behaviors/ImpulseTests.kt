@@ -18,6 +18,7 @@ import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalYafrlAPI::class)
 class ImpulseTests: FunSpec({
@@ -121,5 +122,25 @@ class ImpulseTests: FunSpec({
         clock.send(1.0.milliseconds)
 
         assertTrue(abs(2.0 - summed.value) < 0.01, "Value was ${summed.value}")
+    }
+
+    test("Impulses are maintained when summed with other behaviors.") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val impulseEvent1 = broadcastEvent<Unit>("event1")
+
+        val impulse = impulseEvent1.impulse(0.0, 1.0)
+
+        val constBehavior = Behavior.const(2.0)
+
+        val behavior = (constBehavior + impulse).integrate()
+
+        impulseEvent1.send(Unit)
+
+        clock.send(1.0.seconds)
+
+        assertTrue(abs(3.0 - behavior.value) < 0.1, "Value was ${behavior.value}")
     }
 })
