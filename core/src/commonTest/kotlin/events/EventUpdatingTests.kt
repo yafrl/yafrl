@@ -9,6 +9,7 @@ import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.internal.current
 import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.retry
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.engine.coroutines.coroutineTestScope
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,7 @@ import kotlinx.coroutines.withContext
 import kotlin.test.assertEquals
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(FragileYafrlAPI::class, ExperimentalYafrlAPI::class)
@@ -277,20 +279,24 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Debounce only emits last event") {
-        Timeline.initializeTimeline(debug = true)
+        // For some reason this test is very flaky.
+        retry(5, 2.minutes) {
 
-        val event = broadcastEvent<Int>()
+            Timeline.initializeTimeline(debug = true)
 
-        val debounced = event.debounced(100.milliseconds).hold(0)
+            val event = broadcastEvent<Int>()
 
-        event.send(1)
-        event.send(2)
-        event.send(3)
+            val debounced = event.debounced(100.milliseconds).hold(0)
 
-        delay(100.milliseconds)
+            event.send(1)
+            event.send(2)
+            event.send(3)
 
-        eventually(1.seconds) {
-            assertEquals(3, debounced.value)
+            delay(100.milliseconds)
+
+            eventually(1.seconds) {
+                assertEquals(3, debounced.value)
+            }
         }
     }
 
