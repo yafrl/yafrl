@@ -143,4 +143,30 @@ class ImpulseTests: FunSpec({
 
         assertTrue(abs(3.0 - behavior.value) < 0.1, "Value was ${behavior.value}")
     }
+
+    test("Sampled behavior has no impulses") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val sampled = Behavior.sampled { 0.0 }
+            .integrate()
+
+        clock.send(1.0.seconds)
+
+        assertEquals(0.0, sampled.value)
+    }
+
+    test("Continuous behavior has no impulses") {
+        Timeline.initializeTimeline()
+
+        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+
+        val sampled = Behavior.continuous { 0.0 }
+            .integrate()
+
+        clock.send(1.0.seconds)
+
+        assertEquals(0.0, sampled.value)
+    }
 })

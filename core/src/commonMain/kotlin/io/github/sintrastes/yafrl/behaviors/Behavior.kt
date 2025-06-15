@@ -77,8 +77,6 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): A {
             return behavior.measureImpulses(transformation(time), dt)
         }
-
-        override fun toString() = "Transformed($behavior)"
     }
 
     /**
@@ -138,8 +136,6 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): B {
             return f(original.measureImpulses(time, dt))
         }
-
-        override fun toString() = "Mapped($original)"
     }
 
     /** Implementation of a flattened behavior. */
