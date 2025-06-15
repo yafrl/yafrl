@@ -92,6 +92,25 @@ class EventUpdatingTests : FunSpec({
         assertEquals(EventState.None, filtered.node.rawValue)
     }
 
+    test("mapNotNull emits only non null elements") {
+        val events = broadcastEvent<Int>()
+
+        // Should only let event events through.
+        val mapped = events.mapNotNull {
+            if(it % 2 == 0) { it + 1 } else null
+        }
+
+        val results = mapped.scan(listOf<Int>()) { xs, x -> xs + listOf(x) }
+
+        events.send(1)
+
+        assertEquals(listOf(), results.value)
+
+        events.send(2)
+
+        assertEquals(listOf(3), results.value)
+    }
+
     test("filtered event using condition") {
         Timeline.initializeTimeline(debug = true)
 
