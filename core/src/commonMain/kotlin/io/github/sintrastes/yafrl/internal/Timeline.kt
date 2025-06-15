@@ -426,16 +426,6 @@ class Timeline(
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun markDirty(node: Node<Any?>) {
-        node.dirty = true
-        for (child in children[node.id] ?: listOf()) {
-            val childNode = nodes[child]!!
-
-            markDirty(childNode)
-        }
-    }
-
-    @OptIn(FragileYafrlAPI::class)
     internal fun fetchNodeValue(
         node: Node<Any?>
     ): Any? = synchronized(this) {
