@@ -18,6 +18,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.filterNot
+import io.kotest.property.arbitrary.int
 import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.arbitrary.numericFloat
 import io.kotest.property.checkAll
@@ -112,6 +113,10 @@ class VectorTests : FunSpec({
 
     test("3D Double vector arithmetic works") {
         testVectorSpace(VectorSpace.double3(), Arb.double3())
+    }
+
+    test("Int scalar arithmetic works") {
+        testVectorSpace(ScalarSpace.int(), Arb.int())
     }
 
     test("Float scalar arithmetic works") {
