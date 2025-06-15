@@ -109,8 +109,9 @@ class BehaviorTests : FunSpec({
     test("Polynomials sum exactly") {
         val behavior1 = Behavior.polynomial(listOf(1.0,2.0))
         val behavior2 = Behavior.polynomial(listOf(3.0,4.0))
+        val behavior3 = Behavior.polynomial(listOf(1.0))
 
-        val summed = behavior1 + behavior2
+        val summed = behavior1 + behavior2 + behavior3
 
         assertTrue(summed is Behavior.Polynomial)
     }
