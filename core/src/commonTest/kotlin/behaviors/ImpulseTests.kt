@@ -28,15 +28,15 @@ class ImpulseTests: FunSpec({
 
             val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-            val impulseEvent = broadcastEvent<Unit>()
+            val impulseEvent = broadcastEvent<Double>()
 
-            val impulse = impulseEvent.impulse(0.0, 1.0)
+            val impulse = impulseEvent.impulse(0.0)
 
             val integral = impulse.integrate()
 
             assertEquals(0.0, integral.value)
 
-            impulseEvent.send(Unit)
+            impulseEvent.send(1.0)
 
             clock.send(dt.milliseconds)
 
