@@ -45,7 +45,3 @@ kotlin {
         }
     }
 }
-
-dependencies {
-    ksp("io.arrow-kt:arrow-optics-ksp-plugin:2.0.1")
-}

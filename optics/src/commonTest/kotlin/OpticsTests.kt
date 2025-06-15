@@ -7,6 +7,7 @@ import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.optics.embed
 import io.github.sintrastes.yafrl.optics.focus
 import io.kotest.core.spec.style.FunSpec
+import kotlin.reflect.typeOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -42,19 +43,30 @@ class OpticsTests : FunSpec({
     }
 
     // Currently broken, bidirectional binding causes stack overflow.
-    xtest("Test focusing states") {
-        val state = bindingState(0 to 0)
+    test("Test focusing states") {
+        val state = bindingState(0 to 0, typeOf<Pair<Int, Int>>())
 
         val focused = state
             .focus(Lens.pairFirst())
 
         state.value = 1 to 2
 
+        // Test setting same value again, make sure it doesn't overflow
+        state.value = 1 to 2
+
         assertEquals(1, focused.value)
 
         focused.value = 3
 
+        // Test setting same value again, make sure it doesn't overflow
+        focused.value = 3
+
         assertEquals(3 to 2, state.value)
+
+        // Test binding the other way around
+        state.value = 4 to 5
+
+        assertEquals(4, focused.value)
     }
 
     test("Test focusing immutable states") {

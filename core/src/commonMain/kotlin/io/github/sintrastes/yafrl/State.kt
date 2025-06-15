@@ -11,6 +11,7 @@ import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
 import kotlin.jvm.JvmName
+import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 /**
@@ -416,12 +417,18 @@ class BindingState<A> internal constructor(
  *  integrating with external systems -- rather than for business logic.
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> bindingState(value: A, label: String? = null): BindingState<A> {
+inline fun <reified A> bindingState(
+    value: A,
+    label: String? = null
+): BindingState<A> = bindingState(value, typeOf<A>(), label)
+
+@OptIn(FragileYafrlAPI::class)
+fun <A> bindingState(value: A, kType: KType, label: String? = null): BindingState<A> {
     val timeline = Timeline.currentTimeline()
 
     val state = internalBindingState(lazy { value }, label)
 
-    timeline.externalNodes[state.node.id] = Timeline.ExternalNode(typeOf<A>(), state.node)
+    timeline.externalNodes[state.node.id] = Timeline.ExternalNode(kType, state.node)
 
     return state
 }

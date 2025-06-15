@@ -7,6 +7,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.internalBindingState
 
 /** Embed an event in a larger set of events via a [Prism]. */
 fun <A, B> Event<A>.embed(inclusion: Prism<B, A>): Event<B> {
@@ -26,15 +27,23 @@ fun <A, B> State<A>.focus(lens: Lens<A, B>): State<B> {
  * Focus on a smaller part of a [BindingState] by applying a [Lens]
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <A, reified B> BindingState<A>.focus(lens: Lens<A, B>): BindingState<B> {
-    val state = bindingState(lens.get(value))
+fun <A, B> BindingState<A>.focus(lens: Lens<A, B>): BindingState<B> {
+    val state = internalBindingState(lazy { lens.get(value) })
 
     this.collectSync { newValue ->
-        state.value = lens.get(newValue)
+        val newValue = lens.get(newValue)
+
+        if (state.value != newValue) {
+            state.value = newValue
+        }
     }
 
     state.collectSync { newValue ->
-        value = lens.set(value, newValue)
+        val newValue = lens.set(value, newValue)
+
+        if (value != newValue) {
+            value = newValue
+        }
     }
 
     return state
