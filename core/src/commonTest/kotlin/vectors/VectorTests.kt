@@ -11,6 +11,8 @@ import io.github.sintrastes.yafrl.vector.Float2
 import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.ScalarSpace
 import io.github.sintrastes.yafrl.vector.VectorSpace
+import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -124,6 +126,24 @@ class VectorTests : FunSpec({
             ScalarSpace.double(),
             Arb.numericDouble().filterNot { it == -0.0 }
         )
+    }
+
+    test("Instances resolve properly") {
+        shouldNotThrow<IllegalArgumentException> {
+            VectorSpace.instance<Double>()
+            VectorSpace.instance<Float>()
+            VectorSpace.instance<Int>()
+            VectorSpace.instance<Float2>()
+            VectorSpace.instance<Float3>()
+            VectorSpace.instance<Double2>()
+            VectorSpace.instance<Double3>()
+        }
+    }
+
+    test("Non-vector spaces do not resolve") {
+        shouldThrow<IllegalArgumentException> {
+            VectorSpace.instance<Unit>()
+        }
     }
 })
 
