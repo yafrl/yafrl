@@ -1,7 +1,7 @@
 package behaviors
 
 import io.github.sintrastes.yafrl.BroadcastEvent
-import io.github.sintrastes.yafrl.behaviors.Behavior
+import io.github.sintrastes.yafrl.behaviors.*
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
@@ -104,5 +104,14 @@ class BehaviorTests : FunSpec({
         selected = false
 
         assertEquals(1, behavior.value)
+    }
+
+    test("Polynomials sum exactly") {
+        val behavior1 = Behavior.polynomial(listOf(1.0,2.0))
+        val behavior2 = Behavior.polynomial(listOf(3.0,4.0))
+
+        val summed = behavior1 + behavior2
+
+        assertTrue(summed is Behavior.Polynomial)
     }
 })
