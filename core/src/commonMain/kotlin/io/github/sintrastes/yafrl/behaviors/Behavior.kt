@@ -170,7 +170,7 @@ sealed interface Behavior<out A> {
         /**
          * Builds a behavior polynomial in time from the list of [coefficients].
          **/
-        inline fun <reified A> polynomial(coefficients: List<A>): Behavior<A> {
+        inline fun <reified A> polynomial(coefficients: List<A>): Behavior.Polynomial<A> {
             return Polynomial(VectorSpace.instance(), coefficients)
         }
 
@@ -262,9 +262,11 @@ sealed interface Behavior<out A> {
         /**
          * Gets the exact symbolic integral of the polynomial behavior.
          **/
-        internal fun exactIntegral(accum: (A, A) -> A): Polynomial<A> = with(vectorSpace.with(accum)) {
+        fun exactIntegral(accum: (A, A) -> A): Polynomial<A> = with(vectorSpace.with(accum)) {
             val newCoefficients = listOf(zero) + coefficients
-                .mapIndexed { i, c -> c / (i + 1) }
+                .mapIndexed { i, c ->
+                    c / (i + 1)
+                }
 
             Polynomial(vectorSpace.with(accum), newCoefficients)
         }

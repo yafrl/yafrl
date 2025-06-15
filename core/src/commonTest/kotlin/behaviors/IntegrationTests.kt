@@ -91,4 +91,13 @@ class IntegrationTests: FunSpec({
         // Should still be 5.0 because of the custom operation
         assertTrue(integrated.value <= 5.0)
     }
+
+    test("Exact integral is correct") {
+        val polynomial = Behavior.polynomial(listOf(1.0, 1.0)) // 1 + t
+
+        val integral = polynomial
+            .exactIntegral { x, y -> x + y }
+
+        assertEquals(listOf(0.0, 1.0, 0.5), integral.coefficients) // t + t^2 / 2
+    }
 })
