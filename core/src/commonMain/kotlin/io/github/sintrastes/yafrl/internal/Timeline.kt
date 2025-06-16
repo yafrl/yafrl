@@ -449,8 +449,9 @@ class Timeline(
             initClock: (State<Boolean>) -> Event<Duration> = {
                 broadcastEvent<Duration>("clock")
             }
-        ) {
+        ): Timeline {
             _timeline = Timeline(scope, timeTravel, debug, lazy, initClock)
+            return _timeline!!
         }
 
         fun currentTimeline(): Timeline {
