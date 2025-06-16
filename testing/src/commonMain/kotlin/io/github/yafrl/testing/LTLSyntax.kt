@@ -1,5 +1,9 @@
 package io.github.yafrl.testing
 
+import io.github.sintrastes.yafrl.BroadcastEvent
+import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+
 /**
  * Syntax for building up LTL propositions.
  *
@@ -13,7 +17,7 @@ interface LTLSyntax<W> {
     infix fun LTL<W>.implies(other: LTL<W>): LTL<W>
     operator fun LTL<W>.not(): LTL<W>
 
-    fun condition(cond: (W) -> Boolean): LTL<W>
+    fun condition(cond: ConditionScope<W>.() -> Boolean): LTL<W>
 
     // Temporal constructs
     fun always(cond: LTL<W>): LTL<W>
@@ -39,7 +43,7 @@ interface LTLSyntax<W> {
                     return LTL.Not(this)
                 }
 
-                override fun condition(cond: (W) -> Boolean): LTL<W> {
+                override fun condition(cond: ConditionScope<W>.() -> Boolean): LTL<W> {
                     return LTL.Condition(cond)
                 }
 
@@ -57,6 +61,18 @@ interface LTLSyntax<W> {
             }
 
             return syntax.syntax()
+        }
+    }
+}
+
+data class ConditionScope<W>(val world: (Int) -> W, val time: Int) {
+    val current: W by lazy { world(time) }
+
+    val previous: W? by lazy {
+        if (time > 0) {
+            world(time - 1)
+        } else {
+            null
         }
     }
 }
@@ -128,11 +144,9 @@ sealed class LTL<W> {
         }
     }
 
-    data class Condition<W>(val cond: (W) -> Boolean): LTL<W>() {
+    data class Condition<W>(val cond: ConditionScope<W>.() -> Boolean): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
-            val currentWorld = world(time)
-
-            return if (cond(currentWorld)) LTLResult.True else LTLResult.False
+            return if (ConditionScope(world, time).cond()) LTLResult.True else LTLResult.False
         }
     }
 

@@ -34,8 +34,10 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":yafrl-core"))
+                implementation(kotlin("test"))
                 implementation(libs.kotlin.coroutines)
                 implementation(libs.kotest.property)
+                implementation(libs.kotest.assertions)
             }
         }
         val jvmTest by getting {

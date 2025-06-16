@@ -4,10 +4,12 @@ import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.kotest.matchers.shouldNotBe
 import io.kotest.property.arbitrary.next
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
 import kotlin.random.nextInt
+import kotlin.test.assertNotEquals
 
 /**
  * Advances the FRP graph to an arbitrary state in the state space, after
@@ -43,7 +45,7 @@ internal fun randomlyStepStateSpace(timeline: Timeline) {
     val (kType, node) = nodes.entries.elementAt(selected).value
 
     if (kType.classifier == EventState::class) {
-        println("Got event of type: ${kType.arguments.first().type}")
+        println("Simulating event for node ${node}")
 
         // Resolve the arbitrary instance from the node type.
         val arbitrary = resolve(kType.arguments.first().type!!)
@@ -80,7 +82,25 @@ internal fun randomlyStepStateSpace(timeline: Timeline) {
  * For each trace, at most [maxTraceLength] actions in the state graph will be
  *  taken.
  **/
-fun <W> propositionHoldsFor(
+fun <W> testPropositionHoldsFor(
+    setupState: () -> State<W>,
+    numIterations: Int = 100,
+    maxTraceLength: Int = 50,
+    proposition: LTLSyntax<W>.() -> LTL<W>
+) {
+    val result = propositionHoldsFor(
+        setupState,
+        numIterations,
+        maxTraceLength,
+        proposition
+    )
+
+    assertNotEquals(LTLResult.False, result,
+        "LTL proposition failed"
+    )
+}
+
+private fun <W> propositionHoldsFor(
     setupState: () -> State<W>,
     numIterations: Int = 100,
     maxTraceLength: Int = 50,

@@ -164,6 +164,19 @@ internal constructor(
     }
         .updated()
 
+    @OptIn(FragileYafrlAPI::class)
+    fun asSignal(): State<EventState<A>> {
+        val graph = Timeline.currentTimeline()
+        return State(
+           graph.createMappedNode(
+               parent = node,
+               f = { event ->
+                   event
+               }
+           )
+        )
+    }
+
     companion object {
         /**
          * Create an event that triggers every [delayTime].
@@ -489,13 +502,19 @@ inline fun <A, reified B> onEvent(
 sealed interface EventState<out A> {
     fun <B> map(f: (A) -> B): EventState<B>
 
+    fun isFired(): Boolean
+
     data class Fired<A>(val event: A) : EventState<A> {
         override fun <B> map(f: (A) -> B): EventState<B> {
             return Fired(f(event))
         }
+
+        override fun isFired(): Boolean = true
     }
 
     data object None : EventState<Nothing> {
+        override fun isFired(): Boolean = false
+
         override fun <B> map(f: (Nothing) -> B): EventState<B> {
             return None
         }
