@@ -3,12 +3,13 @@ import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.yafrl.testing.ConditionScope
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertTrue
 
-class CounterTestState(
+data class CounterTestState(
     val incrementClicked: Boolean,
     val decrementClicked: Boolean,
     val count: Int
@@ -32,40 +33,64 @@ class CounterStateTesting: FunSpec({
         }
     }
 
-    test("Test incrementing always works") {
+    fun setupCounter() = run {
+        val increment = broadcastEvent<Unit>("increment")
+            .map { { count: Int -> count + 1 } }
+
+        val decrement = broadcastEvent<Unit>("decrement")
+            .map { { count: Int -> count - 1 } }
+
+        val actions = Event.merged(increment, decrement)
+
+        val counter = State.fold(0, actions) { state, action ->
+            action(state)
+        }
+
+        increment.asSignal().combineWith(
+            decrement.asSignal(),
+            counter
+        ) { increment, decrement, count ->
+            CounterTestState(increment.isFired(), decrement.isFired(), count)
+        }
+    }
+
+    test("Incrementing counter always works") {
         testPropositionHoldsFor(
-            setupState = {
-                val increment = broadcastEvent<Unit>("increment")
-                    .map { { count: Int -> count + 1 } }
-
-                val decrement = broadcastEvent<Unit>("decrement")
-                    .map { { count: Int -> count - 1 } }
-
-                val actions = Event.merged(increment, decrement)
-
-                val counter = State.fold(0, actions) { state, action ->
-                    action(state)
-                }
-
-                increment.asSignal().combineWith(
-                    decrement.asSignal(),
-                    counter
-                ) { increment, decrement, count ->
-                    CounterTestState(increment.isFired(), decrement.isFired(), count)
-                }
-            },
+            setupState = ::setupCounter,
             proposition = {
-                val clicked = condition {
+                val clickedIncrement = condition {
                     current.incrementClicked
                 }
 
                 val countHasIncremented = condition {
-                    previous != null && current.count ==
+                    previous == null || current.count ==
                             previous!!.count + 1
                 }
 
-                clicked implies immediately(
-                    countHasIncremented
+                always(
+                    clickedIncrement implies
+                        countHasIncremented
+                )
+            }
+        )
+    }
+
+    test("Decrementing counter always works") {
+        testPropositionHoldsFor(
+            setupState = ::setupCounter,
+            proposition = {
+                val clickedDecrement = condition {
+                    current.decrementClicked
+                }
+
+                val countHasDecremented = condition {
+                    previous == null || current.count ==
+                            previous!!.count - 1
+                }
+
+                always(
+                    clickedDecrement implies
+                        countHasDecremented
                 )
             }
         )

@@ -45,8 +45,6 @@ internal fun randomlyStepStateSpace(timeline: Timeline) {
     val (kType, node) = nodes.entries.elementAt(selected).value
 
     if (kType.classifier == EventState::class) {
-        println("Simulating event for node ${node}")
-
         // Resolve the arbitrary instance from the node type.
         val arbitrary = resolve(kType.arguments.first().type!!)
 

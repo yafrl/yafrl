@@ -172,6 +172,9 @@ internal constructor(
                parent = node,
                f = { event ->
                    event
+               },
+               onNextFrame = { node ->
+                   node.rawValue = EventState.None
                }
            )
         )
