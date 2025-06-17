@@ -100,8 +100,8 @@ fun <W> testPropositionHoldsFor(
 
 private fun <W> propositionHoldsFor(
     setupState: () -> State<W>,
-    numIterations: Int = 100,
-    maxTraceLength: Int = 50,
+    numIterations: Int,
+    maxTraceLength: Int,
     proposition: LTLSyntax<W>.() -> LTL<W>
 ): LTLResult {
     var result = LTLResult.True
