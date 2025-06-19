@@ -25,6 +25,9 @@ interface LTLSyntax<W> {
     fun eventually(cond: LTL<W>): LTL<W>
     fun immediately(cond: LTL<W>): LTL<W>
 
+    infix fun LTL<W>.until(cond: LTL<W>): LTL<W>
+    infix fun LTL<W>.releases(by: LTL<W>): LTL<W>
+
     companion object {
         fun <W> build(syntax: LTLSyntax<W>.() -> LTL<W>): LTL<W> {
             val syntax = object: LTLSyntax<W> {
@@ -58,6 +61,14 @@ interface LTLSyntax<W> {
 
                 override fun immediately(cond: LTL<W>): LTL<W> {
                     return LTL.Next(cond)
+                }
+
+                override fun LTL<W>.until(cond: LTL<W>): LTL<W> {
+                    return LTL.Until(this, cond)
+                }
+
+                override fun LTL<W>.releases(by: LTL<W>): LTL<W> {
+                    return LTL.Release(this, by)
                 }
             }
 
@@ -185,7 +196,36 @@ sealed class LTL<W> {
         }
     }
 
+    // x has to hold at least until y becomes true, which must hold at the current or a future position.
     data class Until<W>(val x: LTL<W>, val y: LTL<W>): LTL<W>() {
+        override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
+            // Couldn't invalidate proposition, return indeterminate.
+            if (time > maxTraceLength) return LTLResult.Indeterminate
+
+            val yHolds = y.evaluateAtTime(world, time, maxTraceLength)
+
+            // The second arg releases us of any responsibilities on x.
+            if (yHolds == LTLResult.True) {
+                return LTLResult.True
+            } else {
+                val xHolds = x.evaluateAtTime(world, time, maxTraceLength)
+
+                return when (xHolds) {
+                    // Could be true, keep evaluating
+                    LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
+                    // Can't get any better than these results, return immediately.
+                    LTLResult.False -> LTLResult.False
+                    LTLResult.Indeterminate -> LTLResult.Indeterminate
+                }
+            }
+        }
+    }
+
+    //
+    // y holds until (and including) the point where x becomes true (x "releases" y).
+    // If x never becomes true, then y must hold forever
+    //
+    data class Release<W>(val y: LTL<W>, val x: LTL<W>): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
             // Couldn't invalidate proposition, return indeterminate.
             if (time > maxTraceLength) return LTLResult.Indeterminate
