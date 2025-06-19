@@ -111,14 +111,12 @@ private fun <W> propositionHoldsFor(
 
         val state = setupState()
 
-        val iterator = object: Iterator<W> {
-            override fun next(): W {
+        val iterator = sequence {
+            while (true) {
                 randomlyStepStateSpace(timeline)
-                return state.value
+                yield(state.value)
             }
-
-            override fun hasNext(): Boolean = true
-        }
+        }.asIterable().iterator()
 
         val testResult = LTL.evaluate(
             proposition,
