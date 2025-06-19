@@ -9,6 +9,7 @@ import io.kotest.property.arbitrary.next
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
 import kotlin.random.nextInt
+import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 /**
@@ -80,40 +81,83 @@ internal fun randomlyStepStateSpace(timeline: Timeline) {
  * For each trace, at most [maxTraceLength] actions in the state graph will be
  *  taken.
  **/
+@OptIn(FragileYafrlAPI::class)
 fun <W> testPropositionHoldsFor(
     setupState: () -> State<W>,
     numIterations: Int = 100,
     maxTraceLength: Int = 50,
     proposition: LTLSyntax<W>.() -> LTL<W>
 ) {
-    val result = propositionHoldsFor(
+    val (numIterations, result) = propositionHoldsFor(
         setupState,
         numIterations,
         maxTraceLength,
         proposition
     )
 
-    assertNotEquals(LTLResult.False, result,
-        "LTL proposition failed"
-    )
+    val timeline = Timeline.currentTimeline()
+
+    val formattedStates = (result ?: listOf()).map {
+        "\n   => $it"
+    }
+
+    val formattedEvents = listOf("[initial state]") + timeline
+        .eventTrace
+        .map { event ->
+            val label = timeline.externalNodes[event.id]!!.node.toString()
+
+            "\n - " + if (event.value == EventState.Fired(Unit)) {
+                label
+            } else {
+                val formattedArg = if (event.value is EventState.Fired<*>) {
+                    "${(event.value as EventState.Fired<*>).event}"
+                } else {
+                    event.value
+                }
+                "$label[$formattedArg]"
+            }
+        }
+
+    val trace = formattedStates
+        .zip(formattedEvents) { state, event -> listOf(event, state) }
+        .flatten()
+        .joinToString("")
+
+    if (result != null) {
+        throw IllegalStateException(
+            "Proposition invalidated after ${numIterations} runs, " +
+                    "with the following trace: \n\n - " + trace + "\n\n"
+        )
+    }
 }
 
+// Returns trace on failure, null otherwise.
 private fun <W> propositionHoldsFor(
     setupState: () -> State<W>,
     numIterations: Int,
     maxTraceLength: Int,
     proposition: LTLSyntax<W>.() -> LTL<W>
-): LTLResult {
-    var result = LTLResult.True
-
+): Pair<Int, List<W>?> {
+    var iterations = 0
     repeat(numIterations) {
+        iterations++
+
         val timeline = Timeline.initializeTimeline()
 
         val state = setupState()
 
+        val trace = mutableListOf<W>()
+
         val iterator = sequence {
+            // Get initial state.
+            trace += state.value
+            yield(state.value)
+
+            println("STATE IS: ${state.value}")
+
             while (true) {
                 randomlyStepStateSpace(timeline)
+                trace += state.value
                 yield(state.value)
             }
         }.asIterable().iterator()
@@ -124,11 +168,9 @@ private fun <W> propositionHoldsFor(
             maxTraceLength
         )
 
-        result = result and testResult
-
-        if (result == LTLResult.False) return LTLResult.False
+        if (testResult == LTLResult.False) return iterations to trace
     }
 
-    return result
+    return iterations to null
 }
 

@@ -58,11 +58,11 @@ class CounterStateTesting: FunSpec({
         testPropositionHoldsFor(
             setupState = ::setupCounter,
             proposition = {
-                val clickedIncrement = condition {
+                val clickedIncrement = condition("clicked_increment") {
                     current.incrementClicked
                 }
 
-                val countHasIncremented = condition {
+                val countHasIncremented = condition("count_incremented") {
                     previous == null || current.count ==
                             previous!!.count + 1
                 }
@@ -79,11 +79,11 @@ class CounterStateTesting: FunSpec({
         testPropositionHoldsFor(
             setupState = ::setupCounter,
             proposition = {
-                val clickedDecrement = condition {
+                val clickedDecrement = condition("clicked_decrement") {
                     current.decrementClicked
                 }
 
-                val countHasDecremented = condition {
+                val countHasDecremented = condition("count_decremented") {
                     previous == null || current.count ==
                             previous!!.count - 1
                 }

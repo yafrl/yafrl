@@ -32,7 +32,7 @@ class EventLogging : FunSpec({
                 Timeline.ExternalEvent(NodeID(0), Fired(1)),
                 Timeline.ExternalEvent(NodeID(0), Fired(2))
             ),
-            Timeline.currentTimeline().eventTrace.toList()
+            Timeline.currentTimeline()._eventTrace.toList()
         )
     }
 })

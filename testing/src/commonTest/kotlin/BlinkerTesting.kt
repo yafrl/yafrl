@@ -1,5 +1,7 @@
 import io.github.sintrastes.yafrl.BroadcastEvent
+import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.behaviors.not
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.broadcastEvent
@@ -18,11 +20,11 @@ data class Blinker(
 ) {
     companion object {
         fun new() = run {
-            val buttonClicks = broadcastEvent<Unit>()
+            val buttonClicks = broadcastEvent<Unit>("button_click")
 
             val isBlinking = State.fold(false, buttonClicks) { state, _ -> !state }
 
-            val buttonText = isBlinking.map { if (true) "Disable" else "Enable" }
+            val buttonText = isBlinking.map { if (it) "Disable" else "Enable" }
 
             val toggleButton = Button(
                 buttonText,
@@ -33,12 +35,16 @@ data class Blinker(
 
             // The light should toggle when it is blinking
             val toggleBlink = clock
-                .gate(isBlinking.asBehavior())
+                .gate(!isBlinking.asBehavior())
                 .map { { lightOn: Boolean -> !lightOn} }
 
-            val lightOn = State.fold(false, toggleBlink) { lightOn, _dt ->
-                !lightOn
-            }
+            // The light should toggle back off when done blinking.
+            val revertToOff = isBlinking.updated().filter { !it }
+                .map { { lightOn: Boolean -> false } }
+
+            val toggleActions = Event.merged(toggleBlink, revertToOff)
+
+            val lightOn = State.fold(false, toggleActions) { state, action -> action(state) }
 
             Blinker(
                 toggleButton,
@@ -50,10 +56,10 @@ data class Blinker(
     @OptIn(FragileYafrlAPI::class)
     fun snapshot() = run {
         button.text.combineWith(
-            button.clicks.asSignal().map { it.isFired() },
+            button.clicks.asSignal(),
             lightOn
         ) {  text, clicked, lightOn ->
-            BlinkerState(text, clicked, lightOn)
+            BlinkerState(text, clicked.isFired(), lightOn)
         }
     }
 }
@@ -67,33 +73,28 @@ data class BlinkerState(
 class BlinkerTesting : FunSpec ({
     test("Blinker specification") {
         testPropositionHoldsFor(
-            setupState = {
-                Blinker.new()
-                    .snapshot()
-            },
+            setupState = { Blinker.new().snapshot() },
             proposition = {
                 val paused = run {
-                    val showingEnable = condition { current.buttonText == "Enable" }
-                    val lightOff = condition { current.lightOn == false }
+                    val showingEnable = condition("showing_enable") { current.buttonText == "Enable" }
+                    val lightOff = condition("light_off") { current.lightOn == false }
 
                     showingEnable and lightOff
                 }
 
                 val blinking = run {
-                    val showingDisable = condition { current.buttonText == "Disable" }
+                    val showingDisable = condition("showing_disable") { current.buttonText == "Disable" }
 
-                    val lightOn = condition { current.lightOn }
-                    val lightOff = condition { !current.lightOn }
+                    val lightOn = condition("light_on") { current.lightOn }
+                    val lightOff = condition("light_off") { !current.lightOn }
 
-                    val isBlinking = (lightOn and immediately(lightOff)) or
-                            (lightOff and immediately(lightOn))
+                    val isBlinking = (lightOn and next(lightOff)) or
+                            (lightOff and next(lightOn))
 
-                    showingDisable and (paused releases isBlinking)
+                    showingDisable and (next(paused) releases isBlinking)
                 }
 
-                always(
-                    paused or blinking
-                )
+                always(paused or blinking)
             }
         )
     }

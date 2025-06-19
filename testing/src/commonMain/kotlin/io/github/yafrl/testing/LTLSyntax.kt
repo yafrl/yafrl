@@ -1,10 +1,5 @@
 package io.github.yafrl.testing
 
-import io.github.sintrastes.yafrl.BroadcastEvent
-import io.github.sintrastes.yafrl.EventState
-import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import kotlin.test.assertTrue
-
 /**
  * Syntax for building up LTL propositions.
  *
@@ -18,12 +13,12 @@ interface LTLSyntax<W> {
     infix fun LTL<W>.implies(other: LTL<W>): LTL<W>
     operator fun LTL<W>.not(): LTL<W>
 
-    fun condition(cond: ConditionScope<W>.() -> Boolean): LTL<W>
+    fun condition(name: String? = null, cond: ConditionScope<W>.() -> Boolean): LTL<W>
 
     // Temporal constructs
     fun always(cond: LTL<W>): LTL<W>
     fun eventually(cond: LTL<W>): LTL<W>
-    fun immediately(cond: LTL<W>): LTL<W>
+    fun next(cond: LTL<W>): LTL<W>
 
     infix fun LTL<W>.until(cond: LTL<W>): LTL<W>
     infix fun LTL<W>.releases(by: LTL<W>): LTL<W>
@@ -47,8 +42,8 @@ interface LTLSyntax<W> {
                     return LTL.Not(this)
                 }
 
-                override fun condition(cond: ConditionScope<W>.() -> Boolean): LTL<W> {
-                    return LTL.Condition(cond)
+                override fun condition(name: String?, cond: ConditionScope<W>.() -> Boolean): LTL<W> {
+                    return LTL.Condition(name, cond)
                 }
 
                 override fun always(cond: LTL<W>): LTL<W> {
@@ -59,7 +54,7 @@ interface LTLSyntax<W> {
                     return LTL.Eventually(cond)
                 }
 
-                override fun immediately(cond: LTL<W>): LTL<W> {
+                override fun next(cond: LTL<W>): LTL<W> {
                     return LTL.Next(cond)
                 }
 
@@ -151,6 +146,8 @@ sealed class LTL<W> {
             return x.evaluateAtTime(world, time, maxTraceLength) and
                     y.evaluateAtTime(world, time, maxTraceLength)
         }
+
+        override fun toString() = "($x and $y)"
     }
 
     data class Or<W>(val x: LTL<W>, val y: LTL<W>): LTL<W>() {
@@ -158,25 +155,33 @@ sealed class LTL<W> {
             return x.evaluateAtTime(world, time, maxTraceLength) or
                 y.evaluateAtTime(world, time, maxTraceLength)
         }
+
+        override fun toString() = "($x or $y)"
     }
 
     data class Not<W>(val cond: LTL<W>): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
             return !cond.evaluateAtTime(world, time, maxTraceLength)
         }
+
+        override fun toString() = "!$cond"
     }
 
-    data class Condition<W>(val cond: ConditionScope<W>.() -> Boolean): LTL<W>() {
+    data class Condition<W>(val name: String?, val cond: ConditionScope<W>.() -> Boolean): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
             val condition = ConditionScope(world, time).cond()
             return if (condition) LTLResult.True else LTLResult.False
         }
+
+        override fun toString() = name ?: "[unnamed_condition]"
     }
 
     data class Next<W>(val cond: LTL<W>): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
             return cond.evaluateAtTime(world, time + 1, maxTraceLength)
         }
+
+        override fun toString() = "next($cond)"
     }
 
     data class Eventually<W>(val cond: LTL<W>): LTL<W>() {
@@ -194,6 +199,8 @@ sealed class LTL<W> {
                 return evaluateAtTime(world, time + 1, maxTraceLength)
             }
         }
+
+        override fun toString() = "eventually($cond)"
     }
 
     // x has to hold at least until y becomes true, which must hold at the current or a future position.
@@ -214,11 +221,16 @@ sealed class LTL<W> {
                     // Could be true, keep evaluating
                     LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
                     // Can't get any better than these results, return immediately.
-                    LTLResult.False -> LTLResult.False
+                    LTLResult.False -> {
+                        println("Failed evaluating $x within until at time $time")
+                        LTLResult.False
+                    }
                     LTLResult.Indeterminate -> LTLResult.Indeterminate
                 }
             }
         }
+
+        override fun toString() = "($x until $y)"
     }
 
     //
@@ -242,11 +254,16 @@ sealed class LTL<W> {
                     // Could be true, keep evaluating
                     LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
                     // Can't get any better than these results, return immediately.
-                    LTLResult.False -> LTLResult.False
+                    LTLResult.False -> {
+                        println("Failed evaluating $x within (... releases $y) at time $time")
+                        LTLResult.False
+                    }
                     LTLResult.Indeterminate -> LTLResult.Indeterminate
                 }
             }
         }
+
+        override fun toString() = "($x releases $y)"
     }
 }
 
