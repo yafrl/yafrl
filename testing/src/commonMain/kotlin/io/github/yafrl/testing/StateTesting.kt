@@ -5,10 +5,33 @@ import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.EventLogger
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.kotest.property.Arb
+import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.next
+import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
 import kotlin.random.nextInt
+import kotlin.reflect.typeOf
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+
+/**
+ * Sane default for an [Arb] that generates clock ticks.
+ *
+ * Generates values around the times specified for the given [framerate],
+ *  with values that can randomly deviate from that average by [delta].
+ **/
+fun fpsClockGenerator(frameRate: Double = 60.0, delta: Duration = 2.0.milliseconds) = arbitrary {
+    val avgFrameDuration = frameRate / 1000.0
+
+    Arb.numericDouble(
+        avgFrameDuration - delta.inWholeMilliseconds,
+        avgFrameDuration + delta.inWholeMilliseconds
+    )
+        .bind()
+        .milliseconds
+}
 
 /**
  * Advances the FRP graph to an arbitrary state in the state space, after
@@ -18,12 +41,13 @@ import kotlin.random.nextInt
  **/
 fun atArbitraryState(
     traceLength: Int = 100,
+    clockGenerator: Arb<Duration> = fpsClockGenerator(),
     check: () -> Unit
 ) {
     val timeline = Timeline.currentTimeline()
 
     repeat(traceLength) {
-        randomlyStepStateSpace(timeline)
+        randomlyStepStateSpace(clockGenerator, timeline)
     }
 
     // Run the test
@@ -36,7 +60,10 @@ fun atArbitraryState(
  *  or state updates from a [io.github.sintrastes.yafrl.BindingSignal].
  **/
 @OptIn(FragileYafrlAPI::class)
-internal fun randomlyStepStateSpace(timeline: Timeline) {
+internal fun randomlyStepStateSpace(
+    clockGenerator: Arb<Duration>,
+    timeline: Timeline
+) {
     val nodes = timeline.externalNodes
 
     val selected = Random.nextInt(nodes.entries.indices)
@@ -44,8 +71,14 @@ internal fun randomlyStepStateSpace(timeline: Timeline) {
     val (kType, node) = nodes.entries.elementAt(selected).value
 
     if (kType.classifier == EventState::class) {
+        val type = kType.arguments.first().type!!
+
         // Resolve the arbitrary instance from the node type.
-        val arbitrary = resolve(kType.arguments.first().type!!)
+        val arbitrary = if (type == typeOf<Duration>()) {
+            clockGenerator
+        } else {
+            resolve(type)
+        }
 
         val event = EventState.Fired(arbitrary.next())
 
@@ -84,12 +117,14 @@ fun <W> testPropositionHoldsFor(
     setupState: () -> Signal<W>,
     numIterations: Int = 100,
     maxTraceLength: Int = 50,
+    clockGenerator: Arb<Duration> = fpsClockGenerator(),
     proposition: LTLSyntax<W>.() -> LTL<W>
 ) {
     val (numIterations, result) = propositionHoldsFor(
         setupState,
         numIterations,
         maxTraceLength,
+        clockGenerator,
         proposition
     )
 
@@ -134,6 +169,7 @@ private fun <W> propositionHoldsFor(
     setupState: () -> Signal<W>,
     numIterations: Int,
     maxTraceLength: Int,
+    clockGenerator: Arb<Duration>,
     proposition: LTLSyntax<W>.() -> LTL<W>
 ): Pair<Int, List<W>?> {
     var iterations = 0
@@ -154,7 +190,7 @@ private fun <W> propositionHoldsFor(
             yield(state.value)
 
             while (true) {
-                randomlyStepStateSpace(timeline)
+                randomlyStepStateSpace(clockGenerator, timeline)
                 trace += state.value
                 yield(state.value)
             }
