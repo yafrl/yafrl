@@ -12,6 +12,6 @@ class DebuggingTests : FunSpec({
         val state = externalSignal(0)
             .labeled("state")
 
-        assertEquals("State(state)", state.toString())
+        assertEquals("Signal(state)", state.toString())
     }
 })

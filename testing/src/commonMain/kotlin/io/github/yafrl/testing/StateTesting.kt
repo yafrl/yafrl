@@ -3,6 +3,7 @@ package io.github.yafrl.testing
 import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.internal.EventLogger
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.property.arbitrary.next
 import io.kotest.property.resolution.resolve
@@ -99,7 +100,7 @@ fun <W> testPropositionHoldsFor(
     }
 
     val formattedEvents = listOf("[initial state]") + timeline
-        .eventTrace
+        .reportEvents()
         .map { event ->
             val label = timeline.externalNodes[event.id]!!.node.toString()
 
@@ -139,7 +140,9 @@ private fun <W> propositionHoldsFor(
     repeat(numIterations) {
         iterations++
 
-        val timeline = Timeline.initializeTimeline()
+        val timeline = Timeline.initializeTimeline(
+            eventLogger = EventLogger.InMemory()
+        )
 
         val state = setupState()
 

@@ -17,12 +17,15 @@ class CountdownTimer(
     )
 
     @OptIn(FragileYafrlAPI::class)
-    fun snapshot() = signal {
-        Snapshot(
-            startButton.clicks.asSignal().bind().isFired(),
-            startButton.text.bind(),
-            count.bind()
-        )
+    fun snapshot() = run {
+        val buttonClicks = startButton.clicks.asSignal()
+        signal {
+            Snapshot(
+                buttonClicks.bind().isFired(),
+                startButton.text.bind(),
+                count.bind()
+            )
+        }
     }
 
     companion object {

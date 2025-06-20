@@ -3,6 +3,7 @@ package debugging
 import io.github.sintrastes.yafrl.EventState.Fired
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.externalEvent
+import io.github.sintrastes.yafrl.internal.EventLogger
 import io.github.sintrastes.yafrl.internal.NodeID
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
@@ -15,6 +16,7 @@ class EventLogging : FunSpec({
     test("test event logging") {
         Timeline.initializeTimeline(
             scope = CoroutineScope(Dispatchers.Default),
+            eventLogger = EventLogger.InMemory,
             timeTravel = true
         )
 
@@ -32,7 +34,7 @@ class EventLogging : FunSpec({
                 Timeline.ExternalEvent(NodeID(0), Fired(1)),
                 Timeline.ExternalEvent(NodeID(0), Fired(2))
             ),
-            Timeline.currentTimeline()._eventTrace.toList()
+            Timeline.currentTimeline().reportEvents().toList()
         )
     }
 })

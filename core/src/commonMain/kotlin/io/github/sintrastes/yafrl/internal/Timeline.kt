@@ -34,9 +34,10 @@ class Timeline(
     val scope: CoroutineScope,
     private val timeTravelEnabled: Boolean,
     private val debugLogging: Boolean,
+    private val eventLogger: EventLogger,
     private val lazy: Boolean,
     initClock: (Signal<Boolean>) -> Event<Duration>
-) : SynchronizedObject() {
+) : SynchronizedObject(), EventLogger by eventLogger {
     @OptIn(FragileYafrlAPI::class)
     val time: Duration
         get() = fetchNodeValue(timeBehavior.node) as Duration
@@ -102,7 +103,7 @@ class Timeline(
     @OptIn(FragileYafrlAPI::class)
     fun resetState(frame: Long) = synchronized(this) {
         val time = measureTime {
-            if (debugLogging) println("Resetting to frame ${frame}, event was: ${_eventTrace.getOrNull(frame.toInt())}")
+            if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventLogger.reportEvents().getOrNull(frame.toInt())}")
             val nodeValues = previousStates[frame]
                 ?.nodeValues ?: run {
                     if (debugLogging) println("No previous state found for frame ${frame}")
@@ -146,15 +147,6 @@ class Timeline(
         val id: NodeID,
         val value: Any?
     )
-
-    /**
-     * Log of all external events that have been emitted into the timeline.
-     *
-     * Only works if [timeTravelEnabled]
-     **/
-    internal val _eventTrace = mutableListOf<ExternalEvent>()
-
-    val eventTrace: List<ExternalEvent> get() = _eventTrace
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
 
@@ -351,7 +343,7 @@ class Timeline(
             latestFrame++
             currentFrame++
 
-            _eventTrace += ExternalEvent(node.id, node.rawValue)
+            eventLogger.logEvent(ExternalEvent(node.id, node.rawValue))
 
             if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
         }
@@ -447,12 +439,13 @@ class Timeline(
             timeTravel: Boolean = false,
             debug: Boolean = false,
             lazy: Boolean = true,
+            eventLogger: EventLogger = EventLogger.Disabled,
             // Use a trivial (discrete) clock by default.
             initClock: (Signal<Boolean>) -> Event<Duration> = {
                 externalEvent<Duration>("clock")
             }
         ): Timeline {
-            _timeline = Timeline(scope, timeTravel, debug, lazy, initClock)
+            _timeline = Timeline(scope, timeTravel, debug, eventLogger, lazy, initClock)
             return _timeline!!
         }
 
