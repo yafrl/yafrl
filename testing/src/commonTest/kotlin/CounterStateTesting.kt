@@ -3,6 +3,7 @@ import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.state
 import io.github.yafrl.testing.ConditionScope
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
@@ -46,11 +47,12 @@ class CounterStateTesting: FunSpec({
             action(state)
         }
 
-        increment.asSignal().combineWith(
-            decrement.asSignal(),
-            counter
-        ) { increment, decrement, count ->
-            CounterTestState(increment.isFired(), decrement.isFired(), count)
+        state {
+            CounterTestState(
+                increment.asSignal().bind().isFired(),
+                decrement.asSignal().bind().isFired(),
+                counter.bind()
+            )
         }
     }
 

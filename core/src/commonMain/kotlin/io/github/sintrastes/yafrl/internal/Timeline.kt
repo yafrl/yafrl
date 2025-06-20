@@ -290,8 +290,8 @@ class Timeline(
         return foldNode
     }
 
-    @OptIn(FragileYafrlAPI::class)
-    internal fun <A> createCombinedNode(
+    @FragileYafrlAPI
+    fun <A> createCombinedNode(
         parentNodes: List<Node<Any?>>,
         combine: (List<Any?>) -> A,
         onNextFrame: ((Node<A>) -> Unit)? = null
