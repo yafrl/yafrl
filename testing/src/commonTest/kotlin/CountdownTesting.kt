@@ -1,7 +1,7 @@
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.state
+import io.github.sintrastes.yafrl.signal
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
 import kotlin.random.Random
@@ -17,7 +17,7 @@ class CountdownTimer(
     )
 
     @OptIn(FragileYafrlAPI::class)
-    fun snapshot() = state {
+    fun snapshot() = signal {
         Snapshot(
             startButton.clicks.asSignal().bind().isFired(),
             startButton.text.bind(),

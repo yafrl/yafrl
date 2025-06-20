@@ -4,20 +4,20 @@ import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Node
 import io.github.sintrastes.yafrl.internal.Timeline
 
-interface StateScope {
+interface SignalScope {
     fun <A> Signal<A>.bind(): A
 }
 
 /**
- * Monadic builder syntax for state, inspired by those formerly used by
+ * Monadic builder syntax for [Signal]s, inspired by those formerly used by
  *  [arrow-kt](https://old.arrow-kt.io/docs/patterns/monad_comprehensions/).
  *
- * [state] introduces a scope allowing for the use of the [StateScope.bind] method.
+ * [signal] introduces a scope allowing for the use of the [SignalScope.bind] method.
  *  This works similarly to [Signal.value], but calls to bind within the block are
  *  recomputed whenever any of the [Signal]s that bind was called on have updated
  *  values.
  *
- * In effect then, [state] gives us a nicer syntax for both [Signal.flatMap] as well as
+ * In effect then, [signal] gives us a nicer syntax for both [Signal.flatMap] as well as
  *  the various [Signal.combineWith]s, depending on how it is used.
  *
  * For example, the following
@@ -62,18 +62,18 @@ interface StateScope {
  * }
  * ```
  *
- * In general, the [state] builder lets you treat the bound results of a [Signal] as regular values,
+ * In general, the [signal] builder lets you treat the bound results of a [Signal] as regular values,
  *  and have them automatically react to changes in input values the way you'd expect, but with a
  *  convenient sequential syntax -- letting you combine [Signal]s in complex ways without
  *  having to deal with the large lambdas of [Signal.combineWith] or the nested callbacks needed for certain
  *  uses of [Signal.flatMap].
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> state(body: StateScope.() -> A): Signal<A> {
+fun <A> signal(body: SignalScope.() -> A): Signal<A> {
     val parentNodes = mutableListOf<Node<Any?>>()
 
     // Run the body once to determine parent nodes, and get initial value
-    val initialScope = object: StateScope {
+    val initialScope = object: SignalScope {
         override fun <A> Signal<A>.bind(): A {
             parentNodes += node
             return value
@@ -83,7 +83,7 @@ fun <A> state(body: StateScope.() -> A): Signal<A> {
     initialScope.body()
 
     // When recomputing, just return the latest values of all of the states.
-    val recomputeScope = object: StateScope {
+    val recomputeScope = object: SignalScope {
         override fun <A> Signal<A>.bind(): A {
             return value
         }

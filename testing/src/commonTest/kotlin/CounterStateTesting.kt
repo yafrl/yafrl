@@ -3,7 +3,7 @@ import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.state
+import io.github.sintrastes.yafrl.signal
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
@@ -46,7 +46,7 @@ class CounterStateTesting: FunSpec({
             action(state)
         }
 
-        state {
+        signal {
             CounterTestState(
                 increment.asSignal().bind().isFired(),
                 decrement.asSignal().bind().isFired(),
