@@ -16,8 +16,8 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.State
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.interop.YafrlCompose
-import io.github.sintrastes.yafrl.interop.composeState
+import io.github.sintrastes.yafrl.compose.YafrlCompose
+import io.github.sintrastes.yafrl.compose.composeState
 
 object CounterComponent {
     class ViewModel(

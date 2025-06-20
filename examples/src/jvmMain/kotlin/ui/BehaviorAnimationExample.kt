@@ -17,8 +17,8 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.integral
 import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.const
-import io.github.sintrastes.yafrl.interop.YafrlCompose
-import io.github.sintrastes.yafrl.interop.composeState
+import io.github.sintrastes.yafrl.compose.YafrlCompose
+import io.github.sintrastes.yafrl.compose.composeState
 import io.github.sintrastes.yafrl.vector.Float2
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import java.lang.Math.toDegrees
