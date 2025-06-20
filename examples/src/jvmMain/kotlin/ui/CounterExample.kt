@@ -14,7 +14,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import io.github.sintrastes.yafrl.compose.composeState
@@ -23,7 +23,7 @@ object CounterComponent {
     class ViewModel(
         clicks: Event<Unit>
     ) {
-        val count = State.fold(0, clicks) { state, _click ->
+        val count = Signal.fold(0, clicks) { state, _click ->
             state + 1
         }
     }

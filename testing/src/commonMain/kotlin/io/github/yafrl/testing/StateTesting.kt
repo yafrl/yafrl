@@ -1,16 +1,13 @@
 package io.github.yafrl.testing
 
 import io.github.sintrastes.yafrl.EventState
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.kotest.matchers.shouldNotBe
 import io.kotest.property.arbitrary.next
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
 import kotlin.random.nextInt
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
  * Advances the FRP graph to an arbitrary state in the state space, after
@@ -83,7 +80,7 @@ internal fun randomlyStepStateSpace(timeline: Timeline) {
  **/
 @OptIn(FragileYafrlAPI::class)
 fun <W> testPropositionHoldsFor(
-    setupState: () -> State<W>,
+    setupState: () -> Signal<W>,
     numIterations: Int = 100,
     maxTraceLength: Int = 50,
     proposition: LTLSyntax<W>.() -> LTL<W>
@@ -133,7 +130,7 @@ fun <W> testPropositionHoldsFor(
 
 // Returns trace on failure, null otherwise.
 private fun <W> propositionHoldsFor(
-    setupState: () -> State<W>,
+    setupState: () -> Signal<W>,
     numIterations: Int,
     maxTraceLength: Int,
     proposition: LTLSyntax<W>.() -> LTL<W>

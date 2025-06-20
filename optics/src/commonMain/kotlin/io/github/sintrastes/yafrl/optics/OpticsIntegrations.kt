@@ -4,9 +4,8 @@ import arrow.optics.Lens
 import arrow.optics.Prism
 import io.github.sintrastes.yafrl.BindingState
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.internalBindingState
 
 /** Embed an event in a larger set of events via a [Prism]. */
@@ -16,8 +15,8 @@ fun <A, B> Event<A>.embed(inclusion: Prism<B, A>): Event<B> {
     }
 }
 
-/** Focus on a smaller part of a [State] by applying a [Lens]. */
-fun <A, B> State<A>.focus(lens: Lens<A, B>): State<B> {
+/** Focus on a smaller part of a [Signal] by applying a [Lens]. */
+fun <A, B> Signal<A>.focus(lens: Lens<A, B>): Signal<B> {
     return map {
         lens.get(it)
     }

@@ -1,6 +1,6 @@
 package states
 
-import io.github.sintrastes.yafrl.State.Companion.combineAll
+import io.github.sintrastes.yafrl.Signal.Companion.combineAll
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
 import io.github.sintrastes.yafrl.sequenceState

@@ -3,7 +3,7 @@ package io.github.sintrastes.yafrl.coroutines
 import io.github.sintrastes.yafrl.BindingState
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -38,11 +38,11 @@ fun <A> bindFlowToEvent(scope: CoroutineScope, flow: Flow<A>, event: BroadcastEv
 }
 
 /**
- * Construct a [State] at the edge of the FRP network
+ * Construct a [Signal] at the edge of the FRP network
  *  with the same values and update behavior of the passed [StateFlow].
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> StateFlow<A>.asState(): State<A> {
+inline fun <reified A> StateFlow<A>.asState(): Signal<A> {
     val state = bindingState(value)
     val scope = Timeline.currentTimeline().scope
     bindStateFlowToState(scope, this, state)

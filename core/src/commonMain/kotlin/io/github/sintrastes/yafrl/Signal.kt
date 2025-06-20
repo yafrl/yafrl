@@ -18,13 +18,13 @@ import kotlin.reflect.typeOf
  * A flow can be thought of as a combination of a [io.github.sintrastes.yafrl.behaviors.Behavior] and an
  *  [Event].
  *
- * Like a [io.github.sintrastes.yafrl.behaviors.Behavior], a [State] has a [current] value which can be
+ * Like a [io.github.sintrastes.yafrl.behaviors.Behavior], a [Signal] has a [current] value which can be
  *  sampled at any time.
  *
- * Like an [Event], a [State] will automatically influence derived [State]s
+ * Like an [Event], a [Signal] will automatically influence derived [Signal]s
  *  when the underlying state changes -- in other words, it is _reactive_.
  *
- * Following our graphical analogies for [Event] and [io.github.sintrastes.yafrl.behaviors.Behavior], a [State]
+ * Following our graphical analogies for [Event] and [io.github.sintrastes.yafrl.behaviors.Behavior], a [Signal]
  *  can be thought of as a stepwise function.
  *
  * ```
@@ -36,18 +36,18 @@ import kotlin.reflect.typeOf
  * ---------------------------------------->
  * ```
  *
- * [State]s are incredibly useful for representing the state of
+ * [Signal]s are incredibly useful for representing the state of
  *  various components in an application which need to be consumed
  *  in responsive user interfaces.
  *
  * They are very similar to [kotlinx.coroutines.flow.StateFlow]s in this sense -- only better.
  **/
-open class State<out A> @FragileYafrlAPI constructor(
+open class Signal<out A> @FragileYafrlAPI constructor(
     @property:FragileYafrlAPI val node: Node<A>
 ) {
     @OptIn(FragileYafrlAPI::class)
     override fun toString(): String {
-        return "State($node)"
+        return "Signal($node)"
     }
 
     @OptIn(FragileYafrlAPI::class)
@@ -57,7 +57,7 @@ open class State<out A> @FragileYafrlAPI constructor(
     open val value get() = node.current()
 
     @OptIn(FragileYafrlAPI::class)
-    fun labeled(label: String): State<A> {
+    fun labeled(label: String): Signal<A> {
         node.label = label
         return this
     }
@@ -80,18 +80,18 @@ open class State<out A> @FragileYafrlAPI constructor(
 
     /**
      * Applies the passed function [f] to each state,
-     *  producing a new transformed [State] value.
+     *  producing a new transformed [Signal] value.
      *
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <B> map(f: (A) -> B): State<B> {
+    fun <B> map(f: (A) -> B): Signal<B> {
         val graph = Timeline.currentTimeline()
 
-        return State(graph.createMappedNode(node, f))
+        return Signal(graph.createMappedNode(node, f))
     }
 
-    fun <B> flatMap(f: (A) -> State<B>): State<B> {
+    fun <B> flatMap(f: (A) -> Signal<B>): Signal<B> {
         return map(f).flatten()
     }
 
@@ -100,7 +100,7 @@ open class State<out A> @FragileYafrlAPI constructor(
     }
 
     /**
-     * Get the [Event] with just the updates associated with a [State].
+     * Get the [Event] with just the updates associated with a [Signal].
      **/
     @OptIn(FragileYafrlAPI::class)
     fun updated(): Event<A> {
@@ -116,7 +116,7 @@ open class State<out A> @FragileYafrlAPI constructor(
     }
 
     /**
-     * Combine two states together into a single [State] by applying a function
+     * Combine two states together into a single [Signal] by applying a function
      *  to the two input states.
      *
      * Example:
@@ -129,7 +129,7 @@ open class State<out A> @FragileYafrlAPI constructor(
      * ```
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <B, C> combineWith(state2: State<B>, op: (A, B) -> C): State<C> {
+    fun <B, C> combineWith(state2: Signal<B>, op: (A, B) -> C): Signal<C> {
         val timeline = Timeline.currentTimeline()
 
         val combined = timeline.createCombinedNode(
@@ -142,11 +142,11 @@ open class State<out A> @FragileYafrlAPI constructor(
             }
         )
 
-        return State(combined)
+        return Signal(combined)
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun <B, C, D> combineWith(state2: State<B>, state3: State<C>, op: (A, B, C) -> D): State<D> {
+    fun <B, C, D> combineWith(state2: Signal<B>, state3: Signal<C>, op: (A, B, C) -> D): Signal<D> {
         val timeline = Timeline.currentTimeline()
 
         val combined = timeline.createCombinedNode(
@@ -160,16 +160,16 @@ open class State<out A> @FragileYafrlAPI constructor(
             }
         )
 
-        return State(combined)
+        return Signal(combined)
     }
 
     @OptIn(FragileYafrlAPI::class)
     fun <B, C, D, E> combineWith(
-        state2: State<B>,
-        state3: State<C>,
-        state4: State<D>,
+        state2: Signal<B>,
+        state3: Signal<C>,
+        state4: Signal<D>,
         op: (A, B, C, D) -> E
-    ): State<E> {
+    ): Signal<E> {
         val timeline = Timeline.currentTimeline()
 
         val combined = timeline.createCombinedNode(
@@ -184,17 +184,17 @@ open class State<out A> @FragileYafrlAPI constructor(
             }
         )
 
-        return State(combined)
+        return Signal(combined)
     }
 
     @OptIn(FragileYafrlAPI::class)
     fun <B, C, D, E, F> combineWith(
-        state2: State<B>,
-        state3: State<C>,
-        state4: State<D>,
-        state5: State<E>,
+        state2: Signal<B>,
+        state3: Signal<C>,
+        state4: Signal<D>,
+        state5: Signal<E>,
         op: (A, B, C, D, E) -> F
-    ): State<F> {
+    ): Signal<F> {
         val timeline = Timeline.currentTimeline()
 
         val combined = timeline.createCombinedNode(
@@ -210,18 +210,18 @@ open class State<out A> @FragileYafrlAPI constructor(
             }
         )
 
-        return State(combined)
+        return Signal(combined)
     }
 
     companion object {
         @OptIn(FragileYafrlAPI::class)
-        fun <A> const(value: A): State<A> {
+        fun <A> const(value: A): Signal<A> {
             return internalBindingState(lazy { value })
         }
 
         /**
-         * Construct a [State] by suppling an [initial] value, a set of [events]
-         *  driving the updates of the [State], together with a [reducer] describing
+         * Construct a [Signal] by suppling an [initial] value, a set of [events]
+         *  driving the updates of the [Signal], together with a [reducer] describing
          *  how new events update the existing state.
          *
          *  Example:
@@ -243,18 +243,18 @@ open class State<out A> @FragileYafrlAPI constructor(
          * ```
          **/
         @OptIn(FragileYafrlAPI::class)
-        fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): State<A> {
+        fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): Signal<A> {
             val graph = Timeline.currentTimeline()
 
-            return State(
+            return Signal(
                 graph.createFoldNode(initial, events.node, reducer)
             )
         }
 
         @OptIn(FragileYafrlAPI::class)
         fun <A> combineAll(
-            vararg states: State<A>
-        ): State<List<A>> {
+            vararg states: Signal<A>
+        ): Signal<List<A>> {
             val timeline = Timeline.currentTimeline()
 
             val combined = timeline.createCombinedNode(
@@ -264,16 +264,16 @@ open class State<out A> @FragileYafrlAPI constructor(
                 }
             )
 
-            return State(combined)
+            return Signal(combined)
         }
 
         /**
-         * Produce a new [State] by providing an initial value, which is held
+         * Produce a new [Signal] by providing an initial value, which is held
          *  constant until the [update] function occurs, at which point
          *  it will hold that value until the next update.
          */
         @OptIn(FragileYafrlAPI::class)
-        fun <A> hold(initial: A, update: Event<A>): State<A> {
+        fun <A> hold(initial: A, update: Event<A>): Signal<A> {
             val timeline = Timeline.currentTimeline()
 
             val state = internalBindingState(lazy { initial })
@@ -289,30 +289,30 @@ open class State<out A> @FragileYafrlAPI constructor(
     }
 }
 
-operator fun State<Float>.plus(other: State<Float>): State<Float> {
+operator fun Signal<Float>.plus(other: Signal<Float>): Signal<Float> {
     return combineWith(other) { x, y -> x + y }
 }
 
 @JvmName("plusFloat2")
-operator fun State<Float2>.plus(other: State<Float2>): State<Float2> = with(VectorSpace.float2()) {
+operator fun Signal<Float2>.plus(other: Signal<Float2>): Signal<Float2> = with(VectorSpace.float2()) {
     return combineWith(other) { x, y ->
         x + y
     }
 }
 
 @JvmName("plusFloat23")
-operator fun State<Float3>.plus(other: State<Float3>): State<Float3> = with(VectorSpace.float3()) {
+operator fun Signal<Float3>.plus(other: Signal<Float3>): Signal<Float3> = with(VectorSpace.float3()) {
     return combineWith(other) { x, y ->
         x + y
     }
 }
 
 /**
- * Utility to convert a [State] into a behavior whose values are interpreted as the
- *  piecewise function of the values of the [State].
+ * Utility to convert a [Signal] into a behavior whose values are interpreted as the
+ *  piecewise function of the values of the [Signal].
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> State<A>.asBehavior(): Behavior<A> {
+inline fun <reified A> Signal<A>.asBehavior(): Behavior<A> {
     if (VectorSpace.hasInstance<A>()) {
         // Use a switcher so we can get an exact polynomial integral piecewise.
         return map { Behavior.const(it) }.switcher()
@@ -324,12 +324,12 @@ inline fun <reified A> State<A>.asBehavior(): Behavior<A> {
 }
 
 /**
- * Constructs a flattened [Event] from a changing [State] of events over time.
+ * Constructs a flattened [Event] from a changing [Signal] of events over time.
  *
  * Compare with switchDyn in reflex.
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> State<Event<A>>.switch(): Event<A> {
+fun <A> Signal<Event<A>>.switch(): Event<A> {
     val resultEvents = internalBroadcastEvent<A>()
 
     var currentEvent = value
@@ -350,12 +350,12 @@ fun <A> State<Event<A>>.switch(): Event<A> {
 
 /**
  * Construct a `State<A>` from a nested `State<State<A>>` by updating whenever
- *  either the inner or outer [State] updates.
+ *  either the inner or outer [Signal] updates.
  *
  * Compare with the Monad instance of [Dynamic](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#t:Dynamic) in [reflex-frp](https://reflex-frp.org/).
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> State<State<A>>.flatten(): State<A> {
+fun <A> Signal<Signal<A>>.flatten(): Signal<A> {
     val timeline = Timeline.currentTimeline()
 
     var currentState = value
@@ -393,7 +393,7 @@ fun <A> State<State<A>>.flatten(): State<A> {
 }
 
 /**
- * Builds a [State] that updates with a list of all input states
+ * Builds a [Signal] that updates with a list of all input states
  *  whenever any of the input states updates.
  *
  * Example usage:
@@ -413,20 +413,20 @@ fun <A> State<State<A>>.flatten(): State<A> {
  * ```
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> List<State<A>>.sequenceState(): State<List<A>> {
-    return State.combineAll(
+fun <A> List<Signal<A>>.sequenceState(): Signal<List<A>> {
+    return Signal.combineAll(
         *this.toTypedArray()
     )
 }
 
 /**
- * Variant of [State] that can be [setTo] a new value.
+ * Variant of [Signal] that can be [setTo] a new value.
  *
  * Constructed with the [bindingState] function.
  **/
 class BindingState<A> internal constructor(
     node: Node<A>
-): State<A>(node) {
+): Signal<A>(node) {
     @OptIn(FragileYafrlAPI::class)
     override var value: A
         get() = super.value
@@ -438,7 +438,7 @@ class BindingState<A> internal constructor(
 }
 
 /**
- * Construct a [BindingState] -- which is a [State] whose value can be updated to new
+ * Construct a [BindingState] -- which is a [Signal] whose value can be updated to new
  *  values arbitrarily.
  *
  * [BindingState]s can be thought of (together with [BroadcastEvent]s) as the "inputs"

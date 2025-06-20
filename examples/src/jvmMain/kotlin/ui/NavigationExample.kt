@@ -26,7 +26,7 @@ class NavigationComponent {
     class ViewModel(
         counter1Clicks: Event<Unit>,
         counter2Clicks: Event<Unit>,
-        currentScreen: io.github.sintrastes.yafrl.State<String>
+        currentScreen: io.github.sintrastes.yafrl.Signal<String>
     ) {
         val counter1 = CounterComponent.ViewModel(counter1Clicks).count
 

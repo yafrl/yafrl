@@ -15,7 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.throttled
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
@@ -130,7 +130,7 @@ fun YafrlCompose(
             }
 
             val fps by remember {
-                State.fold("--", runningAverage) { _, avgFrameTime ->
+                Signal.fold("--", runningAverage) { _, avgFrameTime ->
                     if (avgFrameTime != null) {
                         (1000f / avgFrameTime).roundToInt().toString()
                     } else {
@@ -148,11 +148,11 @@ fun YafrlCompose(
 }
 
 /**
- * Utility function to assist with using a [io.github.sintrastes.yafrl.State]
+ * Utility function to assist with using a [io.github.sintrastes.yafrl.Signal]
  *  in Jetpack Compose, by converting it to a [androidx.compose.runtime.State].
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> State<A>.composeState(): androidx.compose.runtime.State<A> {
+fun <A> Signal<A>.composeState(): androidx.compose.runtime.State<A> {
     val state = mutableStateOf(value = value)
 
     collectSync { updatedState ->

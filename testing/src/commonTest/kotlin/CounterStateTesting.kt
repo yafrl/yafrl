@@ -1,6 +1,6 @@
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.state
@@ -22,7 +22,7 @@ class CounterStateTesting: FunSpec({
 
         val clicks = broadcastEvent<Unit>()
 
-        val counter = State.fold(0, clicks) { state, _ ->
+        val counter = Signal.fold(0, clicks) { state, _ ->
             state + 1
         }
 
@@ -42,7 +42,7 @@ class CounterStateTesting: FunSpec({
 
         val actions = Event.merged(increment, decrement)
 
-        val counter = State.fold(0, actions) { state, action ->
+        val counter = Signal.fold(0, actions) { state, action ->
             action(state)
         }
 

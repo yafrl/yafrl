@@ -1,7 +1,7 @@
 package io.github.sintrastes.yafrl.internal
 
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
@@ -35,7 +35,7 @@ class Timeline(
     private val timeTravelEnabled: Boolean,
     private val debugLogging: Boolean,
     private val lazy: Boolean,
-    initClock: (State<Boolean>) -> Event<Duration>
+    initClock: (Signal<Boolean>) -> Event<Duration>
 ) : SynchronizedObject() {
     @OptIn(FragileYafrlAPI::class)
     val time: Duration
@@ -448,7 +448,7 @@ class Timeline(
             debug: Boolean = false,
             lazy: Boolean = true,
             // Use a trivial (discrete) clock by default.
-            initClock: (State<Boolean>) -> Event<Duration> = {
+            initClock: (Signal<Boolean>) -> Event<Duration> = {
                 broadcastEvent<Duration>("clock")
             }
         ): Timeline {

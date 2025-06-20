@@ -4,7 +4,7 @@ package io.github.sintrastes.yafrl.behaviors
 
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.EventState
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -149,14 +149,14 @@ sealed interface Behavior<out A> {
     }
 
     /**
-     * Sample a [Behavior] to produce a [State].
+     * Sample a [Behavior] to produce a [Signal].
      *
      * See [sample].
      **/
     fun sampleState(
         times: Event<Any?> = Timeline.currentTimeline().timeBehavior.updated()
-    ): State<A> {
-        return State.Companion.hold(value, sample(times))
+    ): Signal<A> {
+        return Signal.Companion.hold(value, sample(times))
     }
 
     companion object {
@@ -342,13 +342,13 @@ operator fun Behavior<Boolean>.not(): Behavior<Boolean> {
  * Constructs a behavior whose value is equal to the state's current behavior's value
  *  at all times.
  *
- * This can be viewed as a behavior that switches to a new behavior whenever the [State]
+ * This can be viewed as a behavior that switches to a new behavior whenever the [Signal]
  *  updates.
  *
  *  Compare with [switcher](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#v:switcher)
  *  from [reflex-frp](https://reflex-frp.org/) and see also [Behavior.until].
  **/
-fun <A> State<Behavior<A>>.switcher(): Behavior<A> {
+fun <A> Signal<Behavior<A>>.switcher(): Behavior<A> {
     return Until(lazy { this.value }, this.updated())
 }
 

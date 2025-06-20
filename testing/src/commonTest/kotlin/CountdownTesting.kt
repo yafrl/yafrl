@@ -1,4 +1,4 @@
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.state
@@ -8,7 +8,7 @@ import kotlin.random.Random
 
 class CountdownTimer(
     val startButton: Button,
-    val count: State<Int>
+    val count: Signal<Int>
 ) {
     data class Snapshot(
         val buttonClicked: Boolean,
@@ -30,12 +30,12 @@ class CountdownTimer(
             val buttonClicks = broadcastEvent<Unit>()
 
             val button = Button(
-                text = State.const("Start"),
+                text = Signal.const("Start"),
                 clicks = buttonClicks
             )
 
             // On click, reset the countdown to a random number between 10 and 100.
-            val count = State.fold(0, buttonClicks) { _, _ ->
+            val count = Signal.fold(0, buttonClicks) { _, _ ->
                 Random.nextInt(10, 100)
             }
 

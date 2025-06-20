@@ -1,14 +1,13 @@
 import arrow.optics.Lens
 import arrow.optics.optics
 import io.github.sintrastes.yafrl.bindingState
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.optics.embed
 import io.github.sintrastes.yafrl.optics.focus
 import io.kotest.core.spec.style.FunSpec
 import kotlin.reflect.typeOf
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @optics
@@ -31,7 +30,7 @@ class OpticsTests : FunSpec({
         val embedded = event1
             .embed(arrow.optics.Prism.instanceOf())
 
-        val collected = State.fold(listOf<Event1>(), embedded) { xs, x ->
+        val collected = Signal.fold(listOf<Event1>(), embedded) { xs, x ->
             xs + listOf(x)
         }
 
@@ -72,7 +71,7 @@ class OpticsTests : FunSpec({
     test("Test focusing immutable states") {
         val state = bindingState(0 to 0)
 
-        val immutableState: State<Pair<Int, Int>> = state
+        val immutableState: Signal<Pair<Int, Int>> = state
 
         val focused = immutableState
             .focus(Lens.pairFirst())

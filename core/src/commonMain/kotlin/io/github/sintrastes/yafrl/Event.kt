@@ -58,10 +58,10 @@ internal constructor(
     }
 
     /**
-     * Method version of [State.fold], for easier use in method chains.
+     * Method version of [Signal.fold], for easier use in method chains.
      **/
-    fun <B> scan(initial: B, reducer: (B, A) -> B): State<B> {
-        return State.fold(initial, this, reducer)
+    fun <B> scan(initial: B, reducer: (B, A) -> B): Signal<B> {
+        return Signal.fold(initial, this, reducer)
     }
 
     /**
@@ -92,9 +92,9 @@ internal constructor(
         return map { f(it) }.filter { it != null }.map { it!! }
     }
 
-    /** Method version of [State.hold].  */
-    fun hold(initial: @UnsafeVariance A): State<A> {
-        return State.hold(initial, this)
+    /** Method version of [Signal.hold].  */
+    fun hold(initial: @UnsafeVariance A): Signal<A> {
+        return Signal.hold(initial, this)
     }
 
     /**
@@ -155,7 +155,7 @@ internal constructor(
      * This is useful for things like calculating moving averages
      *  for the values of an [Event].
      **/
-    fun window(size: Int): Event<List<A>> = State.fold(listOf<A>(), this) { window, newValue ->
+    fun window(size: Int): Event<List<A>> = Signal.fold(listOf<A>(), this) { window, newValue ->
         if (window.size < size) {
             window + listOf(newValue)
         } else {
@@ -165,9 +165,9 @@ internal constructor(
         .updated()
 
     @OptIn(FragileYafrlAPI::class)
-    fun asSignal(): State<EventState<A>> {
+    fun asSignal(): Signal<EventState<A>> {
         val graph = Timeline.currentTimeline()
-        return State(
+        return Signal(
            graph.createMappedNode(
                parent = node,
                f = { event ->

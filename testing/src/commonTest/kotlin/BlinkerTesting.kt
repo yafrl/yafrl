@@ -1,6 +1,6 @@
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.behaviors.not
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
@@ -10,19 +10,19 @@ import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
 
 data class Button(
-    val text: State<String>,
+    val text: Signal<String>,
     val clicks: BroadcastEvent<Unit>
 )
 
 data class Blinker(
     val button: Button,
-    val lightOn: State<Boolean>
+    val lightOn: Signal<Boolean>
 ) {
     companion object {
         fun new() = run {
             val buttonClicks = broadcastEvent<Unit>("button_click")
 
-            val isBlinking = State.fold(false, buttonClicks) { state, _ -> !state }
+            val isBlinking = Signal.fold(false, buttonClicks) { state, _ -> !state }
 
             val buttonText = isBlinking.map { if (it) "Disable" else "Enable" }
 
@@ -44,7 +44,7 @@ data class Blinker(
 
             val toggleActions = Event.merged(toggleBlink, revertToOff)
 
-            val lightOn = State.fold(false, toggleActions) { state, action -> action(state) }
+            val lightOn = Signal.fold(false, toggleActions) { state, action -> action(state) }
 
             Blinker(
                 toggleButton,

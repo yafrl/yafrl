@@ -1,6 +1,6 @@
 package states
 
-import io.github.sintrastes.yafrl.State.Companion.const
+import io.github.sintrastes.yafrl.Signal.Companion.const
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.bindingState
 import io.kotest.core.spec.style.FunSpec

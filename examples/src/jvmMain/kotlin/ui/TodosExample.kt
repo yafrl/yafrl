@@ -21,7 +21,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.State
+import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import io.github.sintrastes.yafrl.compose.composeState
@@ -83,7 +83,7 @@ object TodosComponent {
             }
         )
 
-        val items = State.fold(listOf<TodoState>(), actions) { state, action ->
+        val items = Signal.fold(listOf<TodoState>(), actions) { state, action ->
             action(state)
         }
     }

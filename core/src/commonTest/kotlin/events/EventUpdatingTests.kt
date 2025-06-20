@@ -11,13 +11,10 @@ import io.github.sintrastes.yafrl.internal.current
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.retry
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.engine.coroutines.coroutineTestScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import kotlin.test.assertEquals
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -284,7 +281,7 @@ class EventUpdatingTests : FunSpec({
     test("Window works as intended") {
         val event = broadcastEvent<Int>()
 
-        val windowed = State.hold(listOf(), event.window(3))
+        val windowed = Signal.hold(listOf(), event.window(3))
 
         event.send(1)
         event.send(2)

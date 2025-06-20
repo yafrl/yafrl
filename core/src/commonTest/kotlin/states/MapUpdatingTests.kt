@@ -7,8 +7,6 @@ import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import kotlin.experimental.ExperimentalNativeApi
-import kotlin.test.BeforeTest
-import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -28,7 +26,7 @@ class MapUpdatingTests: FunSpec({
     test("Build held node") {
         val updates = broadcastEvent<Int>()
 
-        val state = State.hold(0, updates)
+        val state = Signal.hold(0, updates)
 
         assertEquals(0, state.value)
 
