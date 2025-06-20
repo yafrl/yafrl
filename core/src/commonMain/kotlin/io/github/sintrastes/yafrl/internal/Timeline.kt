@@ -4,7 +4,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internalBindingState
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
@@ -449,7 +449,7 @@ class Timeline(
             lazy: Boolean = true,
             // Use a trivial (discrete) clock by default.
             initClock: (Signal<Boolean>) -> Event<Duration> = {
-                broadcastEvent<Duration>("clock")
+                externalEvent<Duration>("clock")
             }
         ): Timeline {
             _timeline = Timeline(scope, timeTravel, debug, lazy, initClock)

@@ -1,7 +1,7 @@
 package debugging
 
 import io.github.sintrastes.yafrl.externalSignal
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertEquals
@@ -60,7 +60,7 @@ class TimeTravel: FunSpec({
             timeTravel = true
         )
 
-        val clicks = broadcastEvent<Unit>()
+        val clicks = externalEvent<Unit>()
 
         val count = clicks.scan(0) { it, _ -> it + 1 }
 

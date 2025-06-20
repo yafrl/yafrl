@@ -7,7 +7,7 @@ import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.behaviors.integrate
 import io.github.sintrastes.yafrl.behaviors.integrateWith
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.behaviors.plus
@@ -28,7 +28,7 @@ class IntegrationTests: FunSpec({
         Timeline.initializeTimeline(
             CoroutineScope(Dispatchers.Default),
             initClock = {
-                broadcastEvent<Duration>()
+                externalEvent<Duration>()
             }
         )
 

@@ -24,7 +24,7 @@ class MapUpdatingTests: FunSpec({
     }
 
     test("Build held node") {
-        val updates = broadcastEvent<Int>()
+        val updates = externalEvent<Int>()
 
         val state = Signal.hold(0, updates)
 

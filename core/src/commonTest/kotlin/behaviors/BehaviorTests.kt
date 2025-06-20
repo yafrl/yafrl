@@ -2,7 +2,7 @@ package behaviors
 
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.behaviors.*
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.delay
@@ -41,7 +41,7 @@ class BehaviorTests : FunSpec({
         Timeline.initializeTimeline(
             scope = this,
             initClock = {
-                broadcastEvent<Duration>("event")
+                externalEvent<Duration>("event")
             }
         )
 
@@ -123,7 +123,7 @@ class BehaviorTests : FunSpec({
     }
 
     test("Until switches between behaviors") {
-        val next = broadcastEvent<Behavior<Int>>()
+        val next = externalEvent<Behavior<Int>>()
 
         val initial = Behavior.continuous { 1 }
 

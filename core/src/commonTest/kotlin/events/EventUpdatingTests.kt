@@ -30,7 +30,7 @@ class EventUpdatingTests : FunSpec({
     test("Event updates immediately") {
         val timeline = Timeline.currentTimeline()
 
-        val events = broadcastEvent<Int>()
+        val events = externalEvent<Int>()
 
         events.send(1)
 
@@ -45,7 +45,7 @@ class EventUpdatingTests : FunSpec({
         runTest {
             val timeline = Timeline.currentTimeline()
 
-            val events = broadcastEvent<Int>()
+            val events = externalEvent<Int>()
 
             val mappedEvents = events
                 .map { it + 2 }
@@ -64,7 +64,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Mapped event is lazy") {
-        val events = broadcastEvent<Int>()
+        val events = externalEvent<Int>()
 
         val mappedEvents = events
             .map { it + 2 }
@@ -78,7 +78,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("filtered event does not emit on filtered elements") {
-        val events = broadcastEvent<Int>()
+        val events = externalEvent<Int>()
 
         // Should only let event events through.
         val filtered = events
@@ -90,7 +90,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("mapNotNull emits only non null elements") {
-        val events = broadcastEvent<Int>()
+        val events = externalEvent<Int>()
 
         // Should only let event events through.
         val mapped = events.mapNotNull {
@@ -113,7 +113,7 @@ class EventUpdatingTests : FunSpec({
 
         val timeline = Timeline.currentTimeline()
 
-        val events = broadcastEvent<Unit>("events")
+        val events = externalEvent<Unit>("events")
 
         var condition = false
 
@@ -135,9 +135,9 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Event should not be fired on next tick") {
-        val event1 = broadcastEvent<Unit>()
+        val event1 = externalEvent<Unit>()
 
-        val event2 = broadcastEvent<Unit>()
+        val event2 = externalEvent<Unit>()
 
         // Emit an event
         event1.send(Unit)
@@ -155,11 +155,11 @@ class EventUpdatingTests : FunSpec({
     test("Mapped event should not be fired on next tick") {
         val timeline = Timeline.currentTimeline()
 
-        val event1 = broadcastEvent<Unit>()
+        val event1 = externalEvent<Unit>()
 
         val mapped = event1.map { "test" }
 
-        val event2 = broadcastEvent<Unit>()
+        val event2 = externalEvent<Unit>()
 
         // Emit an event
         event1.send(Unit)
@@ -177,7 +177,7 @@ class EventUpdatingTests : FunSpec({
     test("Default merge handling is Leftmost") {
         val graph = Timeline.currentTimeline()
 
-        val count = broadcastEvent<Int>()
+        val count = externalEvent<Int>()
 
         val fizz = count
             .filter { it % 3 == 0 }
@@ -211,7 +211,7 @@ class EventUpdatingTests : FunSpec({
     test("Custom merge works for fizzbuzz") {
         val graph = Timeline.currentTimeline()
 
-        val count = broadcastEvent<Int>()
+        val count = externalEvent<Int>()
 
         val fizz = count
             .filter { it % 3 == 0 }
@@ -251,7 +251,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Event does not fire if gated") {
-        val clicks = broadcastEvent<Unit>()
+        val clicks = externalEvent<Unit>()
 
         val enabledState = externalSignal<Boolean>(true)
 
@@ -279,7 +279,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Window works as intended") {
-        val event = broadcastEvent<Int>()
+        val event = externalEvent<Int>()
 
         val windowed = Signal.hold(listOf(), event.window(3))
 
@@ -300,7 +300,7 @@ class EventUpdatingTests : FunSpec({
 
             Timeline.initializeTimeline(debug = true)
 
-            val event = broadcastEvent<Int>()
+            val event = externalEvent<Int>()
 
             val debounced = event.debounced(100.milliseconds).hold(0)
 
@@ -334,7 +334,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Throttled event emits immediately") {
-        val event = broadcastEvent<Unit>()
+        val event = externalEvent<Unit>()
 
         val throttled = event
             .throttled(100.milliseconds)
@@ -345,7 +345,7 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Async events eventually emit") {
-        val clicks = broadcastEvent<Unit>()
+        val clicks = externalEvent<Unit>()
 
         val response = onEvent(clicks) {
             delay(100.milliseconds)
@@ -363,13 +363,13 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Impulse behaves as expected") {
-        val event2 = broadcastEvent<Duration>()
+        val event2 = externalEvent<Duration>()
 
         Timeline.initializeTimeline(initClock = {
             event2
         })
 
-        val event1 = broadcastEvent<Unit>()
+        val event1 = externalEvent<Unit>()
 
         val impulse = event1.impulse(0, 1)
 
@@ -391,15 +391,15 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Combined impulses behaves as expected") {
-        val event3 = broadcastEvent<Duration>()
+        val event3 = externalEvent<Duration>()
 
         Timeline.initializeTimeline(initClock = {
             event3
         })
 
-        val event1 = broadcastEvent<Unit>()
+        val event1 = externalEvent<Unit>()
 
-        val event2 = broadcastEvent<Unit>()
+        val event2 = externalEvent<Unit>()
 
         val state = event1.impulse(0, 1) +
                 event2.impulse(0, 2)
@@ -432,9 +432,9 @@ class EventUpdatingTests : FunSpec({
             }
         )
 
-        clock = broadcastEvent()
+        clock = externalEvent()
 
-        val event = broadcastEvent<Unit>()
+        val event = externalEvent<Unit>()
 
         val signal = event.impulse(0, 1)
 
@@ -454,8 +454,8 @@ class EventUpdatingTests : FunSpec({
 
         val timeline = Timeline.currentTimeline()
 
-        val event1 = broadcastEvent<Int>()
-        val event2 = broadcastEvent<Int>()
+        val event1 = externalEvent<Int>()
+        val event2 = externalEvent<Int>()
 
         val merged = Event.mergeAll(event1, event2)
 
@@ -473,7 +473,7 @@ class EventUpdatingTests : FunSpec({
 
         val timeline = Timeline.currentTimeline()
 
-        val event1 = broadcastEvent<Int>()
+        val event1 = externalEvent<Int>()
         val event2 = event1.map { it + 1 }
 
         val merged = Event.mergeAll(event1, event2)

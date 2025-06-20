@@ -11,7 +11,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import io.github.sintrastes.yafrl.compose.composeState
 import io.github.sintrastes.yafrl.externalSignal
@@ -43,9 +43,9 @@ class NavigationComponent {
 
     @Composable
     fun view() = YafrlCompose {
-        val clicks1 = remember { broadcastEvent<Unit>() }
+        val clicks1 = remember { externalEvent<Unit>() }
 
-        val clicks2 = remember { broadcastEvent<Unit>() }
+        val clicks2 = remember { externalEvent<Unit>() }
 
         val tabIndexState = remember { externalSignal(0) }
 

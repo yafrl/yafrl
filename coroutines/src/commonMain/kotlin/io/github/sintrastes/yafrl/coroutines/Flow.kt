@@ -5,7 +5,7 @@ import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.externalSignal
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
  **/
 @OptIn(FragileYafrlAPI::class)
 inline fun <reified A> Flow<A>.asEvent(): Event<A> {
-    val event = broadcastEvent<A>()
+    val event = externalEvent<A>()
     val scope = Timeline.currentTimeline().scope
     bindFlowToEvent(scope, this , event)
 

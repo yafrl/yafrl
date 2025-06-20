@@ -30,7 +30,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class VectorTests : FunSpec({
     test("Gravity simulation works") {
-        val clock by lazy { broadcastEvent<Duration>() }
+        val clock by lazy { externalEvent<Duration>() }
 
         Timeline.initializeTimeline(
             initClock = {
@@ -66,7 +66,7 @@ class VectorTests : FunSpec({
     }
 
     test("Gravity simulation works 3D") {
-        val clock by lazy { broadcastEvent<Duration>() }
+        val clock by lazy { externalEvent<Duration>() }
 
         Timeline.initializeTimeline(
             initClock = {

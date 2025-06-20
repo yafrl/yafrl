@@ -1,6 +1,6 @@
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.signal
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
@@ -27,7 +27,7 @@ class CountdownTimer(
 
     companion object {
         fun new() = run {
-            val buttonClicks = broadcastEvent<Unit>()
+            val buttonClicks = externalEvent<Unit>()
 
             val button = Button(
                 text = Signal.const("Start"),

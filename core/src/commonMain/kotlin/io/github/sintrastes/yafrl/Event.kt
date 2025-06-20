@@ -392,7 +392,7 @@ fun <A> Event<A>.throttled(duration: Duration): Event<A> {
  *
  * Usually used as an internal API to build up a new [Event].
  *
- * Created with the [broadcastEvent] function.
+ * Created with the [externalEvent] function.
  **/
 open class BroadcastEvent<A> @OptIn(FragileYafrlAPI::class)
 @FragileYafrlAPI constructor(
@@ -428,10 +428,50 @@ fun <A> internalBroadcastEvent(
 }
 
 /**
- * Constructs a new [BroadcastEvent].
+ * Constructs a new external [BroadcastEvent], which is intended to represent
+ *  events external to the current [Timeline]. (See also [externalSignal] for the
+ *  [Signal] variant of this).
+ *
+ * Since this is intended to represent external events, it is an anti-pattern to
+ *  call [BroadcastEvent.send] from logical code that manipulates [Signal]s and
+ *  [Event]s.
+ *
+ * For example, the following would be an incorrect use of [externalEvent]:
+ *
+ * ```kotlin
+ * val someEvent: Event<Int> = ...
+ *
+ * val newEvent = externalEvent<Int>()
+ *
+ * scope.launch {
+ *     someEvent.collect { event ->
+ *         if (event % 2 == 0) {
+ *             newEvent.send(event * 3)
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * If using yafrl's FRP state testing utilities, this will confuse the test generator into thinking
+ *  that `newEvent` above is an input to the system, and thus can have arbitrary values emitted to it,
+ *  when in fact this is not the case, and `newEvent` is entirely dependent on `someEvent`.
+ *
+ * Further, the above can be written much more simply as:
+ *
+ * ```kotlin
+ * val someEvent: Event<Int> = ...
+ *
+ * val newEvent = someEvent
+ *     .filter { it % 2 == 0 }
+ *     .map { it * 3 }
+ * ```
+ *
+ * If you really do need access to a more imperative API, and yafrl does not provide another
+ *  way of implementing your desired logic, you should use [internalBroadcastEvent] for any
+ *  internal events.
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> broadcastEvent(
+inline fun <reified A> externalEvent(
     label: String? = null
 ): BroadcastEvent<A> {
     val timeline = Timeline.currentTimeline()
@@ -476,7 +516,7 @@ inline fun <A, reified B> onEvent(
 ): Event<B> {
     // Note: For now treat this as an external event, since the result from
     // perform could be nondeterministic.
-    val responseEvent = broadcastEvent<B>()
+    val responseEvent = externalEvent<B>()
 
     val scope = Timeline.currentTimeline().scope
 

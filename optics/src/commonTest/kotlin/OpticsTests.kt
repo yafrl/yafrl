@@ -2,7 +2,7 @@ import arrow.optics.Lens
 import arrow.optics.optics
 import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.optics.embed
 import io.github.sintrastes.yafrl.optics.focus
@@ -25,7 +25,7 @@ class OpticsTests : FunSpec({
     }
 
     test("Test embedding events") {
-        val event1 = broadcastEvent<Event1>()
+        val event1 = externalEvent<Event1>()
 
         val embedded = event1
             .embed(arrow.optics.Prism.instanceOf())

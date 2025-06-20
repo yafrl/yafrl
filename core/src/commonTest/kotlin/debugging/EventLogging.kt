@@ -2,7 +2,7 @@ package debugging
 
 import io.github.sintrastes.yafrl.EventState.Fired
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.NodeID
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
@@ -18,7 +18,7 @@ class EventLogging : FunSpec({
             timeTravel = true
         )
 
-        val externalEvent = broadcastEvent<Int>()
+        val externalEvent = externalEvent<Int>()
 
         val mapped = externalEvent
             .map { it + 2 }

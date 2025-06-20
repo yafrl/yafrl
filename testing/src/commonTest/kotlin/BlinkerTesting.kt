@@ -4,7 +4,7 @@ import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.behaviors.not
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
@@ -20,7 +20,7 @@ data class Blinker(
 ) {
     companion object {
         fun new() = run {
-            val buttonClicks = broadcastEvent<Unit>("button_click")
+            val buttonClicks = externalEvent<Unit>("button_click")
 
             val isBlinking = Signal.fold(false, buttonClicks) { state, _ -> !state }
 

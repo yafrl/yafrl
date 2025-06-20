@@ -1,6 +1,6 @@
 package ui
 
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +17,7 @@ class CounterTest : FunSpec({
             lazy = false
         )
 
-        val clicks = broadcastEvent<Unit>()
+        val clicks = externalEvent<Unit>()
 
         val viewModel = CounterComponent.ViewModel(clicks)
 
@@ -44,7 +44,7 @@ class CounterTest : FunSpec({
             lazy = false
         )
 
-        val clicks = broadcastEvent<Unit>()
+        val clicks = externalEvent<Unit>()
 
         val viewModel = CounterComponent.ViewModel(clicks)
 

@@ -19,7 +19,7 @@ import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.throttled
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -174,7 +174,7 @@ fun newComposeFrameClock(
     scope: CoroutineScope,
     paused: Behavior<Boolean>
 ): Event<Duration> {
-    val clock = broadcastEvent<Duration>(
+    val clock = externalEvent<Duration>(
         label = "compose_frame_clock"
     )
 

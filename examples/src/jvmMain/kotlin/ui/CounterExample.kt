@@ -15,7 +15,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import io.github.sintrastes.yafrl.compose.composeState
 
@@ -32,7 +32,7 @@ object CounterComponent {
     fun View() = YafrlCompose(
         timeTravelDebugger = true
     ) {
-        val clicks = remember { broadcastEvent<Unit>() }
+        val clicks = remember { externalEvent<Unit>() }
         val viewModel = remember { ViewModel(clicks) }
 
         val count by remember { viewModel.count.composeState() }

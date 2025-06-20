@@ -1,7 +1,7 @@
 package states
 
 import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +16,7 @@ class FoldUpdatingTests: FunSpec({
     }
 
     test("Fold node updates with new events") {
-        val events = broadcastEvent<Int>()
+        val events = externalEvent<Int>()
 
         val counter = Signal.fold(0, events) { state: Int, event: Int ->
             state + event

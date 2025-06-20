@@ -22,7 +22,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.broadcastEvent
+import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import io.github.sintrastes.yafrl.compose.composeState
 import kotlin.collections.plus
@@ -39,10 +39,10 @@ object TodosComponent {
 
         fun dismissCompleted() = dismissEvent.send(Unit)
 
-        private val dismissEvent = broadcastEvent<Unit>()
-        private val clicks = broadcastEvent<Unit>()
-        val textUpdates = broadcastEvent<TodoState>()
-        val markComplete = broadcastEvent<Int>()
+        private val dismissEvent = externalEvent<Unit>()
+        private val clicks = externalEvent<Unit>()
+        val textUpdates = externalEvent<TodoState>()
+        val markComplete = externalEvent<Int>()
 
         private val actions = Event.merged(
             clicks.map {
