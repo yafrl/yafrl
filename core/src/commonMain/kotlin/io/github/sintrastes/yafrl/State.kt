@@ -95,6 +95,10 @@ open class State<out A> @FragileYafrlAPI constructor(
         return map(f).flatten()
     }
 
+    fun <B> switchMap(f: (A) -> Event<B>): Event<B> {
+        return map(f).switch()
+    }
+
     /**
      * Get the [Event] with just the updates associated with a [State].
      **/
@@ -317,6 +321,31 @@ inline fun <reified A> State<A>.asBehavior(): Behavior<A> {
         // instance that does not exist at runtime.
         return Behavior.sampled { this.value }
     }
+}
+
+/**
+ * Constructs a flattened [Event] from a changing [State] of events over time.
+ *
+ * Compare with switchDyn in reflex.
+ **/
+@OptIn(FragileYafrlAPI::class)
+fun <A> State<Event<A>>.switch(): Event<A> {
+    val resultEvents = internalBroadcastEvent<A>()
+
+    var currentEvent = value
+    val eventListener = { event: EventState<A> ->
+        if (event is EventState.Fired<A>) resultEvents.send(event.event)
+    }
+
+    currentEvent.node.collectSync(eventListener)
+
+    node.collectSync { newEvents ->
+        currentEvent.node.unregisterSync(eventListener)
+        currentEvent = newEvents
+        newEvents.node.collectSync(eventListener)
+    }
+
+    return resultEvents
 }
 
 /**

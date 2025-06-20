@@ -102,7 +102,7 @@ class Timeline(
     @OptIn(FragileYafrlAPI::class)
     fun resetState(frame: Long) = synchronized(this) {
         val time = measureTime {
-            if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventTrace.getOrNull(frame.toInt())}")
+            if (debugLogging) println("Resetting to frame ${frame}, event was: ${_eventTrace.getOrNull(frame.toInt())}")
             val nodeValues = previousStates[frame]
                 ?.nodeValues ?: run {
                     if (debugLogging) println("No previous state found for frame ${frame}")
@@ -152,7 +152,9 @@ class Timeline(
      *
      * Only works if [timeTravelEnabled]
      **/
-    internal val eventTrace = mutableListOf<ExternalEvent>()
+    internal val _eventTrace = mutableListOf<ExternalEvent>()
+
+    val eventTrace: List<ExternalEvent> get() = _eventTrace
 
     val onNextFrameListeners = mutableListOf<() -> Unit>()
 
@@ -345,11 +347,11 @@ class Timeline(
 
         node.rawValue = newValue
 
-        if (!internal && timeTravelEnabled && externalNodes.contains(node.id)) {
+        if (!internal && externalNodes.contains(node.id)) {
             latestFrame++
             currentFrame++
 
-            eventTrace += ExternalEvent(node.id, node.rawValue)
+            _eventTrace += ExternalEvent(node.id, node.rawValue)
 
             if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
         }
@@ -449,8 +451,9 @@ class Timeline(
             initClock: (State<Boolean>) -> Event<Duration> = {
                 broadcastEvent<Duration>("clock")
             }
-        ) {
+        ): Timeline {
             _timeline = Timeline(scope, timeTravel, debug, lazy, initClock)
+            return _timeline!!
         }
 
         fun currentTimeline(): Timeline {
