@@ -32,7 +32,7 @@ fun atArbitraryState(
 /**
  * Performs a random valid action in the current [Timeline], simulating an
  *  arbitrary external action (i.e. events from a [io.github.sintrastes.yafrl.BroadcastEvent],
- *  or state updates from a [io.github.sintrastes.yafrl.BindingState].
+ *  or state updates from a [io.github.sintrastes.yafrl.BindingSignal].
  **/
 @OptIn(FragileYafrlAPI::class)
 internal fun randomlyStepStateSpace(timeline: Timeline) {

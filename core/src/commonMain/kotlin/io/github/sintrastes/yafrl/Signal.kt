@@ -424,7 +424,7 @@ fun <A> List<Signal<A>>.sequenceState(): Signal<List<A>> {
  *
  * Constructed with the [bindingState] function.
  **/
-class BindingState<A> internal constructor(
+class BindingSignal<A> internal constructor(
     node: Node<A>
 ): Signal<A>(node) {
     @OptIn(FragileYafrlAPI::class)
@@ -438,10 +438,10 @@ class BindingState<A> internal constructor(
 }
 
 /**
- * Construct a [BindingState] -- which is a [Signal] whose value can be updated to new
+ * Construct a [BindingSignal] -- which is a [Signal] whose value can be updated to new
  *  values arbitrarily.
  *
- * [BindingState]s can be thought of (together with [BroadcastEvent]s) as the "inputs"
+ * [BindingSignal]s can be thought of (together with [BroadcastEvent]s) as the "inputs"
  *  to the Yafrl FRP state graph, and thus should typically only be used as a means of
  *  integrating with external systems -- rather than for business logic.
  **/
@@ -449,10 +449,10 @@ class BindingState<A> internal constructor(
 inline fun <reified A> bindingState(
     value: A,
     label: String? = null
-): BindingState<A> = bindingState(value, typeOf<A>(), label)
+): BindingSignal<A> = bindingState(value, typeOf<A>(), label)
 
 @OptIn(FragileYafrlAPI::class)
-fun <A> bindingState(value: A, kType: KType, label: String? = null): BindingState<A> {
+fun <A> bindingState(value: A, kType: KType, label: String? = null): BindingSignal<A> {
     val timeline = Timeline.currentTimeline()
 
     val state = internalBindingState(lazy { value }, label)
@@ -467,10 +467,10 @@ fun <A> bindingState(value: A, kType: KType, label: String? = null): BindingStat
  * "internal" implementation details of the graph.
  **/
 @FragileYafrlAPI
-fun <A> internalBindingState(value: Lazy<A>, label: String? = null): BindingState<A> {
+fun <A> internalBindingState(value: Lazy<A>, label: String? = null): BindingSignal<A> {
     val graph = Timeline.currentTimeline()
 
-    return BindingState(
+    return BindingSignal(
         graph.createNode(
             value = value,
             label = label

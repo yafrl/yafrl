@@ -2,7 +2,7 @@ package io.github.sintrastes.yafrl.optics
 
 import arrow.optics.Lens
 import arrow.optics.Prism
-import io.github.sintrastes.yafrl.BindingState
+import io.github.sintrastes.yafrl.BindingSignal
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
@@ -23,10 +23,10 @@ fun <A, B> Signal<A>.focus(lens: Lens<A, B>): Signal<B> {
 }
 
 /**
- * Focus on a smaller part of a [BindingState] by applying a [Lens]
+ * Focus on a smaller part of a [BindingSignal] by applying a [Lens]
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A, B> BindingState<A>.focus(lens: Lens<A, B>): BindingState<B> {
+fun <A, B> BindingSignal<A>.focus(lens: Lens<A, B>): BindingSignal<B> {
     val state = internalBindingState(lazy { lens.get(value) })
 
     this.collectSync { newValue ->

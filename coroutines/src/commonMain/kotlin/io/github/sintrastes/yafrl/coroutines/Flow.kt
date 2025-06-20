@@ -1,6 +1,6 @@
 package io.github.sintrastes.yafrl.coroutines
 
-import io.github.sintrastes.yafrl.BindingState
+import io.github.sintrastes.yafrl.BindingSignal
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
@@ -52,7 +52,7 @@ inline fun <reified A> StateFlow<A>.asState(): Signal<A> {
 
 // Note: Created to fix bug with test coverage
 @FragileYafrlAPI
-fun <A> bindStateFlowToState(scope: CoroutineScope, flow: StateFlow<A>, state: BindingState<A>) {
+fun <A> bindStateFlowToState(scope: CoroutineScope, flow: StateFlow<A>, state: BindingSignal<A>) {
     scope.launch {
         // Since state flows replay the current state, drop the first value
         // so we only emit on updates.
