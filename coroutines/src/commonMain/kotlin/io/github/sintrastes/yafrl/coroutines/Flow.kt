@@ -1,4 +1,4 @@
-package io.github.sintrastes.yafrl.interop
+package io.github.sintrastes.yafrl.coroutines
 
 import io.github.sintrastes.yafrl.BindingState
 import io.github.sintrastes.yafrl.BroadcastEvent
@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
- * Construct an [io.github.sintrastes.yafrl.Event] at the edge of the FRP network by
- *  emitting a frame whenever the passed [kotlinx.coroutines.flow.Flow] updates.
+ * Construct an [Event] at the edge of the FRP network by
+ *  emitting a frame whenever the passed [Flow] updates.
  **/
 @OptIn(FragileYafrlAPI::class)
 inline fun <reified A> Flow<A>.asEvent(): Event<A> {
@@ -38,8 +38,8 @@ fun <A> bindFlowToEvent(scope: CoroutineScope, flow: Flow<A>, event: BroadcastEv
 }
 
 /**
- * Construct a [io.github.sintrastes.yafrl.State] at the edge of the FRP network
- *  with the same values and update behavior of the passed [kotlinx.coroutines.flow.StateFlow].
+ * Construct a [State] at the edge of the FRP network
+ *  with the same values and update behavior of the passed [StateFlow].
  **/
 @OptIn(FragileYafrlAPI::class)
 inline fun <reified A> StateFlow<A>.asState(): State<A> {

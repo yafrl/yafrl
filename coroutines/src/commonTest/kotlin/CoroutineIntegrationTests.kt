@@ -1,7 +1,7 @@
 
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.interop.asEvent
-import io.github.sintrastes.yafrl.interop.asState
+import io.github.sintrastes.yafrl.coroutines.asEvent
+import io.github.sintrastes.yafrl.coroutines.asState
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
