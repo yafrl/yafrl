@@ -31,6 +31,8 @@ kotlin {
                 implementation(project(":yafrl-core"))
                 implementation(libs.kotlin.coroutines)
                 implementation(compose.material)
+                // TODO: Probably want to split the stuff that depends on this into another module.
+                implementation(libs.arrow.optics)
             }
         }
         val jvmTest by getting {

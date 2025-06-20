@@ -12,8 +12,8 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.broadcastEvent
-import io.github.sintrastes.yafrl.interop.YafrlCompose
-import io.github.sintrastes.yafrl.interop.composeState
+import io.github.sintrastes.yafrl.compose.YafrlCompose
+import io.github.sintrastes.yafrl.compose.composeState
 import io.github.sintrastes.yafrl.bindingState
 
 class NavigationComponent {

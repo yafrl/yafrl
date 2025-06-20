@@ -1,4 +1,4 @@
-package io.github.sintrastes.yafrl.interop
+package io.github.sintrastes.yafrl.compose
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
