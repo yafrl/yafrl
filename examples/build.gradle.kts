@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.atomicfu)
     alias(libs.plugins.compose)
     alias(libs.plugins.compose.plugin)
+    alias(libs.plugins.ksp)
 }
 
 repositories {
@@ -33,6 +34,7 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(compose.material)
                 implementation(libs.molecule)
+                implementation(libs.arrow.optics)
                 implementation(kotlin("test"))
             }
         }
@@ -53,4 +55,8 @@ kotlin {
             }
         }
     }
+}
+
+dependencies {
+    ksp("io.arrow-kt:arrow-optics-ksp-plugin:2.1.0")
 }
