@@ -1,6 +1,6 @@
 package debugging
 
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.kotest.core.spec.style.FunSpec
@@ -12,7 +12,7 @@ class TimeTravel: FunSpec({
             timeTravel = true
         )
 
-        val count = bindingState(0)
+        val count = externalSignal(0)
 
         assertEquals(0, count.value)
 
@@ -34,7 +34,7 @@ class TimeTravel: FunSpec({
             timeTravel = true
         )
 
-        val count = bindingState(0)
+        val count = externalSignal(0)
 
         assertEquals(0, count.value)
 

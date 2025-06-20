@@ -1,6 +1,6 @@
 import arrow.optics.Lens
 import arrow.optics.optics
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -43,7 +43,7 @@ class OpticsTests : FunSpec({
 
     // Currently broken, bidirectional binding causes stack overflow.
     test("Test focusing states") {
-        val state = bindingState(0 to 0, typeOf<Pair<Int, Int>>())
+        val state = externalSignal(0 to 0, typeOf<Pair<Int, Int>>())
 
         val focused = state
             .focus(Lens.pairFirst())
@@ -69,7 +69,7 @@ class OpticsTests : FunSpec({
     }
 
     test("Test focusing immutable states") {
-        val state = bindingState(0 to 0)
+        val state = externalSignal(0 to 0)
 
         val immutableState: Signal<Pair<Int, Int>> = state
 

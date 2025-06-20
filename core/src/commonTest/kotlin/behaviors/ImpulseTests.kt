@@ -6,7 +6,7 @@ import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.behaviors.integrate
 import io.github.sintrastes.yafrl.behaviors.plus
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.impulse
 import io.github.sintrastes.yafrl.internal.Timeline
@@ -49,7 +49,7 @@ class ImpulseTests: FunSpec({
 
         val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val switch = bindingState(true)
+        val switch = externalSignal(true)
 
         val impulseEvent1 = broadcastEvent<Unit>("event1")
         val impulseEvent2 = broadcastEvent<Unit>("event2")

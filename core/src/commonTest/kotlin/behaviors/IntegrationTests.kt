@@ -9,10 +9,9 @@ import io.github.sintrastes.yafrl.behaviors.integrate
 import io.github.sintrastes.yafrl.behaviors.integrateWith
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.vector.ScalarSpace
-import io.github.sintrastes.yafrl.vector.VectorSpace
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +32,7 @@ class IntegrationTests: FunSpec({
             }
         )
 
-        val modifier = bindingState<Float>(0f)
+        val modifier = externalSignal<Float>(0f)
 
         val deltaTime = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
 

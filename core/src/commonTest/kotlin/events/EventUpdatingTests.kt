@@ -253,7 +253,7 @@ class EventUpdatingTests : FunSpec({
     test("Event does not fire if gated") {
         val clicks = broadcastEvent<Unit>()
 
-        val enabledState = bindingState<Boolean>(true)
+        val enabledState = externalSignal<Boolean>(true)
 
         val enabled = enabledState.asBehavior()
 

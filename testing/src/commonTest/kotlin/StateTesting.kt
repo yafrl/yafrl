@@ -1,4 +1,4 @@
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.yafrl.testing.atArbitraryState
 import io.kotest.core.spec.style.FunSpec
@@ -8,9 +8,9 @@ class StateTesting: FunSpec({
     test("Test state testing external states") {
         Timeline.initializeTimeline()
 
-        val state1 = bindingState(1)
+        val state1 = externalSignal(1)
 
-        val state2 = bindingState("test")
+        val state2 = externalSignal("test")
 
         val combined = state1.combineWith(state2) { x, y ->
             "$x, $y"

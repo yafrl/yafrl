@@ -18,7 +18,7 @@ class MapUpdatingTests: FunSpec({
     }
 
     test("Build node") {
-        val node = bindingState(0)
+        val node = externalSignal(0)
 
         assertEquals(0, node.value)
     }
@@ -36,7 +36,7 @@ class MapUpdatingTests: FunSpec({
     }
 
     test("Build map node") {
-        val node = bindingState(0)
+        val node = externalSignal(0)
 
         val mapped = node
             .map { it + 2 }
@@ -45,7 +45,7 @@ class MapUpdatingTests: FunSpec({
     }
 
     test("Map node updates immediately") {
-        val node = bindingState(0)
+        val node = externalSignal(0)
 
         val mapped = node
             .map { it + 2 }
@@ -59,7 +59,7 @@ class MapUpdatingTests: FunSpec({
     test("Map does not update unless queried") {
         var mapEvaluated = false
 
-        val node = bindingState(0)
+        val node = externalSignal(0)
 
         node.map {
             mapEvaluated = true
@@ -76,7 +76,7 @@ class MapUpdatingTests: FunSpec({
         runTest {
             var mapEvaluated = false
 
-            val node = bindingState(0)
+            val node = externalSignal(0)
 
             val mapped = node.map {
                 mapEvaluated = true

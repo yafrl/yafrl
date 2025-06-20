@@ -6,7 +6,7 @@ import io.github.sintrastes.yafrl.internal.Timeline
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.compose.composeState
 import org.junit.Rule
 import org.junit.runner.RunWith
@@ -34,7 +34,7 @@ class YafrlComposeTests {
                 Text("Here comes the content!")
 
                 val valueState = remember {
-                    bindingState(0)
+                    externalSignal(0)
                 }
 
                 val value by remember {

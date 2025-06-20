@@ -2,7 +2,7 @@ package states
 
 import io.github.sintrastes.yafrl.Signal.Companion.const
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +14,11 @@ class FlatMapTests: FunSpec({
             CoroutineScope(Dispatchers.Default)
         )
 
-        val state1 = bindingState(0)
+        val state1 = externalSignal(0)
 
-        val state2 = bindingState(1)
+        val state2 = externalSignal(1)
 
-        val use1 = bindingState(true)
+        val use1 = externalSignal(true)
 
         val flatmapped = use1.flatMap { use1 ->
             if (use1) {
@@ -48,9 +48,9 @@ class FlatMapTests: FunSpec({
             CoroutineScope(Dispatchers.Default)
         )
 
-        val state1 = bindingState(0)
+        val state1 = externalSignal(0)
 
-        val state2 = bindingState(0)
+        val state2 = externalSignal(0)
 
         val flatmapped = state1.flatMap { x ->
             state2.flatMap { y ->

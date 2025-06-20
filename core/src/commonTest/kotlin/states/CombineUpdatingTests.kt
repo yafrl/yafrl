@@ -2,7 +2,7 @@ package states
 
 import io.github.sintrastes.yafrl.Signal.Companion.combineAll
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.sequenceState
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
@@ -19,9 +19,9 @@ class CombineUpdatingTests : FunSpec({
     }
 
     test("Combined state updates when parents update") {
-        val x = bindingState(0)
+        val x = externalSignal(0)
 
-        val y = bindingState(0)
+        val y = externalSignal(0)
 
         val sum = x.combineWith(y) { x, y -> x + y }
 
@@ -38,9 +38,9 @@ class CombineUpdatingTests : FunSpec({
 
     @OptIn(ExperimentalNativeApi::class)
     test("Combined does not update unless queried") {
-        val x = bindingState(0)
+        val x = externalSignal(0)
 
-        val y = bindingState(0)
+        val y = externalSignal(0)
 
         var evaluated = false
 
@@ -55,11 +55,11 @@ class CombineUpdatingTests : FunSpec({
     }
 
     test("Combined state 3-arg updates when parents update") {
-        val x = bindingState(0)
+        val x = externalSignal(0)
 
-        val y = bindingState(0)
+        val y = externalSignal(0)
 
-        val z = bindingState(0)
+        val z = externalSignal(0)
 
         val sum = x.combineWith(y, z) { x, y, z -> x + y + z }
 
@@ -79,13 +79,13 @@ class CombineUpdatingTests : FunSpec({
     }
 
     test("Combined state 4-arg updates when parents update") {
-        val x = bindingState(0)
+        val x = externalSignal(0)
 
-        val y = bindingState(0)
+        val y = externalSignal(0)
 
-        val z = bindingState(0)
+        val z = externalSignal(0)
 
-        val w = bindingState(0)
+        val w = externalSignal(0)
 
         val sum = x.combineWith(y, z, w) { x, y, z, w -> x + y + z + w }
 
@@ -109,15 +109,15 @@ class CombineUpdatingTests : FunSpec({
     }
 
     test("Combined state 5-arg updates when parents update") {
-        val x = bindingState(0)
+        val x = externalSignal(0)
 
-        val y = bindingState(0)
+        val y = externalSignal(0)
 
-        val z = bindingState(0)
+        val z = externalSignal(0)
 
-        val w = bindingState(0)
+        val w = externalSignal(0)
 
-        val q = bindingState(0)
+        val q = externalSignal(0)
 
         val sum = x.combineWith(y, z, w, q) { x, y, z, w, q -> x + y + z + w + q }
 
@@ -145,17 +145,17 @@ class CombineUpdatingTests : FunSpec({
     }
 
     test("Combine all updates when parents update") {
-        val x = bindingState(0)
+        val x = externalSignal(0)
 
-        val y = bindingState(0)
+        val y = externalSignal(0)
 
-        val z = bindingState(0)
+        val z = externalSignal(0)
 
-        val w = bindingState(0)
+        val w = externalSignal(0)
 
-        val q = bindingState(0)
+        val q = externalSignal(0)
 
-        val r = bindingState(0)
+        val r = externalSignal(0)
 
         val sum = combineAll(x, y, z, w, q, r)
             .map { it.sum() }
@@ -188,8 +188,8 @@ class CombineUpdatingTests : FunSpec({
     }
 
     test("sequenceState combines all states into list") {
-        val x = bindingState(0)
-        val y = bindingState(1)
+        val x = externalSignal(0)
+        val y = externalSignal(1)
 
         val sequenced = listOf(x, y)
             .sequenceState()

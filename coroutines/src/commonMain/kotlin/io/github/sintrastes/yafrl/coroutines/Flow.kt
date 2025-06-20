@@ -7,7 +7,7 @@ import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.broadcastEvent
 import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.bindingState
+import io.github.sintrastes.yafrl.externalSignal
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +43,7 @@ fun <A> bindFlowToEvent(scope: CoroutineScope, flow: Flow<A>, event: BroadcastEv
  **/
 @OptIn(FragileYafrlAPI::class)
 inline fun <reified A> StateFlow<A>.asState(): Signal<A> {
-    val state = bindingState(value)
+    val state = externalSignal(value)
     val scope = Timeline.currentTimeline().scope
     bindStateFlowToState(scope, this, state)
 

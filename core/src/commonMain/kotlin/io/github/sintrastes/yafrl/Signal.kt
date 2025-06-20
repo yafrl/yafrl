@@ -422,7 +422,7 @@ fun <A> List<Signal<A>>.sequenceState(): Signal<List<A>> {
 /**
  * Variant of [Signal] that can be [setTo] a new value.
  *
- * Constructed with the [bindingState] function.
+ * Constructed with the [externalSignal] function.
  **/
 class BindingSignal<A> internal constructor(
     node: Node<A>
@@ -438,21 +438,25 @@ class BindingSignal<A> internal constructor(
 }
 
 /**
- * Construct a [BindingSignal] -- which is a [Signal] whose value can be updated to new
+ * Construct an external [BindingSignal] -- which is a [Signal] whose value can be updated to new
  *  values arbitrarily.
  *
- * [BindingSignal]s can be thought of (together with [BroadcastEvent]s) as the "inputs"
- *  to the Yafrl FRP state graph, and thus should typically only be used as a means of
- *  integrating with external systems -- rather than for business logic.
+ * external [BindingSignal]s can be thought of (together with external [BroadcastEvent]s)
+ *  as the "inputs" to the Yafrl FRP state graph, and thus should typically only be used
+ *  as a means of integrating with external systems -- rather than for business logic.
+ *
+ * If you need a [BindingSignal] for internal use to implement some buisness logic,
+ *  this practice is generally discouraged, but [internalBindingState] can be used
+ *  for this purpose if it is necessary.
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> bindingState(
+inline fun <reified A> externalSignal(
     value: A,
     label: String? = null
-): BindingSignal<A> = bindingState(value, typeOf<A>(), label)
+): BindingSignal<A> = externalSignal(value, typeOf<A>(), label)
 
 @OptIn(FragileYafrlAPI::class)
-fun <A> bindingState(value: A, kType: KType, label: String? = null): BindingSignal<A> {
+fun <A> externalSignal(value: A, kType: KType, label: String? = null): BindingSignal<A> {
     val timeline = Timeline.currentTimeline()
 
     val state = internalBindingState(lazy { value }, label)
@@ -463,7 +467,7 @@ fun <A> bindingState(value: A, kType: KType, label: String? = null): BindingSign
 }
 
 /**
- * Internal version of [bindingState] used for states which should be considered
+ * Internal version of [externalSignal] used for states which should be considered
  * "internal" implementation details of the graph.
  **/
 @FragileYafrlAPI
