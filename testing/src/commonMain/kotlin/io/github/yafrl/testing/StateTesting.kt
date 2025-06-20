@@ -153,8 +153,6 @@ private fun <W> propositionHoldsFor(
             trace += state.value
             yield(state.value)
 
-            println("STATE IS: ${state.value}")
-
             while (true) {
                 randomlyStepStateSpace(timeline)
                 trace += state.value

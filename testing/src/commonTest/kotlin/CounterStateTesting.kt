@@ -62,7 +62,7 @@ class CounterStateTesting: FunSpec({
                     current.incrementClicked
                 }
 
-                val countHasIncremented = condition("count_incremented") {
+                val countHasIncremented = condition {
                     previous == null || current.count ==
                             previous!!.count + 1
                 }

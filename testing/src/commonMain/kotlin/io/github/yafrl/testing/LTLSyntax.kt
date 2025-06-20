@@ -222,7 +222,7 @@ sealed class LTL<W> {
                     LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
                     // Can't get any better than these results, return immediately.
                     LTLResult.False -> {
-                        println("Failed evaluating $x within until at time $time")
+//                        println("Failed evaluating $x within until at time $time")
                         LTLResult.False
                     }
                     LTLResult.Indeterminate -> LTLResult.Indeterminate
@@ -255,7 +255,7 @@ sealed class LTL<W> {
                     LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
                     // Can't get any better than these results, return immediately.
                     LTLResult.False -> {
-                        println("Failed evaluating $x within (... releases $y) at time $time")
+                        // println("Failed evaluating $x within (... releases $y) at time $time")
                         LTLResult.False
                     }
                     LTLResult.Indeterminate -> LTLResult.Indeterminate
