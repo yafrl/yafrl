@@ -10,7 +10,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import arrow.optics.optics
-import io.github.sintrastes.yafrl.compose.Form
+import io.github.yafrl.compose.Form
 
 @optics
 data class User(

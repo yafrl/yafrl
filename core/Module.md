@@ -84,11 +84,11 @@ Since `yafrl` is synchronous by default, writing tests for `yafrl` code is just 
  for normal synchronous Kotlin -- while still providing integration with `kotlinx-coroutine`'s asynchronous
  features when necessary.
 
-# Package io.github.sintrastes.yafrl
+# Package io.github.yafrl
 
 User-facing (public) APIs for `yafrl`.
 
-# Package io.github.sintrastes.yafrl.timeline
+# Package io.github.yafrl.timeline
 
 Internal `yafrl` APIs -- not intended to be used directly
  by users of the library in most use-cases.

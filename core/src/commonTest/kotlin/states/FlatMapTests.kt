@@ -1,9 +1,9 @@
 package states
 
-import io.github.sintrastes.yafrl.Signal.Companion.const
-import io.github.sintrastes.yafrl.timeline.Timeline
-import io.github.sintrastes.yafrl.externalSignal
-import io.github.sintrastes.yafrl.runYafrl
+import io.github.yafrl.Signal.Companion.const
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.externalSignal
+import io.github.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

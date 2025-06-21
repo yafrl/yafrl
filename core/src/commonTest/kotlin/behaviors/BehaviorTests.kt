@@ -1,10 +1,10 @@
 package behaviors
 
-import io.github.sintrastes.yafrl.BroadcastEvent
-import io.github.sintrastes.yafrl.behaviors.*
-import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.timeline.Timeline
-import io.github.sintrastes.yafrl.sample
+import io.github.yafrl.BroadcastEvent
+import io.github.yafrl.behaviors.*
+import io.github.yafrl.externalEvent
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.sample
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.delay
 import kotlin.math.abs

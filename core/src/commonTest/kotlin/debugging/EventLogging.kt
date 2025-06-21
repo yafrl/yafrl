@@ -1,11 +1,12 @@
 package debugging
 
-import io.github.sintrastes.yafrl.EventState.Fired
-import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.timeline.debugging.EventLogger
-import io.github.sintrastes.yafrl.timeline.NodeID
-import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.yafrl.EventState.Fired
+import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.externalEvent
+import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.NodeID
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.debugging.ExternalEvent
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,8 +32,8 @@ class EventLogging : FunSpec({
 
         assertEquals(
             listOf(
-                Timeline.ExternalEvent(NodeID(0), Fired(1)),
-                Timeline.ExternalEvent(NodeID(0), Fired(2))
+                ExternalEvent(NodeID(0), Fired(1)),
+                ExternalEvent(NodeID(0), Fired(2))
             ),
             Timeline.currentTimeline().reportEvents().toList()
         )

@@ -1,7 +1,7 @@
 package states
 
-import io.github.sintrastes.yafrl.externalSignal
-import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.yafrl.externalSignal
+import io.github.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertEquals
 

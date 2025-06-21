@@ -1,13 +1,13 @@
 package events
 
-import io.github.sintrastes.yafrl.*
-import io.github.sintrastes.yafrl.EventState
-import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
-import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.behaviors.not
-import io.github.sintrastes.yafrl.behaviors.plus
-import io.github.sintrastes.yafrl.timeline.Timeline
-import io.github.sintrastes.yafrl.timeline.current
+import io.github.yafrl.*
+import io.github.yafrl.EventState
+import io.github.yafrl.annotations.ExperimentalYafrlAPI
+import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.behaviors.not
+import io.github.yafrl.behaviors.plus
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.current
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.retry
 import io.kotest.core.spec.style.FunSpec

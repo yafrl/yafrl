@@ -1,7 +1,7 @@
-import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.signal
+import io.github.yafrl.Signal
+import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.externalEvent
+import io.github.yafrl.signal
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
 import kotlin.random.Random

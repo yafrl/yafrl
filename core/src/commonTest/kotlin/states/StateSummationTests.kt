@@ -1,8 +1,8 @@
 package states
 
-import io.github.sintrastes.yafrl.*
-import io.github.sintrastes.yafrl.vector.Float2
-import io.github.sintrastes.yafrl.vector.Float3
+import io.github.yafrl.*
+import io.github.yafrl.vector.Float2
+import io.github.yafrl.vector.Float3
 import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertEquals
 

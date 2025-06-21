@@ -1,16 +1,16 @@
 package behaviors
 
-import io.github.sintrastes.yafrl.BroadcastEvent
-import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
-import io.github.sintrastes.yafrl.asBehavior
-import io.github.sintrastes.yafrl.behaviors.Behavior
-import io.github.sintrastes.yafrl.behaviors.integrate
-import io.github.sintrastes.yafrl.behaviors.plus
-import io.github.sintrastes.yafrl.externalSignal
-import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.impulse
-import io.github.sintrastes.yafrl.timeline.Timeline
-import io.github.sintrastes.yafrl.runYafrl
+import io.github.yafrl.BroadcastEvent
+import io.github.yafrl.annotations.ExperimentalYafrlAPI
+import io.github.yafrl.asBehavior
+import io.github.yafrl.behaviors.Behavior
+import io.github.yafrl.behaviors.integrate
+import io.github.yafrl.behaviors.plus
+import io.github.yafrl.externalSignal
+import io.github.yafrl.externalEvent
+import io.github.yafrl.impulse
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.numericDouble

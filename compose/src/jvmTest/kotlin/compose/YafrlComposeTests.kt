@@ -2,12 +2,12 @@ package compose
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import io.github.sintrastes.yafrl.timeline.Timeline
-import io.github.sintrastes.yafrl.compose.YafrlCompose
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.compose.YafrlCompose
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import io.github.sintrastes.yafrl.externalSignal
-import io.github.sintrastes.yafrl.compose.composeState
+import io.github.yafrl.externalSignal
+import io.github.yafrl.compose.composeState
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4

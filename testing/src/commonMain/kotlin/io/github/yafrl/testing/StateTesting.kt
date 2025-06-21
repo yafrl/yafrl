@@ -1,12 +1,12 @@
 package io.github.yafrl.testing
 
-import io.github.sintrastes.yafrl.EventState
-import io.github.sintrastes.yafrl.SampleScope
-import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.sample
-import io.github.sintrastes.yafrl.timeline.debugging.EventLogger
-import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.yafrl.EventState
+import io.github.yafrl.SampleScope
+import io.github.yafrl.Signal
+import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.sample
+import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.Timeline
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.next
@@ -60,8 +60,8 @@ fun atArbitraryState(
 
 /**
  * Performs a random valid action in the current [Timeline], simulating an
- *  arbitrary external action (i.e. events from a [io.github.sintrastes.yafrl.BroadcastEvent],
- *  or state updates from a [io.github.sintrastes.yafrl.BindingSignal].
+ *  arbitrary external action (i.e. events from a [io.github.yafrl.BroadcastEvent],
+ *  or state updates from a [io.github.yafrl.BindingSignal].
  **/
 @OptIn(FragileYafrlAPI::class)
 internal fun randomlyStepStateSpace(

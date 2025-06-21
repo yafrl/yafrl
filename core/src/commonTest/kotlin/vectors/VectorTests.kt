@@ -1,16 +1,16 @@
 package vectors
 
-import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.const
-import io.github.sintrastes.yafrl.*
-import io.github.sintrastes.yafrl.behaviors.integrate
-import io.github.sintrastes.yafrl.behaviors.plus
-import io.github.sintrastes.yafrl.timeline.Timeline
-import io.github.sintrastes.yafrl.vector.Double2
-import io.github.sintrastes.yafrl.vector.Double3
-import io.github.sintrastes.yafrl.vector.Float2
-import io.github.sintrastes.yafrl.vector.Float3
-import io.github.sintrastes.yafrl.vector.ScalarSpace
-import io.github.sintrastes.yafrl.vector.VectorSpace
+import io.github.yafrl.behaviors.Behavior.Companion.const
+import io.github.yafrl.*
+import io.github.yafrl.behaviors.integrate
+import io.github.yafrl.behaviors.plus
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.vector.Double2
+import io.github.yafrl.vector.Double3
+import io.github.yafrl.vector.Float2
+import io.github.yafrl.vector.Float3
+import io.github.yafrl.vector.ScalarSpace
+import io.github.yafrl.vector.VectorSpace
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec

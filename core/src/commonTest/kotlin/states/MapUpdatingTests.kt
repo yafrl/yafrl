@@ -1,8 +1,8 @@
 package states
 
-import io.github.sintrastes.yafrl.*
-import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.yafrl.*
+import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest

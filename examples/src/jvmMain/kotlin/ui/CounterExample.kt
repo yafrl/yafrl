@@ -13,11 +13,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.Signal
-import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.compose.YafrlCompose
-import io.github.sintrastes.yafrl.compose.composeState
+import io.github.yafrl.Event
+import io.github.yafrl.Signal
+import io.github.yafrl.externalEvent
+import io.github.yafrl.compose.YafrlCompose
+import io.github.yafrl.compose.composeState
 
 object CounterComponent {
     class ViewModel(

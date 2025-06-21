@@ -10,11 +10,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import io.github.sintrastes.yafrl.Event
-import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.compose.YafrlCompose
-import io.github.sintrastes.yafrl.compose.composeState
-import io.github.sintrastes.yafrl.externalSignal
+import io.github.yafrl.Event
+import io.github.yafrl.externalEvent
+import io.github.yafrl.compose.YafrlCompose
+import io.github.yafrl.compose.composeState
+import io.github.yafrl.externalSignal
 
 class NavigationComponent {
     sealed class ScreenData {
@@ -26,7 +26,7 @@ class NavigationComponent {
     class ViewModel(
         counter1Clicks: Event<Unit>,
         counter2Clicks: Event<Unit>,
-        currentScreen: io.github.sintrastes.yafrl.Signal<String>
+        currentScreen: io.github.yafrl.Signal<String>
     ) {
         val counter1 = CounterComponent.ViewModel(counter1Clicks).count
 
