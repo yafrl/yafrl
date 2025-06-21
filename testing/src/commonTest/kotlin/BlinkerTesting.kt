@@ -5,7 +5,7 @@ import io.github.sintrastes.yafrl.behaviors.not
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.kotest.core.spec.style.FunSpec
 

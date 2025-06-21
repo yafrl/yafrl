@@ -3,7 +3,8 @@ package behaviors
 import io.github.sintrastes.yafrl.BroadcastEvent
 import io.github.sintrastes.yafrl.behaviors.*
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.sample
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -27,13 +28,15 @@ class BehaviorTests : FunSpec({
 
         val mapped = behavior.map { it * 2 }
 
-        val value = behavior.value
-        val mappedValue = mapped.value
+        sample {
+            val value = behavior.sampleValue()
+            val mappedValue = mapped.sampleValue()
 
-        val difference = abs(value * 2 - mappedValue)
+            val difference = abs(value * 2 - mappedValue)
 
-        assertTrue("Difference between mapped and unmapped value was $difference") {
-            difference < 0.1f
+            assertTrue("Difference between mapped and unmapped value was $difference") {
+                difference < 0.1f
+            }
         }
     }
 
@@ -55,15 +58,17 @@ class BehaviorTests : FunSpec({
 
         val sampled = behavior.sampleState()
 
-        val initial = sampled.value
+        sample {
+            val initial = sampled.currentValue()
 
-        delay(10.milliseconds)
+            delay(10.milliseconds)
 
-        assertEquals(initial, sampled.value)
+            assertEquals(initial, sampled.currentValue())
 
-        event.send(0.1.seconds)
+            event.send(0.1.seconds)
 
-        assertNotEquals(initial, sampled.value)
+            assertNotEquals(initial, sampled.currentValue())
+        }
     }
 
     test("Time transformation transforms time") {
@@ -76,13 +81,15 @@ class BehaviorTests : FunSpec({
         val transformed = behavior
             .transformTime { time -> (3 * time.inWholeMilliseconds).milliseconds }
 
-        assertEquals(0, transformed.value)
+        sample {
+            assertEquals(0, transformed.sampleValue())
 
-        clock.send(1.0.seconds)
+            clock.send(1.0.seconds)
 
-        assertEquals(1.0.seconds, Timeline.currentTimeline().time)
+            assertEquals(1.0.seconds, Timeline.currentTimeline().time)
 
-        assertEquals(6, transformed.value)
+            assertEquals(6, transformed.sampleValue())
+        }
     }
 
     test("FlatMap switches between behaviors") {
@@ -99,11 +106,13 @@ class BehaviorTests : FunSpec({
             if (selected) behavior1 else behavior2
         }
 
-        assertEquals(0, behavior.value)
+        sample {
+            assertEquals(0, behavior.sampleValue())
 
-        selected = false
+            selected = false
 
-        assertEquals(1, behavior.value)
+            assertEquals(1, behavior.sampleValue())
+        }
     }
 
     test("Polynomials sum exactly") {
@@ -129,10 +138,12 @@ class BehaviorTests : FunSpec({
 
         val behavior = initial.until(next)
 
-        assertEquals(1, behavior.value)
+        sample {
+            assertEquals(1, behavior.sampleValue())
 
-        next.send(Behavior.continuous { 2 })
+            next.send(Behavior.continuous { 2 })
 
-        assertEquals(2, behavior.value)
+            assertEquals(2, behavior.sampleValue())
+        }
     }
 })

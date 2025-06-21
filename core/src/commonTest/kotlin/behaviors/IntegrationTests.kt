@@ -2,15 +2,17 @@ package behaviors
 
 import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.integral
 import io.github.sintrastes.yafrl.BroadcastEvent
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.const
 import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.behaviors.integrate
 import io.github.sintrastes.yafrl.behaviors.integrateWith
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.behaviors.plus
+import io.github.sintrastes.yafrl.runYafrl
 import io.github.sintrastes.yafrl.vector.ScalarSpace
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -23,35 +25,32 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(FragileYafrlAPI::class)
 class IntegrationTests: FunSpec({
     test("Integration can be used to compute variable velocity") {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default),
-            initClock = {
-                externalEvent<Duration>()
+        runYafrl(CoroutineScope(Dispatchers.Default)) {
+
+            val modifier = externalSignal<Float>(0f)
+
+            val deltaTime = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
+
+            val position = integral(
+                const(1f) + integral(modifier.asBehavior())
+            )
+
+            assertEquals(0f, position.sampleValue())
+
+            deltaTime.send(1.0.seconds)
+
+            assertEquals(1f, position.sampleValue())
+
+            modifier.value = 1f
+
+            deltaTime.send(1.0.seconds)
+
+            assertTrue("Expected 2.5 but was ${position.sampleValue()}") {
+                abs(position.sampleValue() - 2.5f) < 0.01 // 0.000001 // TODO: Accuracy is not as good as it was here.
             }
-        )
-
-        val modifier = externalSignal<Float>(0f)
-
-        val deltaTime = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
-
-        val position = integral(
-            const(1f) + integral(modifier.asBehavior())
-        )
-
-        assertEquals(0f, position.value)
-
-        deltaTime.send(1.0.seconds)
-
-        assertEquals(1f, position.value)
-
-        modifier.value = 1f
-
-        deltaTime.send(1.0.seconds)
-
-        assertTrue("Expected 2.5 but was ${position.value}") {
-            abs(position.value - 2.5f) < 0.01 // 0.000001 // TODO: Accuracy is not as good as it was here.
         }
     }
 
@@ -60,35 +59,37 @@ class IntegrationTests: FunSpec({
             val integrated = Behavior.continuous { 0.0 }
                 .integrate()
 
-            integrated.sampleValue(1.0.seconds)
+            integrated.sampleValueAt(1.0.seconds)
 
-            integrated.sampleValue(0.0.seconds)
+            integrated.sampleValueAt(0.0.seconds)
         }
     }
 
     test("Can specify custom vector space for integration") {
-        val integrated = Behavior.continuous { 1.0 }
-            .integrate(ScalarSpace.double())
+        runYafrl {
+            val integrated = Behavior.continuous { 1.0 }
+                .integrate(ScalarSpace.double())
 
-        val integrated2 = Behavior.continuous { 1.0 }
-            .integrate()
+            val integrated2 = Behavior.continuous { 1.0 }
+                .integrate()
 
-        assertEquals(integrated.value, integrated2.value)
+            assertEquals(integrated.sampleValue(), integrated2.sampleValue())
+        }
     }
 
     test("Can specify custom accumulator for integration") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
+            val integrated = Behavior.continuous { time -> 1.0 }
+                .integrateWith(0.0, accum = { x, y -> min(5.0, x + y) })
 
-        val integrated = Behavior.continuous { time -> 1.0 }
-            .integrateWith(0.0, accum = { x, y -> min(5.0, x + y) })
+            // Wait a long time
+            clock.send(100.0.seconds)
 
-        // Wait a long time
-        clock.send(100.0.seconds)
-
-        // Should still be 5.0 because of the custom operation
-        assertTrue(integrated.value <= 5.0)
+            // Should still be 5.0 because of the custom operation
+            assertTrue(integrated.sampleValue() <= 5.0)
+        }
     }
 
     test("Exact integral is correct") {

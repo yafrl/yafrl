@@ -6,8 +6,8 @@ import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.behaviors.not
 import io.github.sintrastes.yafrl.behaviors.plus
-import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.internal.current
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.current
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.retry
 import io.kotest.core.spec.style.FunSpec
@@ -90,22 +90,26 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("mapNotNull emits only non null elements") {
-        val events = externalEvent<Int>()
+        runYafrl {
+            val events = externalEvent<Int>()
 
-        // Should only let event events through.
-        val mapped = events.mapNotNull {
-            if(it % 2 == 0) { it + 1 } else null
+            // Should only let event events through.
+            val mapped = events.mapNotNull {
+                if (it % 2 == 0) {
+                    it + 1
+                } else null
+            }
+
+            val results = mapped.scan(listOf<Int>()) { xs, x -> xs + listOf(x) }
+
+            events.send(1)
+
+            assertEquals(listOf(), results.currentValue())
+
+            events.send(2)
+
+            assertEquals(listOf(3), results.currentValue())
         }
-
-        val results = mapped.scan(listOf<Int>()) { xs, x -> xs + listOf(x) }
-
-        events.send(1)
-
-        assertEquals(listOf(), results.value)
-
-        events.send(2)
-
-        assertEquals(listOf(3), results.value)
     }
 
     test("filtered event using condition") {
@@ -251,97 +255,106 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Event does not fire if gated") {
-        val clicks = externalEvent<Unit>()
+        runYafrl {
+            val clicks = externalEvent<Unit>()
 
-        val enabledState = externalSignal<Boolean>(true)
+            val enabledState = externalSignal<Boolean>(true)
 
-        val enabled = enabledState.asBehavior()
+            val enabled = enabledState.asBehavior()
 
-        val count = clicks.gate(!enabled).scan(0) { count, _click ->
-            count + 1
+            val count = clicks.gate(!enabled).scan(0) { count, _click ->
+                count + 1
+            }
+
+            clicks.send(Unit)
+
+            assertEquals(1, count.currentValue())
+
+            enabledState.value = false
+
+            clicks.send(Unit)
+
+            assertEquals(1, count.currentValue())
+
+            enabledState.value = true
+
+            clicks.send(Unit)
+
+            assertEquals(2, count.currentValue())
         }
-
-        clicks.send(Unit)
-
-        assertEquals(1, count.value)
-
-        enabledState.value = false
-
-        clicks.send(Unit)
-
-        assertEquals(1, count.value)
-
-        enabledState.value = true
-
-        clicks.send(Unit)
-
-        assertEquals(2, count.value)
     }
 
     test("Window works as intended") {
-        val event = externalEvent<Int>()
-
-        val windowed = Signal.hold(listOf(), event.window(3))
-
-        event.send(1)
-        event.send(2)
-        event.send(3)
-
-        assertEquals(listOf(1, 2, 3), windowed.value)
-
-        event.send(4)
-
-        assertEquals(listOf(2, 3, 4), windowed.value)
-    }
-
-    test("Debounce only emits last event") {
-        // For some reason this test is very flaky.
-        retry(5, 2.minutes) {
-
-            Timeline.initializeTimeline(debug = true)
-
+        runYafrl {
             val event = externalEvent<Int>()
 
-            val debounced = event.debounced(100.milliseconds).hold(0)
+            val windowed = Signal.hold(listOf(), event.window(3))
 
             event.send(1)
             event.send(2)
             event.send(3)
 
-            delay(100.milliseconds)
+            assertEquals(listOf(1, 2, 3), windowed.currentValue())
 
-            eventually(1.seconds) {
-                assertEquals(3, debounced.value)
+            event.send(4)
+
+            assertEquals(listOf(2, 3, 4), windowed.currentValue())
+        }
+    }
+
+    test("Debounce only emits last event") {
+        // For some reason this test is very flaky.
+        retry(5, 2.minutes) {
+            runYafrl {
+                Timeline.initializeTimeline(debug = true)
+
+                val event = externalEvent<Int>()
+
+                val debounced = event.debounced(100.milliseconds).hold(0)
+
+                event.send(1)
+                event.send(2)
+                event.send(3)
+
+                delay(100.milliseconds)
+
+                eventually(1.seconds) {
+                    assertEquals(3, debounced.currentValue())
+                }
             }
         }
     }
 
     test("Tick emits events at specified intervals") {
-        val ticks = Event
-            .tick(50.milliseconds)
-            .scan(0) { ticks, _ -> ticks + 1 }
+        runYafrl {
+            val ticks = Event
+                .tick(50.milliseconds)
+                .scan(0) { ticks, _ -> ticks + 1 }
 
-        repeat(10) {
-            delay(50.milliseconds)
+            repeat(10) {
+                delay(50.milliseconds)
 
-            // TODO: This should not be required. Laziness bug.
-            ticks.value
-        }
+                // TODO: This should not be required. Laziness bug.
+                ticks.currentValue()
+            }
 
-        eventually {
-            assertEquals(10, ticks.value)
+            eventually {
+                assertEquals(10, ticks.currentValue())
+            }
         }
     }
 
     test("Throttled event emits immediately") {
-        val event = externalEvent<Unit>()
+        runYafrl {
+            val event = externalEvent<Unit>()
 
-        val throttled = event
-            .throttled(100.milliseconds)
+            val throttled = event
+                .throttled(100.milliseconds)
 
-        event.send(Unit)
+            event.send(Unit)
 
-        assertEquals(EventState.Fired(Unit), throttled.node.current())
+            assertEquals(EventState.Fired(Unit), throttled.node.current())
+        }
     }
 
     test("Async events eventually emit") {
@@ -353,100 +366,94 @@ class EventUpdatingTests : FunSpec({
         }
             .hold(0)
 
-        runTest {
+        runYafrl {
             clicks.send(Unit)
 
             eventually {
-                assertEquals(42, response.value)
+                assertEquals(42, response.currentValue())
             }
         }
     }
 
     test("Impulse behaves as expected") {
-        val event2 = externalEvent<Duration>()
+        runYafrl {
+            val event2 = externalEvent<Duration>()
 
-        Timeline.initializeTimeline(initClock = {
-            event2
-        })
+            Timeline.initializeTimeline(initClock = {
+                event2
+            })
 
-        val event1 = externalEvent<Unit>()
+            val event1 = externalEvent<Unit>()
 
-        val impulse = event1.impulse(0, 1)
+            val impulse = event1.impulse(0, 1)
 
-        assertEquals(0, impulse.value)
+            assertEquals(0, impulse.sampleValue())
 
-        event1.send(Unit)
+            event1.send(Unit)
 
-        assertEquals(1, impulse.value)
+            assertEquals(1, impulse.sampleValue())
 
-        event2.send(0.1.seconds)
+            event2.send(0.1.seconds)
 
-        assertEquals(0, impulse.value)
+            assertEquals(0, impulse.sampleValue())
 
-        event1.send(Unit)
+            event1.send(Unit)
 
-        event1.send(Unit)
+            event1.send(Unit)
 
-        assertEquals(1, impulse.value)
+            assertEquals(1, impulse.sampleValue())
+        }
     }
 
     test("Combined impulses behaves as expected") {
-        val event3 = externalEvent<Duration>()
+        runYafrl {
+            val event3 = clock as BroadcastEvent<Duration>
 
-        Timeline.initializeTimeline(initClock = {
-            event3
-        })
+            val event1 = externalEvent<Unit>()
 
-        val event1 = externalEvent<Unit>()
+            val event2 = externalEvent<Unit>()
 
-        val event2 = externalEvent<Unit>()
+            val state = event1.impulse(0, 1) +
+                    event2.impulse(0, 2)
 
-        val state = event1.impulse(0, 1) +
-                event2.impulse(0, 2)
+            assertEquals(0, state.sampleValue())
 
-        assertEquals(0, state.value)
+            event1.send(Unit)
 
-        event1.send(Unit)
+            assertEquals(1, state.sampleValue())
 
-        assertEquals(1, state.value)
+            event3.send(0.1.seconds)
 
-        event3.send(0.1.seconds)
+            assertEquals(0, state.sampleValue())
 
-        assertEquals(0, state.value)
+            event2.send(Unit)
 
-        event2.send(Unit)
+            assertEquals(2, state.sampleValue())
 
-        assertEquals(2, state.value)
+            event3.send(0.1.seconds)
 
-        event3.send(0.1.seconds)
-
-        assertEquals(0, state.value)
+            assertEquals(0, state.sampleValue())
+        }
     }
 
     test("Impulse resets after clock tick") {
-        var clock: BroadcastEvent<Duration>? = null
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default),
-            initClock = {
-                clock!!
-            }
-        )
+        runYafrl {
+            val clock = clock as BroadcastEvent<Duration>
 
-        clock = externalEvent()
+            val event = externalEvent<Unit>()
 
-        val event = externalEvent<Unit>()
+            val signal = event.impulse(0, 1)
 
-        val signal = event.impulse(0, 1)
+            assertEquals(0, signal.sampleValue())
 
-        assertEquals(0, signal.value)
+            event.send(Unit)
 
-        event.send(Unit)
+            assertEquals(1, signal.sampleValue())
 
-        assertEquals(1, signal.value)
+            clock.send(1.0.seconds)
 
-        clock.send(1.0.seconds)
-
-        assertEquals(0, signal.value)
+            assertEquals(0, signal.sampleValue())
+        }
     }
 
     test("mergeAll updates if either of the events updates") {

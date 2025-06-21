@@ -1,4 +1,4 @@
-package io.github.sintrastes.yafrl.internal
+package io.github.sintrastes.yafrl.timeline
 
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import kotlinx.coroutines.flow.Flow

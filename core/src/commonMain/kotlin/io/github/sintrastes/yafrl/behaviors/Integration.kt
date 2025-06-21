@@ -2,7 +2,7 @@ package io.github.sintrastes.yafrl.behaviors
 
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlin.math.abs
 import kotlin.math.max
@@ -81,8 +81,9 @@ internal class IntegratedBehavior<T>(
 
     val values = mutableMapOf<Duration, T>(lastSampled to initial)
 
+    @FragileYafrlAPI
     @OptIn(ExperimentalYafrlAPI::class)
-    override fun sampleValue(time: Duration): T = run {
+    override fun sampleValueAt(time: Duration): T = run {
         val cached = values[time]
 
         // Check prevents a stack overflow.
@@ -108,18 +109,18 @@ internal class IntegratedBehavior<T>(
 
             with(vectorSpace) {
                 // Simpson’s rule weights: 1, 4, 2, 4, …, 2, 4, 1
-                var sum: T = behavior.sampleValue(start)
+                var sum: T = behavior.sampleValueAt(start)
 
                 for (i in 1 until subdivisions) {
                     val t = start + stepDur * i
                     sum = sum + if (i % 2 == 0) {
-                        2.0 * behavior.sampleValue(t)
+                        2.0 * behavior.sampleValueAt(t)
                     } else {
-                        4.0 * behavior.sampleValue(t)
+                        4.0 * behavior.sampleValueAt(t)
                     }
                 }
 
-                sum = sum + behavior.sampleValue(start + dt)
+                sum = sum + behavior.sampleValueAt(start + dt)
 
                 // Also add in anything from definite integrals.
                 val impulses = behavior.measureImpulses(start, dt)

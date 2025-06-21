@@ -8,29 +8,35 @@ import kotlin.test.assertEquals
 
 class StateSummationTests: FunSpec({
     test("Test summing float states") {
-        val state1 = externalSignal(1f)
-        val state2 = externalSignal(2f)
+        runYafrl {
+            val state1 = externalSignal(1f)
+            val state2 = externalSignal(2f)
 
-        val summed = state1 + state2
+            val summed = state1 + state2
 
-        assertEquals(3f, summed.value)
+            assertEquals(3f, summed.currentValue())
+        }
     }
 
     test("Test summing float2 states") {
-        val state1 = externalSignal(Float2(1f, 1f))
-        val state2 = externalSignal(Float2(2f, 2f))
+        runYafrl {
+            val state1 = externalSignal(Float2(1f, 1f))
+            val state2 = externalSignal(Float2(2f, 2f))
 
-        val summed = state1 + state2
+            val summed = state1 + state2
 
-        assertEquals(Float2(3f, 3f), summed.value)
+            assertEquals(Float2(3f, 3f), summed.currentValue())
+        }
     }
 
     test("Test summing float3 states") {
-        val state1 = externalSignal(Float3(1f, 1f, 1f))
-        val state2 = externalSignal(Float3(2f, 2f, 2f))
+        runYafrl {
+            val state1 = externalSignal(Float3(1f, 1f, 1f))
+            val state2 = externalSignal(Float3(2f, 2f, 2f))
 
-        val summed = state1 + state2
+            val summed = state1 + state2
 
-        assertEquals(Float3(3f, 3f, 3f), summed.value)
+            assertEquals(Float3(3f, 3f, 3f), summed.currentValue())
+        }
     }
 })

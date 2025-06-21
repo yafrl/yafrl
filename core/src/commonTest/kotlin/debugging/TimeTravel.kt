@@ -2,7 +2,8 @@ package debugging
 
 import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.sample
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertEquals
 
@@ -64,22 +65,24 @@ class TimeTravel: FunSpec({
 
         val count = clicks.scan(0) { it, _ -> it + 1 }
 
-        assertEquals(0, count.value)
+        sample {
+            assertEquals(0, count.currentValue())
 
-        clicks.send(Unit)
+            clicks.send(Unit)
 
-        assertEquals(1, count.value)
+            assertEquals(1, count.currentValue())
 
-        clicks.send(Unit)
+            clicks.send(Unit)
 
-        assertEquals(2, count.value)
+            assertEquals(2, count.currentValue())
 
-        Timeline.currentTimeline().rollbackState()
+            Timeline.currentTimeline().rollbackState()
 
-        assertEquals(1, count.value)
+            assertEquals(1, count.currentValue())
 
-        clicks.send(Unit)
+            clicks.send(Unit)
 
-        assertEquals(2, count.value)
+            assertEquals(2, count.currentValue())
+        }
     }
 })

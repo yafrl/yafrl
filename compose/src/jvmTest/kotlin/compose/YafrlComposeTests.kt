@@ -2,7 +2,7 @@ package compose
 
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.compose.YafrlCompose
 import androidx.compose.material.Text
 import androidx.compose.runtime.*

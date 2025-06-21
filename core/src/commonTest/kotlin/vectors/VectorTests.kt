@@ -4,7 +4,7 @@ import io.github.sintrastes.yafrl.behaviors.Behavior.Companion.const
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.behaviors.integrate
 import io.github.sintrastes.yafrl.behaviors.plus
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.vector.Double2
 import io.github.sintrastes.yafrl.vector.Double3
 import io.github.sintrastes.yafrl.vector.Float2
@@ -30,73 +30,65 @@ import kotlin.time.Duration.Companion.seconds
 
 class VectorTests : FunSpec({
     test("Gravity simulation works") {
-        val clock by lazy { externalEvent<Duration>() }
+        runYafrl {
+            val clock = clock as BroadcastEvent<Duration>
 
-        Timeline.initializeTimeline(
-            initClock = {
-                clock
+            val gravityAcceleration = Float2(0f, -9.81f)
+
+            val initialPosition = Float2(20f, 100f)
+
+            val gravity = const(gravityAcceleration).integrate()
+
+            val position = const(initialPosition) + gravity.integrate()
+
+            assertEquals(
+                Float2(20f, 100f),
+                position.sampleValue()
+            )
+
+            val samples = 100
+
+            repeat(samples) {
+                clock.send((1.0 / samples).seconds)
+                position.sampleValue()
             }
-        )
 
-        val gravityAcceleration = Float2(0f, -9.81f)
-
-        val initialPosition = Float2(20f, 100f)
-
-        val gravity = const(gravityAcceleration).integrate()
-
-        val position = const(initialPosition) + gravity.integrate()
-
-        assertEquals(
-            Float2(20f, 100f),
-            position.value
-        )
-
-        val samples = 100
-
-        repeat(samples) {
-            clock.send((1.0 / samples).seconds)
-            position.value
-        }
-
-        assertTrue(
-            "Value was: ${position.value.y}"
-        ) {
-            95.095f == position.value.y
+            assertTrue(
+                "Value was: ${position.sampleValue().y}"
+            ) {
+                95.095f == position.sampleValue().y
+            }
         }
     }
 
     test("Gravity simulation works 3D") {
-        val clock by lazy { externalEvent<Duration>() }
+        runYafrl {
+            val clock = clock as BroadcastEvent<Duration>
 
-        Timeline.initializeTimeline(
-            initClock = {
-                clock
+            val gravityAcceleration = Float3(0f, 0f, -9.81f)
+
+            val initialPosition = Float3(20f, 30f, 100f)
+
+            val gravity = const(gravityAcceleration).integrate()
+
+            val position = const(initialPosition) + gravity.integrate()
+
+            assertEquals(
+                Float3(20f, 30f, 100f),
+                position.sampleValue()
+            )
+
+            val samples = 100
+
+            repeat(samples) {
+                clock.send((1.0 / samples).seconds)
+                position.sampleValue()
             }
-        )
 
-        val gravityAcceleration = Float3(0f, 0f, -9.81f)
-
-        val initialPosition = Float3(20f, 30f, 100f)
-
-        val gravity = const(gravityAcceleration).integrate()
-
-        val position = const(initialPosition) + gravity.integrate()
-
-        assertEquals(
-            Float3(20f, 30f, 100f),
-            position.value
-        )
-
-        val samples = 100
-
-        repeat(samples) {
-            clock.send((1.0 / samples).seconds)
-            position.value
+            assertTrue(
+                95.095f == position.sampleValue().z
+            )
         }
-
-        assertTrue(
-            95.095f == position.value.z
-        )
     }
 
     test("Float vector arithmetic works") {

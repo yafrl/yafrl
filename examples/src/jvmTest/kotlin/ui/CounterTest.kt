@@ -1,12 +1,15 @@
 package ui
 
+import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.current
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.test.assertEquals
 
+@OptIn(FragileYafrlAPI::class)
 class CounterTest : FunSpec({
     test("Counter resets state after two events with timetravel debugger") {
         Timeline.initializeTimeline(
@@ -21,18 +24,18 @@ class CounterTest : FunSpec({
 
         val viewModel = CounterComponent.ViewModel(clicks)
 
-        assertEquals(0, viewModel.count.value)
+        assertEquals(0, viewModel.count.node.current())
 
         clicks.send(Unit)
 
         clicks.send(Unit)
 
-        assertEquals(2, viewModel.count.value)
+        assertEquals(2, viewModel.count.node.current())
 
         Timeline.currentTimeline()
             .rollbackState()
 
-        assertEquals(1, viewModel.count.value)
+        assertEquals(1, viewModel.count.node.current())
     }
 
     test("Counter resets state with timetravel debugger") {
@@ -48,15 +51,15 @@ class CounterTest : FunSpec({
 
         val viewModel = CounterComponent.ViewModel(clicks)
 
-        assertEquals(0, viewModel.count.value)
+        assertEquals(0, viewModel.count.node.current())
 
         clicks.send(Unit)
 
-        assertEquals(1, viewModel.count.value)
+        assertEquals(1, viewModel.count.node.current())
 
         Timeline.currentTimeline()
             .rollbackState()
 
-        assertEquals(0, viewModel.count.value)
+        assertEquals(0, viewModel.count.node.current())
     }
 })

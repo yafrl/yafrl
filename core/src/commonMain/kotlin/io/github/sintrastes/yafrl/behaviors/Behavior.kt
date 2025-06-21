@@ -7,7 +7,8 @@ import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.current
 import io.github.sintrastes.yafrl.vector.VectorSpace
 import kotlin.math.pow
 import kotlin.time.Duration
@@ -36,7 +37,8 @@ import kotlin.time.Duration
  **/
 sealed interface Behavior<out A> {
     /** Calculates the value at the specified time. */
-    fun sampleValue(time: Duration): A
+    @FragileYafrlAPI
+    fun sampleValueAt(time: Duration): A
 
     /**
      * Used to support dirac impulses in behaviors.
@@ -47,9 +49,6 @@ sealed interface Behavior<out A> {
      **/
     @ExperimentalYafrlAPI
     fun measureImpulses(time: Duration, dt: Duration): A
-
-    val value: A
-        get() = sampleValue(Timeline.currentTimeline().time)
 
     /**
      * Apply a function to the time used to sample the behavior.
@@ -63,8 +62,9 @@ sealed interface Behavior<out A> {
         private val transformation: (Duration) -> Duration,
         private val behavior: Behavior<A>
     ) : Behavior<A> {
-        override fun sampleValue(time: Duration): A {
-            return behavior.sampleValue(transformation(time))
+        @OptIn(FragileYafrlAPI::class)
+        override fun sampleValueAt(time: Duration): A {
+            return behavior.sampleValueAt(transformation(time))
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): A {
@@ -106,7 +106,7 @@ sealed interface Behavior<out A> {
     fun sample(
         times: Event<Any?> = Timeline.currentTimeline().clock
     ): Event<A> {
-        return times.map { value }
+        return times.map { sampleValue() }
     }
 
     fun <B> map(f: (A) -> B): Behavior<B> {
@@ -122,8 +122,10 @@ sealed interface Behavior<out A> {
         private val original: Behavior<A>,
         private val f: (A) -> B
     ) : Behavior<B> {
-        override fun sampleValue(time: Duration): B {
-            return f(original.sampleValue(time))
+
+        @FragileYafrlAPI
+        override fun sampleValueAt(time: Duration): B {
+            return f(original.sampleValueAt(time))
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): B {
@@ -135,15 +137,18 @@ sealed interface Behavior<out A> {
     private class Flattened<A>(
         private val original: Behavior<Behavior<A>>
     ) : Behavior<A> {
-        override fun sampleValue(time: Duration): A {
+
+        @FragileYafrlAPI
+        override fun sampleValueAt(time: Duration): A {
             return original
-                .sampleValue(time)
-                .sampleValue(time)
+                .sampleValueAt(time)
+                .sampleValueAt(time)
         }
 
+        @OptIn(FragileYafrlAPI::class)
         override fun measureImpulses(time: Duration, dt: Duration): A {
             return original
-                .sampleValue(time)
+                .sampleValueAt(time)
                 .measureImpulses(time, dt)
         }
     }
@@ -153,10 +158,11 @@ sealed interface Behavior<out A> {
      *
      * See [sample].
      **/
+    @OptIn(FragileYafrlAPI::class)
     fun sampleState(
         times: Event<Any?> = Timeline.currentTimeline().timeBehavior.updated()
     ): Signal<A> {
-        return Signal.Companion.hold(value, sample(times))
+        return Signal.Companion.hold(sampleValueAt(Timeline.currentTimeline().time), sample(times))
     }
 
     companion object {
@@ -230,7 +236,7 @@ sealed interface Behavior<out A> {
             }
         }
 
-        override fun sampleValue(time: Duration): B {
+        override fun sampleValueAt(time: Duration): B {
             return impulses.get(time) ?: zeroValue
         }
 
@@ -271,7 +277,8 @@ sealed interface Behavior<out A> {
             Polynomial(vectorSpace.with(accum), newCoefficients)
         }
 
-        override fun sampleValue(time: Duration): A = with(vectorSpace) {
+        @FragileYafrlAPI
+        override fun sampleValueAt(time: Duration): A = with(vectorSpace) {
             val seconds = time.inWholeMilliseconds / 1000f
 
             return coefficients
@@ -293,7 +300,8 @@ sealed interface Behavior<out A> {
         internal val vectorSpace: Lazy<VectorSpace<A>>,
         internal val f: (Duration) -> A
     ) : Behavior<A> {
-        override fun sampleValue(time: Duration): A {
+        @FragileYafrlAPI
+        override fun sampleValueAt(time: Duration): A {
             return f(time)
         }
 
@@ -309,7 +317,8 @@ sealed interface Behavior<out A> {
         private val instance: () -> VectorSpace<A>,
         private val current: () -> A
     ) : Behavior<A> {
-        override fun sampleValue(time: Duration): A {
+        @FragileYafrlAPI
+        override fun sampleValueAt(time: Duration): A {
             return current()
         }
 
@@ -323,8 +332,9 @@ sealed interface Behavior<out A> {
         val first: Behavior<A>,
         val second: Behavior<A>
     ) : Behavior<A>, VectorSpace<A> by vectorSpace {
-        override fun sampleValue(time: Duration): A {
-            return first.sampleValue(time) + second.sampleValue(time)
+        @FragileYafrlAPI
+        override fun sampleValueAt(time: Duration): A {
+            return first.sampleValueAt(time) + second.sampleValueAt(time)
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): A {
@@ -348,8 +358,9 @@ operator fun Behavior<Boolean>.not(): Behavior<Boolean> {
  *  Compare with [switcher](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#v:switcher)
  *  from [reflex-frp](https://reflex-frp.org/) and see also [Behavior.until].
  **/
+@OptIn(FragileYafrlAPI::class)
 fun <A> Signal<Behavior<A>>.switcher(): Behavior<A> {
-    return Until(lazy { this.value }, this.updated())
+    return Until(lazy { this.node.current() }, this.updated())
 }
 
 @OptIn(FragileYafrlAPI::class)
@@ -368,9 +379,9 @@ internal class Until<A>(
         }
     }
 
-    override fun sampleValue(time: Duration): A {
+    override fun sampleValueAt(time: Duration): A {
         return (current ?: initialBehavior.value)
-            .sampleValue(time)
+            .sampleValueAt(time)
     }
 
     override fun measureImpulses(time: Duration, dt: Duration): A {

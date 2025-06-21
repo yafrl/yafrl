@@ -1,8 +1,9 @@
 package io.github.sintrastes.yafrl
 
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.internal.Node
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Node
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.current
 
 interface SignalScope {
     fun <A> Signal<A>.bind(): A
@@ -76,7 +77,7 @@ fun <A> signal(body: SignalScope.() -> A): Signal<A> {
     val initialScope = object: SignalScope {
         override fun <A> Signal<A>.bind(): A {
             parentNodes += node
-            return value
+            return node.current()
         }
     }
 
@@ -85,7 +86,7 @@ fun <A> signal(body: SignalScope.() -> A): Signal<A> {
     // When recomputing, just return the latest values of all of the states.
     val recomputeScope = object: SignalScope {
         override fun <A> Signal<A>.bind(): A {
-            return value
+            return node.current()
         }
     }
 

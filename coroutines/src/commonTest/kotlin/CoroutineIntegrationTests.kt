@@ -1,7 +1,8 @@
 
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.coroutines.asEvent
 import io.github.sintrastes.yafrl.coroutines.asState
+import io.github.sintrastes.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CoroutineScope
@@ -19,7 +20,7 @@ class CoroutineIntegrationTests: FunSpec({
     test("External events are received") {
         Timeline.initializeTimeline(CoroutineScope(Dispatchers.Default))
 
-        runTest {
+        runYafrl {
             val flow = MutableSharedFlow<Unit>()
 
             val event = flow.asEvent()
@@ -30,7 +31,7 @@ class CoroutineIntegrationTests: FunSpec({
 
             withContext(Dispatchers.Default) { delay(25) }
 
-            events.value.size shouldBe 1
+            events.currentValue().size shouldBe 1
         }
     }
 
@@ -38,18 +39,18 @@ class CoroutineIntegrationTests: FunSpec({
     test("External state changes are received") {
         Timeline.initializeTimeline(CoroutineScope(Dispatchers.Default))
 
-        runTest {
+        runYafrl {
             val stateFlow = MutableStateFlow(0)
 
             val state = stateFlow.asState()
 
-            assertEquals(0, state.value)
+            assertEquals(0, state.currentValue())
 
             stateFlow.value = 1
 
             withContext(Dispatchers.Default) { delay(25) }
 
-            assertEquals(1, state.value)
+            assertEquals(1, state.currentValue())
         }
     }
 })

@@ -88,7 +88,7 @@ Since `yafrl` is synchronous by default, writing tests for `yafrl` code is just 
 
 User-facing (public) APIs for `yafrl`.
 
-# Package io.github.sintrastes.yafrl.internal
+# Package io.github.sintrastes.yafrl.timeline
 
 Internal `yafrl` APIs -- not intended to be used directly
  by users of the library in most use-cases.

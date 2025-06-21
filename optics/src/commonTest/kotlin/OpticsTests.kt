@@ -3,9 +3,10 @@ import arrow.optics.optics
 import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.optics.embed
 import io.github.sintrastes.yafrl.optics.focus
+import io.github.sintrastes.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
 import kotlin.reflect.typeOf
 import kotlin.test.assertEquals
@@ -20,25 +21,23 @@ data object Event1 : CombinedEvent
 data object Event2 : CombinedEvent
 
 class OpticsTests : FunSpec({
-    beforeTest {
-        Timeline.initializeTimeline()
-    }
-
     test("Test embedding events") {
-        val event1 = externalEvent<Event1>()
+        runYafrl {
+            val event1 = externalEvent<Event1>()
 
-        val embedded = event1
-            .embed(arrow.optics.Prism.instanceOf())
+            val embedded = event1
+                .embed(arrow.optics.Prism.instanceOf())
 
-        val collected = Signal.fold(listOf<Event1>(), embedded) { xs, x ->
-            xs + listOf(x)
+            val collected = Signal.fold(listOf<Event1>(), embedded) { xs, x ->
+                xs + listOf(x)
+            }
+
+            assertEquals(listOf(), collected.currentValue())
+
+            event1.send(Event1)
+
+            assertEquals(listOf(Event1), collected.currentValue())
         }
-
-        assertEquals(listOf(), collected.value)
-
-        event1.send(Event1)
-
-        assertEquals(listOf(Event1), collected.value)
     }
 
     // Currently broken, bidirectional binding causes stack overflow.
@@ -69,15 +68,17 @@ class OpticsTests : FunSpec({
     }
 
     test("Test focusing immutable states") {
-        val state = externalSignal(0 to 0)
+        runYafrl {
+            val state = externalSignal(0 to 0)
 
-        val immutableState: Signal<Pair<Int, Int>> = state
+            val immutableState: Signal<Pair<Int, Int>> = state
 
-        val focused = immutableState
-            .focus(Lens.pairFirst())
+            val focused = immutableState
+                .focus(Lens.pairFirst())
 
-        state.value = 1 to 2
+            state.value = 1 to 2
 
-        assertEquals(1, focused.value)
+            assertEquals(1, focused.currentValue())
+        }
     }
 })

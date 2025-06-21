@@ -2,7 +2,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.signal
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
@@ -28,7 +28,7 @@ class CounterStateTesting: FunSpec({
 
         atArbitraryState {
             assertTrue {
-                counter.value >= 0
+                counter.currentValue() >= 0
             }
         }
     }

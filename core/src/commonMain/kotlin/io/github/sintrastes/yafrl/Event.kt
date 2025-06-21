@@ -3,8 +3,8 @@ package io.github.sintrastes.yafrl
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.behaviors.Behavior
-import io.github.sintrastes.yafrl.internal.Node
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Node
+import io.github.sintrastes.yafrl.timeline.Timeline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -71,16 +71,16 @@ internal constructor(
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <B> map(f: (A) -> B): Event<B> {
+    fun <B> map(f: SampleScope.(A) -> B): Event<B> {
         val graph = Timeline.currentTimeline()
 
         return Event(
             graph.createMappedNode(
                 parent = node,
                 f = {
-                    it.map(f)
+                    it.map { f(it) }
                 },
-                initialValue = lazy { EventState.None },
+                initialValue = { EventState.None },
                 onNextFrame = { node ->
                     node.rawValue = EventState.None
                 }
@@ -135,7 +135,7 @@ internal constructor(
             graph.createMappedNode(
                 parent = node,
                 f = { event ->
-                    if (event is EventState.Fired && !condition.value) {
+                    if (event is EventState.Fired && !condition.sampleValueAt(graph.time)) {
                         event
                     } else {
                         EventState.None

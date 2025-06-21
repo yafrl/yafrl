@@ -3,9 +3,9 @@ package io.github.sintrastes.yafrl
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.behaviors.switcher
-import io.github.sintrastes.yafrl.internal.Node
-import io.github.sintrastes.yafrl.internal.Timeline
-import io.github.sintrastes.yafrl.internal.current
+import io.github.sintrastes.yafrl.timeline.Node
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.current
 import io.github.sintrastes.yafrl.vector.Float2
 import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.VectorSpace
@@ -54,9 +54,6 @@ open class Signal<out A> @FragileYafrlAPI constructor(
     val label get() = node.label
 
     @OptIn(FragileYafrlAPI::class)
-    open val value get() = node.current()
-
-    @OptIn(FragileYafrlAPI::class)
     fun labeled(label: String): Signal<A> {
         node.label = label
         return this
@@ -85,17 +82,17 @@ open class Signal<out A> @FragileYafrlAPI constructor(
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <B> map(f: (A) -> B): Signal<B> {
+    fun <B> map(f: SampleScope.(A) -> B): Signal<B> {
         val graph = Timeline.currentTimeline()
 
         return Signal(graph.createMappedNode(node, f))
     }
 
-    fun <B> flatMap(f: (A) -> Signal<B>): Signal<B> {
+    fun <B> flatMap(f: SampleScope.(A) -> Signal<B>): Signal<B> {
         return map(f).flatten()
     }
 
-    fun <B> switchMap(f: (A) -> Event<B>): Event<B> {
+    fun <B> switchMap(f: SampleScope.(A) -> Event<B>): Event<B> {
         return map(f).switch()
     }
 
@@ -109,7 +106,7 @@ open class Signal<out A> @FragileYafrlAPI constructor(
         return Event(
             graph.createMappedNode(
                 parent = node,
-                initialValue = lazy { EventState.None },
+                initialValue = { EventState.None },
                 f = { EventState.Fired(it) }
             )
         )
@@ -319,7 +316,7 @@ inline fun <reified A> Signal<A>.asBehavior(): Behavior<A> {
     } else {
         // If no instance exists, just use sampled so we do not try to get an
         // instance that does not exist at runtime.
-        return Behavior.sampled { this.value }
+        return Behavior.sampled { node.current() }
     }
 }
 
@@ -332,7 +329,7 @@ inline fun <reified A> Signal<A>.asBehavior(): Behavior<A> {
 fun <A> Signal<Event<A>>.switch(): Event<A> {
     val resultEvents = internalBroadcastEvent<A>()
 
-    var currentEvent = value
+    var currentEvent = node.current()
     val eventListener = { event: EventState<A> ->
         if (event is EventState.Fired<A>) resultEvents.send(event.event)
     }
@@ -358,9 +355,9 @@ fun <A> Signal<Event<A>>.switch(): Event<A> {
 fun <A> Signal<Signal<A>>.flatten(): Signal<A> {
     val timeline = Timeline.currentTimeline()
 
-    var currentState = value
+    var currentState = node.current()
 
-    val flattened = internalBindingState(lazy { currentState.value })
+    val flattened = internalBindingState(lazy { currentState.node.current() })
 
     var collector: ((A) -> Unit)? = null
 
@@ -428,8 +425,8 @@ class BindingSignal<A> internal constructor(
     node: Node<A>
 ): Signal<A>(node) {
     @OptIn(FragileYafrlAPI::class)
-    override var value: A
-        get() = super.value
+    var value: A
+        get() = super.node.current()
         set(value) {
             val graph = Timeline.currentTimeline()
 

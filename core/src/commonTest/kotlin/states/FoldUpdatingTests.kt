@@ -2,36 +2,33 @@ package states
 
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.runYafrl
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.test.assertEquals
 
 class FoldUpdatingTests: FunSpec({
-    beforeTest {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
-        )
-    }
-
     test("Fold node updates with new events") {
-        val events = externalEvent<Int>()
+        runYafrl {
+            val events = externalEvent<Int>()
 
-        val counter = Signal.fold(0, events) { state: Int, event: Int ->
-            state + event
+            val counter = Signal.fold(0, events) { state: Int, event: Int ->
+                state + event
+            }
+
+            assertEquals(0, counter.currentValue())
+
+            // Increment by 1
+            events.send(1)
+
+            assertEquals(1, counter.currentValue())
+
+            // Increment by 2
+            events.send(2)
+
+            assertEquals(3, counter.currentValue())
         }
-
-        assertEquals(0, counter.value)
-
-        // Increment by 1
-        events.send(1)
-
-        assertEquals(1, counter.value)
-
-        // Increment by 2
-        events.send(2)
-
-        assertEquals(3, counter.value)
     }
 })

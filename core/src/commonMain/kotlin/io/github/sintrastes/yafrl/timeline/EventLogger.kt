@@ -1,6 +1,6 @@
-package io.github.sintrastes.yafrl.internal
+package io.github.sintrastes.yafrl.timeline
 
-import io.github.sintrastes.yafrl.internal.Timeline.ExternalEvent
+import io.github.sintrastes.yafrl.timeline.Timeline.ExternalEvent
 
 interface EventLogger {
     /**

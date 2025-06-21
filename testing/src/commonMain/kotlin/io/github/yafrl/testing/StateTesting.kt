@@ -1,10 +1,12 @@
 package io.github.yafrl.testing
 
 import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.SampleScope
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.internal.EventLogger
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.sample
+import io.github.sintrastes.yafrl.timeline.EventLogger
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.next
@@ -42,7 +44,7 @@ fun fpsClockGenerator(frameRate: Double = 60.0, delta: Duration = 2.0.millisecon
 fun atArbitraryState(
     traceLength: Int = 100,
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
-    check: () -> Unit
+    check: SampleScope.() -> Unit
 ) {
     val timeline = Timeline.currentTimeline()
 
@@ -51,7 +53,9 @@ fun atArbitraryState(
     }
 
     // Run the test
-    check()
+    sample {
+        check()
+    }
 }
 
 /**
@@ -185,14 +189,16 @@ private fun <W> propositionHoldsFor(
         val trace = mutableListOf<W>()
 
         val iterator = sequence {
-            // Get initial state.
-            trace += state.value
-            yield(state.value)
+            sample {
+                // Get initial state.
+                trace += state.currentValue()
+                yield(state.currentValue())
 
-            while (true) {
-                randomlyStepStateSpace(clockGenerator, timeline)
-                trace += state.value
-                yield(state.value)
+                while (true) {
+                    randomlyStepStateSpace(clockGenerator, timeline)
+                    trace += state.currentValue()
+                    yield(state.currentValue())
+                }
             }
         }.asIterable().iterator()
 

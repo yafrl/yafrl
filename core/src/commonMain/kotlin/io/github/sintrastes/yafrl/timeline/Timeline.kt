@@ -1,11 +1,14 @@
-package io.github.sintrastes.yafrl.internal
+package io.github.sintrastes.yafrl.timeline
 
 import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.EventState
+import io.github.sintrastes.yafrl.SampleScope
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internalBindingState
+import io.github.sintrastes.yafrl.sample
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.collections.immutable.PersistentList
@@ -187,40 +190,53 @@ class Timeline(
         return newNode
     }
 
+    fun addChild(parent: NodeID, child: NodeID) {
+        val newChildren = children[parent]
+
+        children = if (newChildren != null) {
+            children.put(parent, newChildren.add(child))
+        } else {
+            children.put(parent, persistentListOf(child))
+        }
+    }
+
     @OptIn(FragileYafrlAPI::class)
     internal fun <A, B> createMappedNode(
         parent: Node<A>,
-        f: (A) -> B,
-        initialValue: Lazy<B> = lazy {
+        f: SampleScope.(A) -> B,
+        initialValue: SampleScope.() -> B = {
             f(fetchNodeValue(parent) as A)
         },
         onNextFrame: ((Node<B>) -> Unit)? = null
     ): Node<B> = synchronized(this) {
         val mapNodeID = newID()
 
+        val initialValue = lazy {
+            trackedSample(mapNodeID) {
+                initialValue()
+            }
+        }
+
         var mappedNode: Node<B>? = null
         mappedNode = Node(
             initialValue = initialValue,
             id = mapNodeID,
             recompute = {
-                val parentValue = fetchNodeValue(parent) as A
+                // On recompute we don't need to track the sample.
+                sample {
+                    val parentValue = fetchNodeValue(parent) as A
 
-                val result = f(parentValue)
+                    val result = f(parentValue)
 
-                result
+                    result
+                }
             },
             onNextFrame = onNextFrame
         )
 
         nodes = nodes.put(mapNodeID, mappedNode)
 
-        val mapChildren = children[parent.id]
-
-        children = if (mapChildren != null) {
-            children.put(parent.id, mapChildren.add(mapNodeID))
-        } else {
-            children.put(parent.id, persistentListOf(mapNodeID))
-        }
+        addChild(parent.id, mapNodeID)
 
         persistState()
 
@@ -269,13 +285,7 @@ class Timeline(
 
         nodes = nodes.put(foldNodeID, foldNode)
 
-        val eventChildren = children[eventNode.id]
-
-        children = if (eventChildren != null) {
-            children.put(eventNode.id, eventChildren.add(foldNodeID))
-        } else {
-            children.put(eventNode.id, persistentListOf(foldNodeID))
-        }
+        addChild(eventNode.id, foldNodeID)
 
         persistState()
 
@@ -304,13 +314,7 @@ class Timeline(
         nodes = nodes.put(combinedNodeID, combinedNode)
 
         for (parentNode in parentNodes) {
-            val nodeChildren = children[parentNode.id]
-
-            children = if (nodeChildren != null) {
-                children.put(parentNode.id, nodeChildren.add(combinedNodeID))
-            } else {
-                children.put(parentNode.id, persistentListOf(combinedNodeID))
-            }
+            addChild(parentNode.id, combinedNode.id)
         }
 
         // This persist state causes a stack overflow in drawing test with time travel enabled
@@ -453,6 +457,36 @@ class Timeline(
             return _timeline
                 ?: error("Timeline must be initialized with Timeline.initializeTimeline().")
         }
+    }
+
+    /**
+     * Introduces a new [SampleScope] that is being used to modify a newly created node
+     *  so that we can keep track of the dependencies between nodes.
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    internal fun <R> trackedSample(id: NodeID, body: SampleScope.() -> R): R {
+        val scope = object: SampleScope {
+            override fun <A> Behavior<A>.sampleValue(): A {
+                // For a behavior it will be trickier. Maybe need to add a new type
+                // of node to represent them?
+                TODO("Not yet implemented")
+            }
+
+            override fun <A> Signal<A>.currentValue(): A {
+                // For a signal we can just add a dependency on the node.
+                addChild(node.id, id)
+
+                return node.current()
+            }
+
+            override val clock: Event<Duration>
+                get() = this@Timeline.clock
+
+            override val timeBehavior: Signal<Duration>
+                get() = this@Timeline.timeBehavior
+        }
+
+        return scope.body()
     }
 }
 

@@ -3,9 +3,9 @@ package debugging
 import io.github.sintrastes.yafrl.EventState.Fired
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.EventLogger
-import io.github.sintrastes.yafrl.internal.NodeID
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.EventLogger
+import io.github.sintrastes.yafrl.timeline.NodeID
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +16,7 @@ class EventLogging : FunSpec({
     test("test event logging") {
         Timeline.initializeTimeline(
             scope = CoroutineScope(Dispatchers.Default),
-            eventLogger = EventLogger.InMemory,
+            eventLogger = EventLogger.InMemory(),
             timeTravel = true
         )
 

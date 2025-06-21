@@ -20,7 +20,9 @@ import io.github.sintrastes.yafrl.throttled
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.asBehavior
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.current
+import io.github.sintrastes.yafrl.sample
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -153,7 +155,7 @@ fun YafrlCompose(
  **/
 @OptIn(FragileYafrlAPI::class)
 fun <A> Signal<A>.composeState(): androidx.compose.runtime.State<A> {
-    val state = mutableStateOf(value = value)
+    val state = mutableStateOf(value = node.current())
 
     collectSync { updatedState ->
         if (updatedState != state.value) {
@@ -173,7 +175,7 @@ fun <A> Signal<A>.composeState(): androidx.compose.runtime.State<A> {
 fun newComposeFrameClock(
     scope: CoroutineScope,
     paused: Behavior<Boolean>
-): Event<Duration> {
+): Event<Duration> = sample {
     val clock = externalEvent<Duration>(
         label = "compose_frame_clock"
     )
@@ -183,7 +185,7 @@ fun newComposeFrameClock(
 
         while (isActive) {
             withFrameNanos { time ->
-                if (lastTime > 0 && !paused.value) {
+                if (lastTime > 0 && !paused.sampleValue()) {
                     clock.send((time - lastTime).nanoseconds)
                 }
 
@@ -192,5 +194,5 @@ fun newComposeFrameClock(
         }
     }
 
-    return clock
+    clock
 }

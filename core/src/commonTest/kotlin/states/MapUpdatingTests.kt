@@ -2,7 +2,7 @@ package states
 
 import io.github.sintrastes.yafrl.*
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
@@ -24,35 +24,41 @@ class MapUpdatingTests: FunSpec({
     }
 
     test("Build held node") {
-        val updates = externalEvent<Int>()
+        runYafrl {
+            val updates = externalEvent<Int>()
 
-        val state = Signal.hold(0, updates)
+            val state = Signal.hold(0, updates)
 
-        assertEquals(0, state.value)
+            assertEquals(0, state.currentValue())
 
-        updates.send(1)
+            updates.send(1)
 
-        assertEquals(1, state.value)
+            assertEquals(1, state.currentValue())
+        }
     }
 
     test("Build map node") {
-        val node = externalSignal(0)
+        runYafrl {
+            val node = externalSignal(0)
 
-        val mapped = node
-            .map { it + 2 }
+            val mapped = node
+                .map { it + 2 }
 
-        assertEquals(2, mapped.value)
+            assertEquals(2, mapped.currentValue())
+        }
     }
 
     test("Map node updates immediately") {
-        val node = externalSignal(0)
+        runYafrl {
+            val node = externalSignal(0)
 
-        val mapped = node
-            .map { it + 2 }
+            val mapped = node
+                .map { it + 2 }
 
-        node.value = 3
+            node.value = 3
 
-        assertEquals(5, mapped.value)
+            assertEquals(5, mapped.currentValue())
+        }
     }
 
     @OptIn(ExperimentalNativeApi::class)

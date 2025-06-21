@@ -6,7 +6,7 @@ import io.github.sintrastes.yafrl.Event
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.externalSignal
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow

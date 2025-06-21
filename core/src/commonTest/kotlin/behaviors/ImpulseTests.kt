@@ -9,7 +9,8 @@ import io.github.sintrastes.yafrl.behaviors.plus
 import io.github.sintrastes.yafrl.externalSignal
 import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.impulse
-import io.github.sintrastes.yafrl.internal.Timeline
+import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.numericDouble
@@ -24,127 +25,126 @@ import kotlin.time.Duration.Companion.seconds
 class ImpulseTests: FunSpec({
     test("Impulses integrate to same value for arbitrary delta time") {
         checkAll(Arb.numericDouble(1.0, 15.0)) { dt ->
-            Timeline.initializeTimeline()
+            runYafrl {
+                val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+                val impulseEvent = externalEvent<Double>()
 
-            val impulseEvent = externalEvent<Double>()
+                val impulse = impulseEvent.impulse(0.0)
 
-            val impulse = impulseEvent.impulse(0.0)
+                val integral = impulse.integrate()
 
-            val integral = impulse.integrate()
+                assertEquals(0.0, integral.sampleValue())
 
-            assertEquals(0.0, integral.value)
+                impulseEvent.send(1.0)
 
-            impulseEvent.send(1.0)
+                clock.send(dt.milliseconds)
 
-            clock.send(dt.milliseconds)
-
-            assertTrue(abs(1.0 -  integral.value) < 0.01, "expected 1.0, but got ${integral.value}")
+                assertTrue(abs(1.0 - integral.sampleValue()) < 0.01, "expected 1.0, but got ${integral.sampleValue()}")
+            }
         }
     }
 
     test("Impulses are maintained under flatmap") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val switch = externalSignal(true)
 
-        val switch = externalSignal(true)
+            val impulseEvent1 = externalEvent<Unit>("event1")
+            val impulseEvent2 = externalEvent<Unit>("event2")
 
-        val impulseEvent1 = externalEvent<Unit>("event1")
-        val impulseEvent2 = externalEvent<Unit>("event2")
+            val impulse1 = impulseEvent1.impulse(0.0, 1.0)
+            val impulse2 = impulseEvent2.impulse(0.0, 1.0)
 
-        val impulse1 = impulseEvent1.impulse(0.0, 1.0)
-        val impulse2 = impulseEvent2.impulse(0.0, 1.0)
+            val behavior = switch.asBehavior()
+                .flatMap { switch -> if (switch) impulse1 else impulse2 }
 
-        val behavior = switch.asBehavior()
-            .flatMap { switch -> if (switch) impulse1 else impulse2 }
+            val integrated = behavior.integrate()
 
-        val integrated = behavior.integrate()
+            assertEquals(0.0, integrated.sampleValue())
 
-        assertEquals(0.0, integrated.value)
+            impulseEvent1.send(Unit)
+            clock.send(1.0.milliseconds)
 
-        impulseEvent1.send(Unit)
-        clock.send(1.0.milliseconds)
+            assertTrue(abs(1.0 - integrated.sampleValue()) < 0.01)
 
-        assertTrue(abs(1.0 - integrated.value) < 0.01)
+            impulseEvent2.send(Unit)
+            clock.send(1.0.milliseconds)
 
-        impulseEvent2.send(Unit)
-        clock.send(1.0.milliseconds)
-
-        assertTrue(abs(2.0 - integrated.value) < 0.01)
+            assertTrue(abs(2.0 - integrated.sampleValue()) < 0.01)
+        }
     }
 
     test("Impulses are maintained under map") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val impulseEvent = externalEvent<Unit>()
+            val impulse = impulseEvent.impulse(0.0, 1.0)
 
-        val impulseEvent = externalEvent<Unit>()
-        val impulse = impulseEvent.impulse(0.0, 1.0)
+            val mapped = impulse.map { it * 2 }
 
-        val mapped = impulse.map { it * 2 }
+            val integrated = mapped.integrate()
 
-        val integrated = mapped.integrate()
+            impulseEvent.send(Unit)
+            clock.send(1.0.milliseconds)
 
-        impulseEvent.send(Unit)
-        clock.send(1.0.milliseconds)
-
-        assertTrue(abs(2.0 - integrated.value) < 0.01)
+            assertTrue(abs(2.0 - integrated.sampleValue()) < 0.01)
+        }
     }
 
     test("Impulses are maintained under transform") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val impulseEvent = externalEvent<Unit>()
+            val impulse = impulseEvent.impulse(0.0, 1.0)
 
-        val impulseEvent = externalEvent<Unit>()
-        val impulse = impulseEvent.impulse(0.0, 1.0)
+            val transformed = impulse.transformTime { it * 2 }
 
-        val transformed = impulse.transformTime { it * 2 }
+            val integrated = transformed.integrate()
 
-        val integrated = transformed.integrate()
+            impulseEvent.send(Unit)
+            clock.send(1.0.milliseconds)
 
-        impulseEvent.send(Unit)
-        clock.send(1.0.milliseconds)
-
-        assertTrue(abs(1.0 - integrated.value) < 0.01, "${integrated.value}")
+            assertTrue(abs(1.0 - integrated.sampleValue()) < 0.01, "${integrated.sampleValue()}")
+        }
     }
 
     test("Sampled behavior has no impulses") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val sampledBehavior = Behavior.sampled { 1.0 }.integrate()
 
-        val sampledBehavior = Behavior.sampled { 1.0 }.integrate()
-
-       assertEquals(0.0, sampledBehavior.value)
+            assertEquals(0.0, sampledBehavior.sampleValue())
+        }
     }
 
     test("Impulses are maintained when summed") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val impulseEvent1 = externalEvent<Unit>("event1")
+            val impulseEvent2 = externalEvent<Unit>("event2")
 
-        val impulseEvent1 = externalEvent<Unit>("event1")
-        val impulseEvent2 = externalEvent<Unit>("event2")
+            val impulse1 = impulseEvent1.impulse(0.0, 1.0)
+            val impulse2 = impulseEvent2.impulse(0.0, 1.0)
 
-        val impulse1 = impulseEvent1.impulse(0.0, 1.0)
-        val impulse2 = impulseEvent2.impulse(0.0, 1.0)
+            val summed = (impulse1 + impulse2).integrate()
 
-        val summed = (impulse1 + impulse2).integrate()
+            assertEquals(0.0, summed.sampleValue())
 
-        assertEquals(0.0, summed.value)
+            impulseEvent1.send(Unit)
+            impulseEvent2.send(Unit)
 
-        impulseEvent1.send(Unit)
-        impulseEvent2.send(Unit)
+            clock.send(1.0.milliseconds)
 
-        clock.send(1.0.milliseconds)
-
-        assertTrue(abs(2.0 - summed.value) < 0.01, "Value was ${summed.value}")
+            assertTrue(abs(2.0 - summed.sampleValue()) < 0.01, "Value was ${summed.sampleValue()}")
+        }
     }
 
     test("Impulses are maintained when summed with other behaviors.") {
-        Timeline.initializeTimeline()
-
+       runYafrl {
         val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
         val impulseEvent1 = externalEvent<Unit>("event1")
@@ -159,32 +159,33 @@ class ImpulseTests: FunSpec({
 
         clock.send(1.0.seconds)
 
-        assertTrue(abs(3.0 - behavior.value) < 0.1, "Value was ${behavior.value}")
+        assertTrue(abs(3.0 - behavior.sampleValue()) < 0.1, "Value was ${behavior.sampleValue()}")
+       }
     }
 
     test("Sampled behavior has no impulses") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val sampled = Behavior.sampled { 0.0 }
+                .integrate()
 
-        val sampled = Behavior.sampled { 0.0 }
-            .integrate()
+            clock.send(1.0.seconds)
 
-        clock.send(1.0.seconds)
-
-        assertEquals(0.0, sampled.value)
+            assertEquals(0.0, sampled.sampleValue())
+        }
     }
 
     test("Continuous behavior has no impulses") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val clock = Timeline.currentTimeline().clock as BroadcastEvent
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val sampled = Behavior.continuous { 0.0 }
+                .integrate()
 
-        val sampled = Behavior.continuous { 0.0 }
-            .integrate()
+            clock.send(1.0.seconds)
 
-        clock.send(1.0.seconds)
-
-        assertEquals(0.0, sampled.value)
+            assertEquals(0.0, sampled.sampleValue())
+        }
     }
 })
