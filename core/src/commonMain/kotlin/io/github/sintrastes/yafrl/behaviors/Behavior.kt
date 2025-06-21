@@ -34,7 +34,8 @@ import kotlin.time.Duration
  *  ```
  *
  * [Behavior]s have no other restrictions, and can be either continuous or discrete
- *  functions of time.
+ *  functions of time. In yafrl, behaviors can even be nondeterministic, acting as good
+ *  representations of external inputs to a program.
  **/
 sealed interface Behavior<out A> {
     /** Calculates the value at the specified time. */
