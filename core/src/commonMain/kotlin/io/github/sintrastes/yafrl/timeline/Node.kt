@@ -55,9 +55,19 @@ open class Node<out A> internal constructor(
     }
 }
 
+/** Uniquely identifies nodes in a particular [Timeline]. */
 @JvmInline
 value class NodeID(private val rawValue: Int) {
     override fun toString(): String {
         return "node#${rawValue}"
     }
 }
+
+/** Uniquely identifies sampled behaviors in a particular [Timeline]. */
+@JvmInline
+value class BehaviorID(private val rawValue: Int) {
+    override fun toString(): String {
+        return "behavior#${rawValue}"
+    }
+}
+

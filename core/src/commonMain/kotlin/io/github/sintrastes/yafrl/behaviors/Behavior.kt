@@ -7,6 +7,7 @@ import io.github.sintrastes.yafrl.EventState
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
+import io.github.sintrastes.yafrl.timeline.BehaviorID
 import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.timeline.current
 import io.github.sintrastes.yafrl.vector.VectorSpace
@@ -191,6 +192,10 @@ sealed interface Behavior<out A> {
          *     sin(time.seconds)
          * }
          * ```
+         *
+         * NOTE: The function used to define continuous should be pure.
+         *  For impure / non-deterministic behaviors, you should use
+         *  [sampled] instead.
          **/
         inline fun <reified A> continuous(
             noinline f: (Duration) -> A
@@ -198,8 +203,14 @@ sealed interface Behavior<out A> {
             return Continuous(lazy { VectorSpace.instance<A>() }, f)
         }
 
+        @OptIn(FragileYafrlAPI::class)
         inline fun <reified A> sampled(noinline current: () -> A): Behavior<A> {
-            return Sampled({ VectorSpace.instance<A>() }, current)
+            val timeline = Timeline.currentTimeline()
+            return Sampled(
+                timeline.newBehaviorID(),
+                { VectorSpace.instance<A>() },
+                current
+            )
         }
 
         inline fun <reified T> integral(f: Behavior<T>): Behavior<T> {
@@ -314,6 +325,7 @@ sealed interface Behavior<out A> {
      * A non-numeric behavior derived from sampling an external signal.
      **/
     class Sampled<A>(
+        val id: BehaviorID,
         private val instance: () -> VectorSpace<A>,
         private val current: () -> A
     ) : Behavior<A> {

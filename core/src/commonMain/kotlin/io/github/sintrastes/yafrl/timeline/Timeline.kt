@@ -9,6 +9,9 @@ import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internalBindingState
 import io.github.sintrastes.yafrl.sample
+import io.github.sintrastes.yafrl.timeline.graph.Graph
+import io.github.sintrastes.yafrl.timeline.graph.MutableGraph
+import io.github.sintrastes.yafrl.timeline.graph.PersistentGraph
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.collections.immutable.PersistentList
@@ -38,6 +41,7 @@ class Timeline(
     private val timeTravelEnabled: Boolean,
     private val debugLogging: Boolean,
     private val eventLogger: EventLogger,
+    private val graph: Graph<NodeID, Node<*>>,
     private val lazy: Boolean,
     initClock: (Signal<Boolean>) -> Event<Duration>
 ) : SynchronizedObject(), EventLogger by eventLogger {
@@ -69,12 +73,21 @@ class Timeline(
         //.gate(pausedState)
     }
 
-    private var latestID = -1
+    private var latestNodeID = -1
 
     private fun newID(): NodeID {
-        latestID++
+        latestNodeID++
 
-        return NodeID(latestID)
+        return NodeID(latestNodeID)
+    }
+
+    private var latestBehaviorID = -1
+
+    @FragileYafrlAPI
+    fun newBehaviorID(): BehaviorID {
+        latestBehaviorID++
+
+        return BehaviorID(latestBehaviorID)
     }
 
     /////////// Basically we are building up a doubly-linked DAG here: /////////////
@@ -86,18 +99,20 @@ class Timeline(
     val previousStates: MutableMap<Long, GraphState> = mutableMapOf()
 
     data class GraphState(
-        val nodeValues: PersistentMap<NodeID, Any?>,
-        val children: PersistentMap<NodeID, PersistentList<NodeID>>
+        val nodeValues: Map<NodeID, Any?>,
+        val children: Map<NodeID, Collection<NodeID>>
     )
 
     @OptIn(FragileYafrlAPI::class)
     fun persistState() {
         if (timeTravelEnabled) {
+            val nodes = graph.getCurrentNodeMap()
+            val children = graph.getCurrentChildMap()
+
             if (debugLogging) println("Persisting state in frame ${latestFrame}, ${nodes.size} nodes")
             previousStates[latestFrame] = GraphState(
                 nodes
-                    .mapValues { it.value.rawValue }
-                    .toPersistentMap(),
+                    .mapValues { it.value.rawValue },
                 children
             )
         }
@@ -107,13 +122,16 @@ class Timeline(
     fun resetState(frame: Long) = synchronized(this) {
         val time = measureTime {
             if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventLogger.reportEvents().getOrNull(frame.toInt())}")
+
             val nodeValues = previousStates[frame]
                 ?.nodeValues ?: run {
                     if (debugLogging) println("No previous state found for frame ${frame}")
                     return@synchronized
                 }
 
-            nodes.values.forEach { node ->
+            val nodes = graph.getCurrentNodes()
+
+            nodes.forEach { node ->
                 if (node.label == "__internal_paused") return@forEach
 
                 val resetValue = nodeValues[node.id]
@@ -124,7 +142,7 @@ class Timeline(
                 }
             }
 
-            children = previousStates[frame]!!.children
+            graph.resetChildren(previousStates[frame]!!.children)
             latestFrame = frame
         }
 
@@ -139,11 +157,6 @@ class Timeline(
         resetState(latestFrame + 1)
     }
 
-    private var nodes: PersistentMap<NodeID, Node<Any?>> = persistentMapOf()
-
-    // Map from a node ID to it's set of child nodes
-    private var children: PersistentMap<NodeID, PersistentList<NodeID>> = persistentMapOf()
-
     ///////////////////////////////////////////////////////////////////////////////
 
     data class ExternalEvent(
@@ -156,6 +169,15 @@ class Timeline(
     data class ExternalNode(
         val type: KType,
         val node: Node<*>
+    )
+
+    /**
+     * An external behavior is a non-deterministic [Behavior.sampled] behavior
+     * that we need to track in the timeline for reproducibility.
+     **/
+    data class ExternalBehavior(
+        val type: KType,
+        val behavior: Behavior.Sampled<*>
     )
 
     /** Keep track of any external (or "input") nodes to the system. */
@@ -182,22 +204,12 @@ class Timeline(
             label ?: id.toString()
         )
 
-        nodes = nodes.put(id, newNode)
+        graph.addNode(newNode)
 
         // This persist state causes a stack overflow in drawing test with time travel enabled
         //persistState()
 
         return newNode
-    }
-
-    fun addChild(parent: NodeID, child: NodeID) {
-        val newChildren = children[parent]
-
-        children = if (newChildren != null) {
-            children.put(parent, newChildren.add(child))
-        } else {
-            children.put(parent, persistentListOf(child))
-        }
     }
 
     @OptIn(FragileYafrlAPI::class)
@@ -234,9 +246,9 @@ class Timeline(
             onNextFrame = onNextFrame
         )
 
-        nodes = nodes.put(mapNodeID, mappedNode)
+        graph.addNode(mappedNode)
 
-        addChild(parent.id, mapNodeID)
+        graph.addChild(parent.id, mapNodeID)
 
         persistState()
 
@@ -283,9 +295,9 @@ class Timeline(
             }
         )
 
-        nodes = nodes.put(foldNodeID, foldNode)
+        graph.addNode(foldNode)
 
-        addChild(eventNode.id, foldNodeID)
+        graph.addChild(eventNode.id, foldNodeID)
 
         persistState()
 
@@ -311,10 +323,10 @@ class Timeline(
             onNextFrame = onNextFrame
         )
 
-        nodes = nodes.put(combinedNodeID, combinedNode)
+        graph.addNode(combinedNode)
 
         for (parentNode in parentNodes) {
-            addChild(parentNode.id, combinedNode.id)
+            graph.addChild(parentNode.id, combinedNode.id)
         }
 
         // This persist state causes a stack overflow in drawing test with time travel enabled
@@ -378,10 +390,10 @@ class Timeline(
     private fun updateChildNodes(
         node: Node<Any?>
     ) {
-        val childNodes = children[node.id] ?: listOf()
+        val childNodes = graph.getChildrenOf(node.id)
 
         for (childID in childNodes) {
-            val child = nodes[childID]!!
+            val child = graph.getNode(childID)!!
 
             if (child.onNextFrame != null) {
                 if (debugLogging) println("Adding on next frame listener for ${child.label}")
@@ -449,7 +461,9 @@ class Timeline(
                 externalEvent<Duration>("clock")
             }
         ): Timeline {
-            _timeline = Timeline(scope, timeTravel, debug, eventLogger, lazy, initClock)
+            val graph = if (timeTravel) PersistentGraph() else MutableGraph()
+
+            _timeline = Timeline(scope, timeTravel, debug, eventLogger, graph, lazy, initClock)
             return _timeline!!
         }
 
@@ -474,7 +488,7 @@ class Timeline(
 
             override fun <A> Signal<A>.currentValue(): A {
                 // For a signal we can just add a dependency on the node.
-                addChild(node.id, id)
+                graph.addChild(node.id, id)
 
                 return node.current()
             }
