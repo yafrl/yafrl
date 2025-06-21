@@ -39,7 +39,7 @@ class Timeline(
     private val timeTravelEnabled: Boolean,
     internal val debugLogging: Boolean,
     internal val eventLogger: EventLogger,
-    internal val graph: Graph<NodeID, Node<*>>,
+    internal val graph: Graph,
     private val initTimeTravel: (Timeline) -> TimeTravelDebugger,
     private val lazy: Boolean,
     initClock: (Signal<Boolean>) -> Event<Duration>

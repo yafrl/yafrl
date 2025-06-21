@@ -14,7 +14,7 @@ import kotlinx.collections.immutable.persistentMapOf
  * Should be somewhat efficient if making extensive use of time-travel debugging,
  *  otherwise [MutableGraph] should be a better option.
  **/
-class PersistentGraph : Graph<NodeID, Node<*>> {
+class PersistentGraph : Graph {
     private var nodes: PersistentMap<NodeID, Node<Any?>> = persistentMapOf()
 
     // Map from a node ID to it's set of child nodes

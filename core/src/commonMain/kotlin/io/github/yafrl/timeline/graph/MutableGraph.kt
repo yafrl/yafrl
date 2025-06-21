@@ -7,7 +7,7 @@ import io.github.yafrl.timeline.NodeID
 /**
  * An efficient graph implementation using mutable adjacency lists.
  */
-class MutableGraph: Graph<NodeID, Node<*>> {
+class MutableGraph: Graph {
     val nodes: MutableMap<NodeID, Node<*>> = mutableMapOf()
 
     val children: MutableMap<NodeID, MutableList<NodeID>> = mutableMapOf()
