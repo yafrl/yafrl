@@ -33,7 +33,7 @@ class CounterTest : FunSpec({
         assertEquals(2, viewModel.count.node.current())
 
         Timeline.currentTimeline()
-            .rollbackState()
+            .timeTravel.rollbackState()
 
         assertEquals(1, viewModel.count.node.current())
     }
@@ -58,7 +58,7 @@ class CounterTest : FunSpec({
         assertEquals(1, viewModel.count.node.current())
 
         Timeline.currentTimeline()
-            .rollbackState()
+            .timeTravel.rollbackState()
 
         assertEquals(0, viewModel.count.node.current())
     }

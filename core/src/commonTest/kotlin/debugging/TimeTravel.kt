@@ -25,7 +25,7 @@ class TimeTravel: FunSpec({
 
         assertEquals(2, count.value)
 
-        Timeline.currentTimeline().rollbackState()
+        Timeline.currentTimeline().timeTravel.rollbackState()
 
         assertEquals(1, count.value)
     }
@@ -47,7 +47,7 @@ class TimeTravel: FunSpec({
 
         assertEquals(2, count.value)
 
-        Timeline.currentTimeline().rollbackState()
+        Timeline.currentTimeline().timeTravel.rollbackState()
 
         assertEquals(1, count.value)
 
@@ -76,7 +76,7 @@ class TimeTravel: FunSpec({
 
             assertEquals(2, count.currentValue())
 
-            Timeline.currentTimeline().rollbackState()
+            Timeline.currentTimeline().timeTravel.rollbackState()
 
             assertEquals(1, count.currentValue())
 

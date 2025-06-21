@@ -9,6 +9,8 @@ import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internalBindingState
 import io.github.sintrastes.yafrl.sample
+import io.github.sintrastes.yafrl.timeline.debugging.SnapshotDebugger
+import io.github.sintrastes.yafrl.timeline.debugging.TimeTravelDebugger
 import io.github.sintrastes.yafrl.timeline.graph.Graph
 import io.github.sintrastes.yafrl.timeline.graph.MutableGraph
 import io.github.sintrastes.yafrl.timeline.graph.PersistentGraph
@@ -39,12 +41,24 @@ import kotlin.time.measureTime
 class Timeline(
     val scope: CoroutineScope,
     private val timeTravelEnabled: Boolean,
-    private val debugLogging: Boolean,
-    private val eventLogger: EventLogger,
-    private val graph: Graph<NodeID, Node<*>>,
+    internal val debugLogging: Boolean,
+    internal val eventLogger: EventLogger,
+    internal val graph: Graph<NodeID, Node<*>>,
+    private val initTimeTravel: (Timeline) -> TimeTravelDebugger,
     private val lazy: Boolean,
     initClock: (Signal<Boolean>) -> Event<Duration>
 ) : SynchronizedObject(), EventLogger by eventLogger {
+    /**
+     * Index to keep track of the latest frame that has been created in the timeline.
+     **/
+    internal var latestFrame: Long = -1
+    /**
+     * Index to keep track of the current frame of the timeline.
+     **/
+    internal var currentFrame: Long = -1
+
+    val timeTravel = initTimeTravel(this)
+
     @OptIn(FragileYafrlAPI::class)
     val time: Duration
         get() = fetchNodeValue(timeBehavior.node) as Duration
@@ -88,73 +102,6 @@ class Timeline(
         latestBehaviorID++
 
         return BehaviorID(latestBehaviorID)
-    }
-
-    /////////// Basically we are building up a doubly-linked DAG here: /////////////
-
-    var latestFrame: Long = -1
-    var currentFrame: Long = -1
-
-    // Indexed by frame number.
-    val previousStates: MutableMap<Long, GraphState> = mutableMapOf()
-
-    data class GraphState(
-        val nodeValues: Map<NodeID, Any?>,
-        val children: Map<NodeID, Collection<NodeID>>
-    )
-
-    @OptIn(FragileYafrlAPI::class)
-    fun persistState() {
-        if (timeTravelEnabled) {
-            val nodes = graph.getCurrentNodeMap()
-            val children = graph.getCurrentChildMap()
-
-            if (debugLogging) println("Persisting state in frame ${latestFrame}, ${nodes.size} nodes")
-            previousStates[latestFrame] = GraphState(
-                nodes
-                    .mapValues { it.value.rawValue },
-                children
-            )
-        }
-    }
-
-    @OptIn(FragileYafrlAPI::class)
-    fun resetState(frame: Long) = synchronized(this) {
-        val time = measureTime {
-            if (debugLogging) println("Resetting to frame ${frame}, event was: ${eventLogger.reportEvents().getOrNull(frame.toInt())}")
-
-            val nodeValues = previousStates[frame]
-                ?.nodeValues ?: run {
-                    if (debugLogging) println("No previous state found for frame ${frame}")
-                    return@synchronized
-                }
-
-            val nodes = graph.getCurrentNodes()
-
-            nodes.forEach { node ->
-                if (node.label == "__internal_paused") return@forEach
-
-                val resetValue = nodeValues[node.id]
-
-                if (resetValue != null) {
-                    updateNodeValue(node, resetValue)
-                    node.onRollback?.invoke(node, frame)
-                }
-            }
-
-            graph.resetChildren(previousStates[frame]!!.children)
-            latestFrame = frame
-        }
-
-        if (debugLogging) println("Reset state in ${time}")
-    }
-
-    fun rollbackState() {
-        resetState(latestFrame - 1)
-    }
-
-    fun nextState() {
-        resetState(latestFrame + 1)
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -250,7 +197,7 @@ class Timeline(
 
         graph.addChild(parent.id, mapNodeID)
 
-        persistState()
+        timeTravel.persistState()
 
         return mappedNode
     }
@@ -299,7 +246,7 @@ class Timeline(
 
         graph.addChild(eventNode.id, foldNodeID)
 
-        persistState()
+        timeTravel.persistState()
 
         return foldNode
     }
@@ -335,7 +282,19 @@ class Timeline(
         return combinedNode
     }
 
-    // Note: This is the entrypoint for a new "frame" in the timeline.
+    /**
+     * Updates the value of the [node] in the [Timeline], yielding a new frame so long as
+     *  this is not an [internal] update.
+     *
+     * This will either update the values uf any dependent (child) nodes in the graph,
+     *  or at the very least mark them dirty so that the values can be updated on-demand.
+     *
+     * @param node The node being updated.
+     * @param newValue The new value for the node
+     * @param internal Whether or not this is an "internal" update -- i.e. a node that is being
+     *  updated as an internal implementation detail of some operation, which should not introduce
+     *  a new frame.
+     **/
     @FragileYafrlAPI
     fun updateNodeValue(
         node: Node<Any?>,
@@ -383,9 +342,14 @@ class Timeline(
 
         updateChildNodes(node)
 
-        persistState()
+        timeTravel.persistState()
     }
 
+    /**
+     * Propagate the changes to a [node] throughout the entire state graph, either
+     *  marking child notes as "dirty" (i.e. need to be re-computed / updated), or
+     *  re-calculating the values directly if needed.
+     **/
     @OptIn(FragileYafrlAPI::class)
     private fun updateChildNodes(
         node: Node<Any?>
@@ -433,6 +397,11 @@ class Timeline(
         }
     }
 
+    /**
+     * Performs an eager "fetch" of a node's value, recomputing the value
+     *  if dirty to ensure the value is up-to-date with its parents in the state
+     *  graph.
+     **/
     @OptIn(FragileYafrlAPI::class)
     internal fun fetchNodeValue(
         node: Node<Any?>
@@ -450,6 +419,21 @@ class Timeline(
     companion object {
         private var _timeline: Timeline? = null
 
+        /**
+         * Initialize a new yafrl [Timeline] with the specified configuration options.
+         *
+         * @param scope The coroutine scope associated with the timeline, to be used to launch
+         *  any coroutines needed for asnychronous actions.
+         * @param timeTravel Determines whether time travel debugging (see [TimeTravelDebugger]) is
+         *  enabled for the timeline.
+         * @param debug Determines whether debug logging is enabled for internal timeline operations.
+         * @param lazy If true (default behavior), state updates are not immediately propagated through
+         *  the graph on changes, but rather updates are computed lazily (on-demand / as needed).
+         * @param eventLogger Configures the [EventLogger] used by default in the timeline. Disabled by defautl.
+         * @param initClock Determines how the timeline's clock is initialized. By default uses a discrete clock
+         *  usable by testing. For animation / graphical applications this should be hooked into the event loop of the graphics
+         *  processing pipeline to emit on each frame.
+         **/
         fun initializeTimeline(
             scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
             timeTravel: Boolean = false,
@@ -463,7 +447,21 @@ class Timeline(
         ): Timeline {
             val graph = if (timeTravel) PersistentGraph() else MutableGraph()
 
-            _timeline = Timeline(scope, timeTravel, debug, eventLogger, graph, lazy, initClock)
+            val initDebugger = { timeline: Timeline ->
+                if (timeTravel) SnapshotDebugger(timeline) else TimeTravelDebugger.Disabled
+            }
+
+            _timeline = Timeline(
+                scope,
+                timeTravel,
+                debug,
+                eventLogger,
+                graph,
+                initDebugger,
+                lazy,
+                initClock
+            )
+
             return _timeline!!
         }
 

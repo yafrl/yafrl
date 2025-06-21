@@ -86,7 +86,7 @@ fun YafrlCompose(
                     content = { Text("<") },
                     onClick = {
                         Timeline.currentTimeline()
-                            .rollbackState()
+                            .timeTravel.rollbackState()
                     }
                 )
 
@@ -115,7 +115,7 @@ fun YafrlCompose(
                     content = { Text(">") },
                     onClick = {
                         Timeline.currentTimeline()
-                            .nextState()
+                            .timeTravel.nextState()
                     }
                 )
             }
