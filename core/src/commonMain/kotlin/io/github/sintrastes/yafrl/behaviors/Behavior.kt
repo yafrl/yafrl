@@ -11,6 +11,7 @@ import io.github.sintrastes.yafrl.timeline.BehaviorID
 import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.timeline.current
 import io.github.sintrastes.yafrl.vector.VectorSpace
+import io.github.sintrastes.yafrl.SampleScope
 import kotlin.math.pow
 import kotlin.time.Duration
 
@@ -38,7 +39,17 @@ import kotlin.time.Duration
  *  representations of external inputs to a program.
  **/
 sealed interface Behavior<out A> {
-    /** Calculates the value at the specified time. */
+    /**
+     * Calculates the value at the specified time.
+     *
+     * **Note**: If not used properly, this API can cause runtime crashes, as for
+     *  efficiency reasons, some behaviors assume times will be accessed in a
+     *  strictly monotonic increasing order.
+     *
+     * Please use [SampleScope.sampleValue] instead to get the value of a behavior
+     *  at the current frame. Or see [transformTime] if you need to modify the
+     *  time sampling behavior of a [Behavior].
+     **/
     @FragileYafrlAPI
     fun sampleValueAt(time: Duration): A
 

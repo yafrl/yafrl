@@ -113,6 +113,19 @@ class Timeline(
     @FragileYafrlAPI
     val externalNodes = mutableMapOf<NodeID, ExternalNode>()
 
+    /**
+     * Creates a new node without any parent / input nodes.
+     *
+     * Typically this is used to construct input / "external" nodes
+     *  to the timeline graph.
+     *
+     * @param value Lazily initialized initial value of the node.
+     * @param onUpdate How to recompute the node when marked dirty.
+     * @param onNextFrame Optional action to perform on the frame immediately after
+     *  a node is updated (typically used for events, to reset state to [EventState.None])
+     * @param onRollback Action to perform when the state has been reset to a different frame
+     *  during time travel (see [TimeTravelDebugger]).
+     **/
     @FragileYafrlAPI
     fun <A> createNode(
         value: Lazy<A>,
@@ -141,6 +154,14 @@ class Timeline(
         return newNode
     }
 
+    /**
+     * Special case of [createCombinedNode] -- creates a new node depending on
+     *  a single other node as it's input / parent.
+     *
+     * Note: Despite the name, this can be used to create any kind of derived node,
+     *  just just a "mapping" operation. For instance, this is used also to implement
+     *  [Event.filter].
+     **/
     @OptIn(FragileYafrlAPI::class)
     internal fun <A, B> createMappedNode(
         parent: Node<A>,
@@ -184,6 +205,13 @@ class Timeline(
         return mappedNode
     }
 
+    /**
+     * Creates a node whose value updates by the action specified by
+     *  the [reducer].
+     *
+     * The node will start with [initialValue], and whenever [eventNode] fires,
+     *  the value will update according to the [reducer].
+     **/
     @OptIn(FragileYafrlAPI::class)
     fun <A, B> createFoldNode(
         initialValue: A,
@@ -233,6 +261,16 @@ class Timeline(
         return foldNode
     }
 
+    /**
+     * Creates a node that updates whenever any of its [parentNodes] updates.
+     *
+     * @param parentNodes The list of nodes used as inputs to the combined node.
+     * @param combine Function that acts on the value of its parent nodes to produce
+     *  the recomputed value of the combined node.
+     * @param onNextFrame Optional action to perform after the node's value has been
+     *  updated (typically only used for events, to reset to [EventState.None] on the
+     *  next frame).
+     **/
     @FragileYafrlAPI
     fun <A> createCombinedNode(
         parentNodes: List<Node<Any?>>,
@@ -484,6 +522,14 @@ class Timeline(
     }
 }
 
+/**
+ * Utility to get the current value of a node.
+ *
+ * Should only be used internally. For high-level application purposes
+ *  please use [SampleScope.currentValue] or [SampleScope.sampleValue]
+ *  instead.
+ **/
+@FragileYafrlAPI
 fun <A> Node<A>.current(): A {
     val graph = Timeline.currentTimeline()
 
