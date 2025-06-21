@@ -1,7 +1,12 @@
-package io.github.sintrastes.yafrl.timeline
+package io.github.sintrastes.yafrl.timeline.debugging
 
-import io.github.sintrastes.yafrl.timeline.Timeline.ExternalEvent
-
+/**
+ * Interface allowing for custom implementations of yafrl's event logging
+ *  capability to be injected into a [Timeline].
+ *
+ * yafrl provides an [InMemory] logger by default, but if desired a custom implementation
+ *  can be used (e.x. to provide console logging, serialization of events, etc...)
+ **/
 interface EventLogger {
     /**
      * Return the list of all currently logged events in-order.

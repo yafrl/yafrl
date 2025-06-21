@@ -6,6 +6,7 @@ import io.github.sintrastes.yafrl.behaviors.switcher
 import io.github.sintrastes.yafrl.timeline.Node
 import io.github.sintrastes.yafrl.timeline.Timeline
 import io.github.sintrastes.yafrl.timeline.current
+import io.github.sintrastes.yafrl.timeline.debugging.ExternalNode
 import io.github.sintrastes.yafrl.vector.Float2
 import io.github.sintrastes.yafrl.vector.Float3
 import io.github.sintrastes.yafrl.vector.VectorSpace
@@ -458,7 +459,7 @@ fun <A> externalSignal(value: A, kType: KType, label: String? = null): BindingSi
 
     val state = internalBindingState(lazy { value }, label)
 
-    timeline.externalNodes[state.node.id] = Timeline.ExternalNode(kType, state.node)
+    timeline.externalNodes[state.node.id] = ExternalNode(kType, state.node)
 
     return state
 }

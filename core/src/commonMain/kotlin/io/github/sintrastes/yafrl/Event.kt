@@ -5,6 +5,7 @@ import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.timeline.Node
 import io.github.sintrastes.yafrl.timeline.Timeline
+import io.github.sintrastes.yafrl.timeline.debugging.ExternalNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -480,7 +481,7 @@ inline fun <reified A> externalEvent(
 
     // If the user creates a broadcast event, assume it is an "external"
     //  input to the system.
-    timeline.externalNodes[event.node.id] = Timeline.ExternalNode(
+    timeline.externalNodes[event.node.id] = ExternalNode(
         typeOf<EventState<A>>(),
         event.node
     )

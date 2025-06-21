@@ -5,7 +5,7 @@ import io.github.sintrastes.yafrl.SampleScope
 import io.github.sintrastes.yafrl.Signal
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.sample
-import io.github.sintrastes.yafrl.timeline.EventLogger
+import io.github.sintrastes.yafrl.timeline.debugging.EventLogger
 import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary

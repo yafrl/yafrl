@@ -9,6 +9,9 @@ import io.github.sintrastes.yafrl.behaviors.Behavior
 import io.github.sintrastes.yafrl.externalEvent
 import io.github.sintrastes.yafrl.internalBindingState
 import io.github.sintrastes.yafrl.sample
+import io.github.sintrastes.yafrl.timeline.debugging.EventLogger
+import io.github.sintrastes.yafrl.timeline.debugging.ExternalEvent
+import io.github.sintrastes.yafrl.timeline.debugging.ExternalNode
 import io.github.sintrastes.yafrl.timeline.debugging.SnapshotDebugger
 import io.github.sintrastes.yafrl.timeline.debugging.TimeTravelDebugger
 import io.github.sintrastes.yafrl.timeline.graph.Graph
@@ -16,18 +19,11 @@ import io.github.sintrastes.yafrl.timeline.graph.MutableGraph
 import io.github.sintrastes.yafrl.timeline.graph.PersistentGraph
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlin.reflect.KType
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.measureTime
 
 /**
  * Simple implementation of a push-pull FRP system using a graph
@@ -106,28 +102,14 @@ class Timeline(
 
     ///////////////////////////////////////////////////////////////////////////////
 
-    data class ExternalEvent(
-        val id: NodeID,
-        val value: Any?
-    )
-
     val onNextFrameListeners = mutableListOf<() -> Unit>()
 
-    data class ExternalNode(
-        val type: KType,
-        val node: Node<*>
-    )
-
     /**
-     * An external behavior is a non-deterministic [Behavior.sampled] behavior
-     * that we need to track in the timeline for reproducibility.
+     * Keep track of any external (or "input") nodes to the system so they can
+     *  be used for testing / debugging.
+     *
+     * See [ExternalNode].
      **/
-    data class ExternalBehavior(
-        val type: KType,
-        val behavior: Behavior.Sampled<*>
-    )
-
-    /** Keep track of any external (or "input") nodes to the system. */
     @FragileYafrlAPI
     val externalNodes = mutableMapOf<NodeID, ExternalNode>()
 

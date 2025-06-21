@@ -3,7 +3,7 @@ package debugging
 import io.github.sintrastes.yafrl.EventState.Fired
 import io.github.sintrastes.yafrl.annotations.FragileYafrlAPI
 import io.github.sintrastes.yafrl.externalEvent
-import io.github.sintrastes.yafrl.timeline.EventLogger
+import io.github.sintrastes.yafrl.timeline.debugging.EventLogger
 import io.github.sintrastes.yafrl.timeline.NodeID
 import io.github.sintrastes.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
