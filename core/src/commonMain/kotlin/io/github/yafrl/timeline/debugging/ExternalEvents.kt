@@ -3,6 +3,7 @@ package io.github.yafrl.timeline.debugging
 import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.behaviors.Behavior.Companion
 import io.github.yafrl.behaviors.Behavior.Companion.sampled
+import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.Timeline
@@ -13,6 +14,7 @@ import kotlin.reflect.KType
  *  to update the state of an [ExternalNode].
  **/
 data class ExternalEvent(
+    val behaviorsSampled: Map<BehaviorID, Any?>,
     val id: NodeID,
     val value: Any?
 )

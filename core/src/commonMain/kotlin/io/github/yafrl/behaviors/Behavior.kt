@@ -12,7 +12,9 @@ import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.current
 import io.github.yafrl.vector.VectorSpace
 import io.github.yafrl.SampleScope
+import io.github.yafrl.timeline.debugging.ExternalBehavior
 import kotlin.math.pow
+import kotlin.reflect.typeOf
 import kotlin.time.Duration
 
 /**
@@ -63,6 +65,8 @@ sealed interface Behavior<out A> {
     @ExperimentalYafrlAPI
     fun measureImpulses(time: Duration, dt: Duration): A
 
+    val parentBehaviors: List<BehaviorID>
+
     /**
      * Apply a function to the time used to sample the behavior.
      **/
@@ -83,6 +87,9 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): A {
             return behavior.measureImpulses(transformation(time), dt)
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = behavior.parentBehaviors
     }
 
     /**
@@ -144,6 +151,9 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): B {
             return f(original.measureImpulses(time, dt))
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = original.parentBehaviors
     }
 
     /** Implementation of a flattened behavior. */
@@ -164,6 +174,10 @@ sealed interface Behavior<out A> {
                 .sampleValueAt(time)
                 .measureImpulses(time, dt)
         }
+
+        // TODO: What about the inner behavior?
+        override val parentBehaviors: List<BehaviorID>
+            get() = original.parentBehaviors
     }
 
     /**
@@ -218,11 +232,23 @@ sealed interface Behavior<out A> {
         @OptIn(FragileYafrlAPI::class)
         inline fun <reified A> sampled(noinline current: () -> A): Behavior<A> {
             val timeline = Timeline.currentTimeline()
-            return Sampled(
+
+            val result = Sampled(
                 timeline.newBehaviorID(),
                 { VectorSpace.instance<A>() },
                 current
             )
+
+            println("Adding behavior ${result.id}")
+
+            timeline.graph.addBehavior(
+                ExternalBehavior(
+                    typeOf<A>(),
+                    result
+                )
+            )
+
+            return result
         }
 
         inline fun <reified T> integral(f: Behavior<T>): Behavior<T> {
@@ -272,6 +298,9 @@ sealed interface Behavior<out A> {
                 ?.value
                 ?: zeroValue
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = listOf()
     }
 
     /**
@@ -314,6 +343,9 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): A = with(vectorSpace) {
             return zero
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = listOf()
     }
 
     /**
@@ -331,6 +363,9 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): A = with(vectorSpace.value) {
             return zero
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = listOf()
     }
 
     /**
@@ -349,6 +384,9 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): A = with(instance()) {
             return zero
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = listOf(id)
     }
 
     class Sum<A>(
@@ -364,6 +402,9 @@ sealed interface Behavior<out A> {
         override fun measureImpulses(time: Duration, dt: Duration): A {
             return first.measureImpulses(time, dt) + second.measureImpulses(time, dt)
         }
+
+        override val parentBehaviors: List<BehaviorID>
+            get() = first.parentBehaviors + second.parentBehaviors
     }
 }
 
@@ -412,4 +453,8 @@ internal class Until<A>(
         return (current ?: initialBehavior.value)
             .measureImpulses(time, dt)
     }
+
+    // TODO: What about when this updates?
+    override val parentBehaviors: List<BehaviorID>
+        get() = initialBehavior.value.parentBehaviors
 }

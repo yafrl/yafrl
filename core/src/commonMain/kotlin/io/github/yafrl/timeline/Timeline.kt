@@ -10,6 +10,7 @@ import io.github.yafrl.externalEvent
 import io.github.yafrl.internalBindingState
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.debugging.ExternalBehavior
 import io.github.yafrl.timeline.debugging.ExternalEvent
 import io.github.yafrl.timeline.debugging.ExternalNode
 import io.github.yafrl.timeline.debugging.SnapshotDebugger
@@ -39,7 +40,7 @@ class Timeline(
     private val timeTravelEnabled: Boolean,
     internal val debugLogging: Boolean,
     internal val eventLogger: EventLogger,
-    internal val graph: Graph,
+    @property:FragileYafrlAPI val graph: Graph,
     private val initTimeTravel: (Timeline) -> TimeTravelDebugger,
     private val lazy: Boolean,
     initClock: (Signal<Boolean>) -> Event<Duration>
@@ -185,7 +186,7 @@ class Timeline(
             id = mapNodeID,
             recompute = {
                 // On recompute we don't need to track the sample.
-                sample {
+                trackedSample(mapNodeID) {
                     val parentValue = fetchNodeValue(parent) as A
 
                     val result = f(parentValue)
@@ -311,6 +312,7 @@ class Timeline(
      *
      * @param node The node being updated.
      * @param newValue The new value for the node
+     * @param behaviorsSampled A map of the value of any behaviors that were sampled this frame.
      * @param internal Whether or not this is an "internal" update -- i.e. a node that is being
      *  updated as an internal implementation detail of some operation, which should not introduce
      *  a new frame.
@@ -321,6 +323,8 @@ class Timeline(
         newValue: Any?,
         internal: Boolean = false
     ) = synchronized(this) {
+        val behaviorsSampled = mutableMapOf<BehaviorID, Any?>()
+
         if (debugLogging && !internal) println("Updating node ${node.label} to ${newValue}")
 
         if (!internal) {
@@ -333,15 +337,6 @@ class Timeline(
         }
 
         node.rawValue = newValue
-
-        if (!internal && externalNodes.contains(node.id)) {
-            latestFrame++
-            currentFrame++
-
-            eventLogger.logEvent(ExternalEvent(node.id, node.rawValue))
-
-            if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
-        }
 
         for (listener in node.syncOnValueChangedListeners) {
             listener.invoke(newValue)
@@ -360,9 +355,36 @@ class Timeline(
             onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
         }
 
-        updateChildNodes(node)
+        sampleBehaviorsForNode(behaviorsSampled, node.id)
+
+        updateChildNodes(behaviorsSampled, node)
+
+        if (!internal && externalNodes.contains(node.id)) {
+            latestFrame++
+            currentFrame++
+
+            eventLogger.logEvent(ExternalEvent(behaviorsSampled, node.id, node.rawValue))
+
+            if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
+        }
 
         timeTravel.persistState()
+    }
+
+    @OptIn(FragileYafrlAPI::class)
+    fun sampleBehaviorsForNode(behaviorsSampled: MutableMap<BehaviorID, Any?>, id: NodeID) {
+        val parentBehaviorIds = graph.getBehaviorParentsOf(id)
+
+        val parentBehaviors = parentBehaviorIds
+            .map {
+                graph.getExternalBehaviors()[it]
+                    ?: throw Exception("Tried to get external behavior of id $it -- not found")
+            }
+
+        val behaviorValues = parentBehaviors
+            .map { it.behavior.sampleValueAt(time) }
+
+        behaviorsSampled.putAll(parentBehaviorIds.zip(behaviorValues))
     }
 
     /**
@@ -372,6 +394,7 @@ class Timeline(
      **/
     @OptIn(FragileYafrlAPI::class)
     private fun updateChildNodes(
+        behaviorsSampled: MutableMap<BehaviorID, Any?>,
         node: Node<Any?>
     ) {
         val childNodes = graph.getChildrenOf(node.id)
@@ -413,7 +436,9 @@ class Timeline(
                 }
             }
 
-            updateChildNodes(child)
+            sampleBehaviorsForNode(behaviorsSampled, childID)
+
+            updateChildNodes(behaviorsSampled, child)
         }
     }
 
@@ -499,9 +524,12 @@ class Timeline(
     internal fun <R> trackedSample(id: NodeID, body: SampleScope.() -> R): R {
         val scope = object: SampleScope {
             override fun <A> Behavior<A>.sampleValue(): A {
-                // For a behavior it will be trickier. Maybe need to add a new type
-                // of node to represent them?
-                TODO("Not yet implemented")
+                for (behaviorId in parentBehaviors) {
+                    println("Adding $behaviorId, $id")
+                    graph.addChild(behaviorId, id)
+                }
+
+                return sampleValueAt(time)
             }
 
             override fun <A> Signal<A>.currentValue(): A {
