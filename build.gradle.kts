@@ -12,7 +12,7 @@ plugins {
 
 allprojects {
     version = "0.3-SNAPSHOT"
-    group = "io.github.sintrastes"
+    group = "io.github.yafrl"
 
     repositories {
         mavenCentral()
@@ -60,7 +60,7 @@ subprojects {
                     project.findProperty("projectDescription") as String
                 )
                 inceptionYear.set("2025")
-                url.set("https://github.com/sintrastes/yafrl/")
+                url.set("https://github.com/yafrl/yafrl/")
 
                 licenses {
                     license {
@@ -79,9 +79,9 @@ subprojects {
                 }
 
                 scm {
-                    url.set("https://github.com/sintrastes/yafrl/")
-                    connection.set("scm:git:git://github.com/sintrastes/yafrl.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/sintrastes/yafrl.git")
+                    url.set("https://github.com/yafrl/yafrl/")
+                    connection.set("scm:git:git://github.com/yafrl/yafrl.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/yafrl/yafrl.git")
                 }
             }
         }
