@@ -38,7 +38,7 @@ subprojects {
 
                     sourceLink {
                         localDirectory.set(file("src/commonMain/kotlin"))
-                        remoteUrl.set(URL("https://github.com/sintrastes/yafrl/tree/main/$projectName/src/commonMain/kotlin"))
+                        remoteUrl.set(URL("https://github.com/yafrl/yafrl/tree/main/$projectName/src/commonMain/kotlin"))
                         remoteLineSuffix.set("#L")
                     }
                 }
@@ -49,7 +49,7 @@ subprojects {
     // Setup publish config in each subproject
     plugins.withId("com.vanniktech.maven.publish") {
         mavenPublishing {
-            publishToMavenCentral(SonatypeHost.S01)
+            publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
             signAllPublications()
 
             coordinates(group.toString(), project.name, version.toString())
