@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-<img src="https://img.shields.io/badge/version-0.1-purple)"/>
+<img src="https://img.shields.io/badge/version-0.3-purple)"/>
 <img src="https://img.shields.io/badge/kotlin-2.1.10-blue"/>
 <a href="https://codecov.io/github/yafrl/yafrl">
   <img src="https://codecov.io/github/yafrl/yafrl/graph/badge.svg?token=2A1XMWGOSH"/>
@@ -30,19 +30,19 @@ For non-multiplatform Android / JVM projects:
 ```groovy
 dependencies {
     // Basic functionality of the library
-    implementation("io.github.sintrastes:yafrl-core-jvm:0.2")
+    implementation("io.github.yafrl:yafrl-core-jvm:0.3")
 
     // Optional: kotlinx.coroutines.flow integrations
-    implementation("io.github.sintrastes:yafrl-core-jvm:0.2")
+    implementation("io.github.yafrl:yafrl-core-jvm:0.3")
 
     // Optional: Utilities for testing yafrl programs
-    implementation("io.github.sintrastes:yafrl-testing-jvm:0.2")
+    implementation("io.github.yafrl:yafrl-testing-jvm:0.3")
 
     // Optional: Jetpack Compose integrations
-    implementation("io.github.sintrastes:yafrl-compose-jvm:0.2")
+    implementation("io.github.yafrl:yafrl-compose-jvm:0.3")
 
     // Optional: Integrations for arrow-optics
-    implementation("io.github.sintrastes:yafrl-optics-jvm:0.2")
+    implementation("io.github.yafrl:yafrl-optics-jvm:0.3")
 }
 ```
 
@@ -54,19 +54,19 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // Basic functionality of the library
-                implementation("io.github.sintrastes:yafrl-core:0.2")
+                implementation("io.github.yafrl:yafrl-core:0.3")
 
                 // Optional: kotlinx.coroutines.flow integrations
-                implementation("io.github.sintrastes:yafrl-core:0.2")
+                implementation("io.github.yafrl:yafrl-core:0.3")
 
                 // Optional: Utilities for testing yafrl programs
-                implementation("io.github.sintrastes:yafrl-testing:0.2")
+                implementation("io.github.yafrl:yafrl-testing:0.3")
 
                 // Optional: Jetpack Compose integrations
-                implementation("io.github.sintrastes:yafrl-compose:0.2")
+                implementation("io.github.yafrl:yafrl-compose:0.3")
 
                 // Optional: Integrations for arrow-optics
-                implementation("io.github.sintrastes:yafrl-optics:0.2")
+                implementation("io.github.yafrl:yafrl-optics:0.3")
             }
         }
     }
