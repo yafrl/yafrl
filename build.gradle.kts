@@ -11,7 +11,7 @@ plugins {
 }
 
 allprojects {
-    version = "0.3-SNAPSHOT"
+    version = "0.3"
     group = "io.github.yafrl"
 
     repositories {
@@ -49,7 +49,7 @@ subprojects {
     // Setup publish config in each subproject
     plugins.withId("com.vanniktech.maven.publish") {
         mavenPublishing {
-            publishToMavenCentral(SonatypeHost.S01)
+            publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
             signAllPublications()
 
             coordinates(group.toString(), project.name, version.toString())
