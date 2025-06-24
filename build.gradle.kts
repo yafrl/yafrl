@@ -49,7 +49,7 @@ subprojects {
     // Setup publish config in each subproject
     plugins.withId("com.vanniktech.maven.publish") {
         mavenPublishing {
-            publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+            publishToMavenCentral(SonatypeHost.S01)
             signAllPublications()
 
             coordinates(group.toString(), project.name, version.toString())
