@@ -1,8 +1,10 @@
 package io.github.yafrl.timeline.graph
 
 import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
+import io.github.yafrl.timeline.debugging.ExternalBehavior
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentListOf
@@ -14,15 +16,35 @@ import kotlinx.collections.immutable.persistentMapOf
  * Should be somewhat efficient if making extensive use of time-travel debugging,
  *  otherwise [MutableGraph] should be a better option.
  **/
-class PersistentGraph : Graph<NodeID, Node<*>> {
+class PersistentGraph : Graph {
     private var nodes: PersistentMap<NodeID, Node<Any?>> = persistentMapOf()
 
     // Map from a node ID to it's set of child nodes
     private var children: PersistentMap<NodeID, PersistentList<NodeID>> = persistentMapOf()
 
+    private var _behaviorParents = persistentMapOf<NodeID, PersistentList<BehaviorID>>()
+
+    private var _externalBehaviors = persistentMapOf<BehaviorID, ExternalBehavior>()
+
     override fun getCurrentNodes(): Collection<Node<*>> {
         // No conversion needed because underling data structure is persistent.
         return nodes.values
+    }
+
+    override fun getExternalBehaviors(): Map<BehaviorID, ExternalBehavior> {
+        return _externalBehaviors
+    }
+
+    override fun addChild(behavior: BehaviorID, child: NodeID) {
+        var parentList = _behaviorParents.get(child)
+
+        if (parentList == null) {
+            parentList = persistentListOf(behavior)
+        } else {
+            parentList = parentList.add(behavior)
+        }
+
+        _behaviorParents = _behaviorParents.put(child, parentList)
     }
 
     override fun getCurrentNodeMap(): Map<NodeID, Node<*>> {
@@ -51,6 +73,10 @@ class PersistentGraph : Graph<NodeID, Node<*>> {
         nodes = nodes.put(node.id, node)
     }
 
+    override fun addBehavior(behavior: ExternalBehavior) {
+        _externalBehaviors = _externalBehaviors.put(behavior.behavior.id, behavior)
+    }
+
     @OptIn(FragileYafrlAPI::class)
     override fun addChild(
         parent: NodeID,
@@ -63,6 +89,10 @@ class PersistentGraph : Graph<NodeID, Node<*>> {
         } else {
             children.put(parent, persistentListOf(child))
         }
+    }
+
+    override fun getBehaviorParentsOf(id: NodeID): List<BehaviorID> {
+        return _behaviorParents[id] ?: listOf()
     }
 
     override fun getChildrenOf(id: NodeID): List<NodeID> {

@@ -2,6 +2,7 @@ package io.github.yafrl.behaviors
 
 import io.github.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.vector.VectorSpace
 import kotlin.math.abs
@@ -142,4 +143,7 @@ internal class IntegratedBehavior<T>(
     override fun measureImpulses(time: Duration, dt: Duration): T = with(vectorSpace) {
         return zero
     }
+
+    override val parentBehaviors: List<BehaviorID>
+        get() = behavior.parentBehaviors
 }

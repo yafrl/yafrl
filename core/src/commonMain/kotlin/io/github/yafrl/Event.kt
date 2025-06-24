@@ -44,6 +44,8 @@ import kotlin.time.Duration
  * To use an [Event] idiomatically, you should avoid using [collect] unless absolutely
  *  necessary for your application -- and if necessary, [collect] should only be used
  *  at the "edges" of your application.
+ *
+ * Conceptually, an [Event] can be viewed as a [Signal]
  **/
 open class Event<out A> @OptIn(FragileYafrlAPI::class)
 internal constructor(
