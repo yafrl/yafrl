@@ -1,5 +1,6 @@
 package io.github.yafrl.behaviors
 
+import io.github.yafrl.SampleScope
 import io.github.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.timeline.BehaviorID
@@ -36,12 +37,12 @@ fun <T> Behavior<T>.integrate(vectorSpace: VectorSpace<T>, initial: T? = null): 
     }
 }
 
-inline fun <reified T> Behavior<T>.integrateWith(initial: T, noinline accum: (T, T) -> T): Behavior<T> {
+inline fun <reified T> Behavior<T>.integrateWith(initial: T, noinline accum: SampleScope.(T, T) -> T): Behavior<T> {
     return integrateWith(VectorSpace.instance<T>(), initial, accum)
 }
 
 @OptIn(FragileYafrlAPI::class)
-fun <T> Behavior<T>.integrateWith(vectorSpace: VectorSpace<T>, initial: T, accum: (T, T) -> T): Behavior<T> {
+fun <T> Behavior<T>.integrateWith(vectorSpace: VectorSpace<T>, initial: T, accum: SampleScope.(T, T) -> T): Behavior<T> {
     return when(this) {
         // Polynomials can be integrated exactly.
         // TODO: Adding this messes up the yafrl-gdx example for some reason
@@ -62,7 +63,7 @@ fun <T> Behavior<T>.integrateWith(vectorSpace: VectorSpace<T>, initial: T, accum
 //        )
 
         // Generic numeric integral that takes impulses into account
-        else -> IntegratedBehavior(vectorSpace.with(accum), initial, this@integrateWith)
+        else -> IntegratedBehavior(vectorSpace.with { x, y -> io.github.yafrl.sample { accum(x, y) } }, initial, this@integrateWith)
     }
 }
 

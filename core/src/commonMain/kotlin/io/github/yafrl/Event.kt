@@ -63,7 +63,7 @@ internal constructor(
     /**
      * Method version of [Signal.fold], for easier use in method chains.
      **/
-    fun <B> scan(initial: B, reducer: (B, A) -> B): Signal<B> {
+    fun <B> scan(initial: B, reducer: SampleScope.(B, A) -> B): Signal<B> {
         return Signal.fold(initial, this, reducer)
     }
 

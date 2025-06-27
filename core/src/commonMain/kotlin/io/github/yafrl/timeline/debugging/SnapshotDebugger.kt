@@ -1,6 +1,7 @@
 package io.github.yafrl.timeline.debugging
 
 import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.Timeline
 import kotlinx.atomicfu.locks.synchronized
@@ -18,6 +19,7 @@ class SnapshotDebugger(
      *  timeline so that previous states can be restored.
      **/
     data class GraphState(
+        val behaviorValues: Map<BehaviorID, Any?>,
         val nodeValues: Map<NodeID, Any?>,
         val children: Map<NodeID, Collection<NodeID>>
     )
@@ -33,7 +35,9 @@ class SnapshotDebugger(
         if (timeline.debugLogging) {
             println("Persisting state in frame ${timeline.latestFrame}, ${nodes.size} nodes")
         }
+
         previousStates[timeline.latestFrame] = GraphState(
+            timeline.behaviorsSampled.toMap(),
             nodes
                 .mapValues { it.value.rawValue },
             children
@@ -58,13 +62,15 @@ class SnapshotDebugger(
 
             val nodes = timeline.graph.getCurrentNodes()
 
+            timeline.behaviorsSampled = previousStates[frame]!!.behaviorValues.toMutableMap()
+
             nodes.forEach { node ->
                 if (node.label == "__internal_paused") return@forEach
 
                 val resetValue = nodeValues[node.id]
 
                 if (resetValue != null) {
-                    timeline.updateNodeValue(node, resetValue)
+                    timeline.updateNodeValue(node, resetValue, resetting = true)
                     node.onRollback?.invoke(node, frame)
                 }
             }

@@ -241,7 +241,7 @@ open class Signal<out A> @FragileYafrlAPI constructor(
          * ```
          **/
         @OptIn(FragileYafrlAPI::class)
-        fun <A, B> fold(initial: A, events: Event<B>, reducer: (A, B) -> A): Signal<A> {
+        fun <A, B> fold(initial: A, events: Event<B>, reducer: SampleScope.(A, B) -> A): Signal<A> {
             val graph = Timeline.currentTimeline()
 
             return Signal(

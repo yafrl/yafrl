@@ -54,6 +54,8 @@ class Timeline(
      **/
     internal var currentFrame: Long = -1
 
+    internal var behaviorsSampled = mutableMapOf<BehaviorID, Any?>()
+
     val timeTravel = initTimeTravel(this)
 
     @OptIn(FragileYafrlAPI::class)
@@ -175,7 +177,7 @@ class Timeline(
         val mapNodeID = newID()
 
         val initialValue = lazy {
-            trackedSample(mapNodeID) {
+            trackedSample {
                 initialValue()
             }
         }
@@ -185,8 +187,7 @@ class Timeline(
             initialValue = initialValue,
             id = mapNodeID,
             recompute = {
-                // On recompute we don't need to track the sample.
-                trackedSample(mapNodeID) {
+                trackedSample {
                     val parentValue = fetchNodeValue(parent) as A
 
                     val result = f(parentValue)
@@ -217,7 +218,7 @@ class Timeline(
     fun <A, B> createFoldNode(
         initialValue: A,
         eventNode: Node<EventState<B>>,
-        reducer: (A, B) -> A
+        reducer: SampleScope.(A, B) -> A
     ): Node<A> = synchronized(this) {
         val foldNodeID = newID()
 
@@ -233,23 +234,28 @@ class Timeline(
             recompute = {
                 val event = fetchNodeValue(eventNode) as EventState<B>
                 if (event is EventState.Fired) {
-                    currentValue = reducer(currentValue, event.event)
+                    trackedSample {
+                        currentValue = reducer(currentValue, event.event)
 
-                    if (timeTravelEnabled) {
-                        events += event.event
+                        if (timeTravelEnabled) {
+                            events += event.event
+                        }
                     }
                 }
 
                 currentValue
             },
             onRollback = { node, frame ->
-                val resetTo = frame - createdFrame
+                // TODO: Not sure if this is the right scope.
+                sample {
+                    val resetTo = frame - createdFrame
 
-                events = events.take(resetTo.toInt())
+                    events = events.take(resetTo.toInt())
 
-                currentValue = events.fold(initialValue, reducer)
+                    currentValue = events.fold(initialValue, { x, y -> reducer(x, y) })
 
-                node.rawValue = currentValue
+                    node.rawValue = currentValue
+                }
             }
         )
 
@@ -321,9 +327,12 @@ class Timeline(
     fun updateNodeValue(
         node: Node<Any?>,
         newValue: Any?,
-        internal: Boolean = false
+        internal: Boolean = false,
+        resetting: Boolean = false
     ) = synchronized(this) {
-        val behaviorsSampled = mutableMapOf<BehaviorID, Any?>()
+        if (!resetting && !internal) {
+            behaviorsSampled = mutableMapOf()
+        }
 
         if (debugLogging && !internal) println("Updating node ${node.label} to ${newValue}")
 
@@ -355,8 +364,6 @@ class Timeline(
             onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
         }
 
-        sampleBehaviorsForNode(behaviorsSampled, node.id)
-
         updateChildNodes(behaviorsSampled, node)
 
         if (!internal && externalNodes.contains(node.id)) {
@@ -368,23 +375,7 @@ class Timeline(
             if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
         }
 
-        timeTravel.persistState()
-    }
-
-    @OptIn(FragileYafrlAPI::class)
-    fun sampleBehaviorsForNode(behaviorsSampled: MutableMap<BehaviorID, Any?>, id: NodeID) {
-        val parentBehaviorIds = graph.getBehaviorParentsOf(id)
-
-        val parentBehaviors = parentBehaviorIds
-            .map {
-                graph.getExternalBehaviors()[it]
-                    ?: throw Exception("Tried to get external behavior of id $it -- not found")
-            }
-
-        val behaviorValues = parentBehaviors
-            .map { it.behavior.sampleValueAt(time) }
-
-        behaviorsSampled.putAll(parentBehaviorIds.zip(behaviorValues))
+        if (!internal && !resetting) timeTravel.persistState()
     }
 
     /**
@@ -435,8 +426,6 @@ class Timeline(
                     }
                 }
             }
-
-            sampleBehaviorsForNode(behaviorsSampled, childID)
 
             updateChildNodes(behaviorsSampled, child)
         }
@@ -521,20 +510,27 @@ class Timeline(
      *  so that we can keep track of the dependencies between nodes.
      **/
     @OptIn(FragileYafrlAPI::class)
-    internal fun <R> trackedSample(id: NodeID, body: SampleScope.() -> R): R {
+    internal fun <R> trackedSample(body: SampleScope.() -> R): R {
         val scope = object: SampleScope {
             override fun <A> Behavior<A>.sampleValue(): A {
-                for (behaviorId in parentBehaviors) {
-                    println("Adding $behaviorId, $id")
-                    graph.addChild(behaviorId, id)
-                }
+                if (this is Behavior.Sampled<A>) {
+                    if (behaviorsSampled.contains(this.id)) {
+                        return behaviorsSampled[id] as A
+                    }
 
-                return sampleValueAt(time)
+                    val value = sampleValueAt(time)
+
+                    behaviorsSampled[id] = value
+
+                    return value
+                } else {
+                    return sampleValueAt(time)
+                }
             }
 
             override fun <A> Signal<A>.currentValue(): A {
                 // For a signal we can just add a dependency on the node.
-                graph.addChild(node.id, id)
+                // graph.addChild(node.id, id)
 
                 return node.current()
             }

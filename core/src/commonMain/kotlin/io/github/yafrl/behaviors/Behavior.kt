@@ -12,6 +12,7 @@ import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.current
 import io.github.yafrl.vector.VectorSpace
 import io.github.yafrl.SampleScope
+import io.github.yafrl.sample
 import io.github.yafrl.timeline.debugging.ExternalBehavior
 import kotlin.math.pow
 import kotlin.reflect.typeOf
@@ -129,27 +130,27 @@ sealed interface Behavior<out A> {
         return times.map { sampleValue() }
     }
 
-    fun <B> map(f: (A) -> B): Behavior<B> {
+    fun <B> map(f: SampleScope.(A) -> B): Behavior<B> {
         return Mapped(this, f)
     }
 
-    fun <B> flatMap(f: (A) -> Behavior<B>): Behavior<B> {
+    fun <B> flatMap(f: SampleScope.(A) -> Behavior<B>): Behavior<B> {
         return Flattened(Mapped(this, f))
     }
 
     /** Implementation of a mapped behavior. */
     private class Mapped<A, B>(
         private val original: Behavior<A>,
-        private val f: (A) -> B
+        private val f: SampleScope.(A) -> B
     ) : Behavior<B> {
 
         @FragileYafrlAPI
         override fun sampleValueAt(time: Duration): B {
-            return f(original.sampleValueAt(time))
+            return sample { f(original.sampleValueAt(time)) }
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): B {
-            return f(original.measureImpulses(time, dt))
+            return sample { f(original.measureImpulses(time, dt)) }
         }
 
         override val parentBehaviors: List<BehaviorID>
@@ -230,16 +231,17 @@ sealed interface Behavior<out A> {
         }
 
         @OptIn(FragileYafrlAPI::class)
-        inline fun <reified A> sampled(noinline current: () -> A): Behavior<A> {
+        inline fun <reified A> sampled(noinline current: SampleScope.() -> A): Behavior<A> {
             val timeline = Timeline.currentTimeline()
 
             val result = Sampled(
                 timeline.newBehaviorID(),
                 { VectorSpace.instance<A>() },
-                current
+                {
+                    // TODO: Probably want to track the dependencies here.
+                    sample { current() }
+                }
             )
-
-            println("Adding behavior ${result.id}")
 
             timeline.graph.addBehavior(
                 ExternalBehavior(

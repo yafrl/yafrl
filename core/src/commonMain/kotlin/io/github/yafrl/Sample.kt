@@ -36,9 +36,10 @@ import kotlin.time.Duration
 
 inline fun <R> runYafrl(
     scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
+    timeTravel: Boolean = false,
     body: SampleScope.() -> R
 ): R {
-    Timeline.initializeTimeline(scope = scope)
+    Timeline.initializeTimeline(scope = scope, timeTravel = timeTravel)
     return sample(body)
 }
 

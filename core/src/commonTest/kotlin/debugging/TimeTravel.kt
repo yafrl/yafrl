@@ -1,10 +1,14 @@
 package debugging
 
+import io.github.yafrl.Signal
+import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.externalSignal
 import io.github.yafrl.externalEvent
+import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
+import kotlin.random.Random
 import kotlin.test.assertEquals
 
 class TimeTravel: FunSpec({
@@ -83,6 +87,40 @@ class TimeTravel: FunSpec({
             clicks.send(Unit)
 
             assertEquals(2, count.currentValue())
+        }
+    }
+
+    test("Time-travel preserves previous values of behaviors") {
+        runYafrl(timeTravel = true) {
+            var numSamples = 0
+
+            val random = Behavior.sampled {
+                numSamples++
+                Random.nextInt()
+            }
+
+            val buttonClick = externalEvent<Unit>("button_click")
+
+            val text = Signal.hold(
+                "Click to get a number.",
+                buttonClick.map {
+                    "Your number is: ${random.sampleValue()}"
+                }
+            )
+
+            buttonClick.send(Unit)
+
+            val initialText = text.currentValue()
+
+            buttonClick.send(Unit)
+
+            Timeline.currentTimeline().timeTravel.rollbackState()
+
+            val afterReset = text.currentValue()
+
+            assertEquals(initialText, afterReset)
+
+            assertEquals(2, numSamples)
         }
     }
 })
