@@ -11,7 +11,7 @@ plugins {
 }
 
 allprojects {
-    version = "0.3"
+    version = "0.4-SNAPSHOT"
     group = "io.github.yafrl"
 
     repositories {
