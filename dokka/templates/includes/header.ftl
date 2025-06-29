@@ -21,7 +21,7 @@
             <div class="navbar" id="navbarNav">
               <ul class="navbar-nav">
                 <li class="nav-item">
-                   <a class="nav-link" href="#">Overview</a>
+                   <a class="nav-link" href="https://yafrl.github.io">Home</a>
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="https://yafrl.github.io/yafrl/docs/yafrl-core">Documentation</a>
