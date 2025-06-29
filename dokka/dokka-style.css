@@ -1,0 +1,25 @@
+:root {
+    --color-background-nav: #2f2f48;
+    --color-background-nav-dt: #2f2f48;
+}
+
+/* make the list horizontal */
+#navbarNav .navbar-nav {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* white, un-underlined links */
+#navbarNav .nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    transition: opacity 0.2s;
+}
+
+#navbarNav .nav-link:hover {
+    opacity: 0.7;
+}

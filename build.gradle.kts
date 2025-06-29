@@ -43,9 +43,10 @@ tasks.withType<DokkaMultiModuleTask>().configureEach {
     pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
         customAssets = listOf(File(rootDir, "pages/yafrl_logo.png"))
         customStyleSheets = listOf(
-            File(rootDir, "pages/logo-styles.css"),
-            File(rootDir, "pages/dokka-style.css")
+            File(rootDir, "dokka/logo-styles.css"),
+            File(rootDir, "dokka/dokka-style.css")
         )
+        templatesDir = File(rootDir, "dokka/templates")
     }
 }
 
@@ -56,9 +57,10 @@ subprojects {
             pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
                 customAssets = listOf(File(rootDir, "pages/yafrl_logo.png"))
                 customStyleSheets = listOf(
-                    File(rootDir, "pages/logo-styles.css"),
-                    File(rootDir, "pages/dokka-style.css")
+                    File(rootDir, "dokka/logo-styles.css"),
+                    File(rootDir, "dokka/dokka-style.css")
                 )
+                templatesDir = File(rootDir, "dokka/templates")
             }
 
             dokkaSourceSets {
