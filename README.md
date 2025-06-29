@@ -21,7 +21,7 @@
 **Y**et **A**nother **F**unctional **R**eactive **L**ibrary (**yafrl**) is a small library for _functional reactive programming_ in Kotlin -- meant to provide an alternative
  to constructs from `kotlinx-coroutines` such as `Flow` and `StateFlow`.
 
-For more information, including potential use-cases and some concrete advantages over `Flow`s, see [the docs](https://sintrastes.github.io/yafrl/).
+For more information, including potential use-cases and some concrete advantages over `Flow`s, see [the docs](https://yafrl.github.io/yafrl/).
 
 # Quickstart
 
