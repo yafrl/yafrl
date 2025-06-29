@@ -41,7 +41,7 @@ kotlin {
 
 tasks.withType<DokkaMultiModuleTask>().configureEach {
     pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
-        customAssets = listOf(File(rootDir, "pages/yafrl_logo.png"))
+        customAssets = listOf(File(rootDir, "dokka/yafrl_logo.png"))
         customStyleSheets = listOf(
             File(rootDir, "dokka/logo-styles.css"),
             File(rootDir, "dokka/dokka-style.css")
@@ -55,7 +55,7 @@ subprojects {
     plugins.withId("org.jetbrains.dokka") {
         tasks.withType<DokkaTaskPartial>().configureEach {
             pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
-                customAssets = listOf(File(rootDir, "pages/yafrl_logo.png"))
+                customAssets = listOf(File(rootDir, "dokka/yafrl_logo.png"))
                 customStyleSheets = listOf(
                     File(rootDir, "dokka/logo-styles.css"),
                     File(rootDir, "dokka/dokka-style.css")
