@@ -1,7 +1,7 @@
 # yafrl
 
 <p align="center">
-  <img src="https://yafrol.github.io/yafrl_logo.png" height="256"/>
+  <img src="https://yafrl.github.io/yafrl_logo.png" height="256"/>
 </p>
 
 <p align="center">
