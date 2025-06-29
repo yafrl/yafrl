@@ -249,6 +249,14 @@ open class Signal<out A> @FragileYafrlAPI constructor(
             )
         }
 
+        fun <A> fold(
+            initial: A,
+            vararg actions: Event<(A) -> A>
+        ) = fold(initial, Event.merged(*actions)) { state, action ->
+            action(state)
+        }
+
+
         @OptIn(FragileYafrlAPI::class)
         fun <A> combineAll(
             vararg states: Signal<A>

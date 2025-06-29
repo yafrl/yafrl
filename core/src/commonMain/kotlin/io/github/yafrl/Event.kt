@@ -287,6 +287,12 @@ internal constructor(
     }
 }
 
+fun <A, B> on(event: Event<B>, reducer: SampleScope.(A, B) -> A): Event<(A) -> A> {
+    return event.map { event ->
+        { state: A -> reducer(state, event) }
+    }
+}
+
 /**
  * Builds a dirac impulse whose value is equal to the event values when the even has fired,
  *  and whole value is equal to [zero] otherwise
