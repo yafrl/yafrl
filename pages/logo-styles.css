@@ -7,7 +7,7 @@
  * You may need to override it and find what works best for your case.
  */
 :root {
-    --dokka-logo-image-url: url('../images/yafrl_logo.png');
+    --dokka-logo-image-url: url('./images/yafrl_logo.png');
     --dokka-logo-height: 56px;
     --dokka-logo-width: 56px;
 }
