@@ -2,6 +2,21 @@ import java.net.URL
 import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.withType
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.dokka.base.DokkaBase
+import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.base.DokkaBaseConfiguration
+import org.jetbrains.dokka.DokkaConfiguration
+import org.jetbrains.dokka.gradle.DokkaBasePlugin
+import org.jetbrains.dokka.gradle.DokkaMultiModuleTask
+import org.jetbrains.dokka.gradle.DokkaPlugin
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
+import org.jetbrains.dokka.gradle.tasks.DokkaBaseTask
+
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.dokka:dokka-base:2.0.0")
+    }
+}
 
 plugins {
     kotlin("multiplatform") version "2.1.20"
@@ -24,12 +39,28 @@ kotlin {
     jvm()
 }
 
-subprojects {
-    if (this == rootProject) return@subprojects
+tasks.withType<DokkaMultiModuleTask>().configureEach {
+    pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
+        customAssets = listOf(File(rootDir, "pages/yafrl_logo.png"))
+        customStyleSheets = listOf(
+            File(rootDir, "pages/logo-styles.css"),
+            File(rootDir, "pages/dokka-style.css")
+        )
+    }
+}
 
+subprojects {
     // Setup dokka config in each subproject.
     plugins.withId("org.jetbrains.dokka") {
-        tasks.withType<org.jetbrains.dokka.gradle.DokkaTask>().configureEach {
+        tasks.withType<DokkaTaskPartial>().configureEach {
+            pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
+                customAssets = listOf(File(rootDir, "pages/yafrl_logo.png"))
+                customStyleSheets = listOf(
+                    File(rootDir, "pages/logo-styles.css"),
+                    File(rootDir, "pages/dokka-style.css")
+                )
+            }
+
             dokkaSourceSets {
                 dokkaSourceSets.matching { it.name == "commonMain" }.configureEach {
                     val projectName = project.name
@@ -45,6 +76,10 @@ subprojects {
             }
         }
     }
+}
+
+subprojects {
+    if (this == rootProject) return@subprojects
 
     // Setup publish config in each subproject
     plugins.withId("com.vanniktech.maven.publish") {
