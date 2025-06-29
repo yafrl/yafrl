@@ -10,10 +10,10 @@
 <a href="https://codecov.io/github/yafrl/yafrl">
   <img src="https://codecov.io/github/yafrl/yafrl/graph/badge.svg?token=2A1XMWGOSH"/>
 </a>
-<a href="https://github.com/Sintrastes/yafrl/actions/workflows/gradle.yml">
+<a href="https://github.com/yafrl/yafrl/actions/workflows/gradle.yml">
   <img src="https://github.com/Sintrastes/yafrl/actions/workflows/gradle.yml/badge.svg"/>
 </a>
-<a href="https://sintrastes.github.io/yafrl/">
+<a href="https://yafrl.github.io/yafrl/docs/yafrl-core">
  <img src="https://img.shields.io/badge/Documentation-2403fc"/>
 </a>
 </p>
