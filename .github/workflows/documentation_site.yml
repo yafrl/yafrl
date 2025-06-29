@@ -45,6 +45,7 @@ jobs:
       - name: Build docs
         run: |
           ./gradlew dokkaHtmlMultiModule
+          mkdir pages
           cp -r build/dokka/htmlMultiModule pages/docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
