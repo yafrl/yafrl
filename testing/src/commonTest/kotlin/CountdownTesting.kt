@@ -55,7 +55,7 @@ class CountdownTesting : FunSpec({
         testPropositionHoldsFor(
             setupState = { CountdownTimer.new().snapshot() },
             proposition = {
-                val lessThanZero = condition { current.count < 0 }
+                val lessThanZero by condition { current.count < 0 }
 
                 always(!lessThanZero)
             }

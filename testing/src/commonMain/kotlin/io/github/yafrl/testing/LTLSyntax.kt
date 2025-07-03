@@ -1,5 +1,8 @@
 package io.github.yafrl.testing
 
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
+
 /**
  * Syntax for building up LTL propositions.
  *
@@ -13,7 +16,7 @@ interface LTLSyntax<W> {
     infix fun LTL<W>.implies(other: LTL<W>): LTL<W>
     operator fun LTL<W>.not(): LTL<W>
 
-    fun condition(name: String? = null, cond: ConditionScope<W>.() -> Boolean): LTL<W>
+    fun condition(cond: ConditionScope<W>.() -> Boolean): ReadOnlyProperty<Any?, LTL<W>>
 
     // Temporal constructs
     fun always(cond: LTL<W>): LTL<W>
@@ -42,8 +45,22 @@ interface LTLSyntax<W> {
                     return LTL.Not(this)
                 }
 
-                override fun condition(name: String?, cond: ConditionScope<W>.() -> Boolean): LTL<W> {
-                    return LTL.Condition(name, cond)
+                private fun String.toSnakeCase(): String {
+                    // insert underscore between lower–upper, and between upper–upperLower
+                    val step1 = replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
+                    val step2 = step1.replace(Regex("([A-Z])([A-Z][a-z])"), "$1_$2")
+                    return step2.lowercase()
+                }
+
+                override fun condition(cond: ConditionScope<W>.() -> Boolean): ReadOnlyProperty<Any?, LTL<W>> {
+                    return object: ReadOnlyProperty<Any?, LTL<W>> {
+                        override fun getValue(
+                            thisRef: Any?,
+                            property: KProperty<*>
+                        ): LTL<W> {
+                            return LTL.Condition(property.name.toSnakeCase(), cond)
+                        }
+                    }
                 }
 
                 override fun always(cond: LTL<W>): LTL<W> {
@@ -81,6 +98,10 @@ data class ConditionScope<W>(val world: (Int) -> W, val time: Int) {
         } else {
             null
         }
+    }
+
+    val next: W by lazy {
+        world(time + 1)
     }
 }
 

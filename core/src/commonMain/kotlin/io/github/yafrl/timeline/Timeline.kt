@@ -188,11 +188,13 @@ class Timeline(
             id = mapNodeID,
             recompute = {
                 trackedSample {
-                    val parentValue = fetchNodeValue(parent) as A
+                    try {
+                        val parentValue = fetchNodeValue(parent) as A
 
-                    val result = f(parentValue)
-
-                    result
+                        f(parentValue)
+                    } catch (e: ClassCastException) {
+                        throw IllegalStateException("Tried to cast ${parent.label} with the wrong type", e)
+                    }
                 }
             },
             onNextFrame = onNextFrame

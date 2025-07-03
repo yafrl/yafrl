@@ -76,17 +76,17 @@ class BlinkerTesting : FunSpec ({
             setupState = { Blinker.new().snapshot() },
             proposition = {
                 val paused = run {
-                    val showingEnable = condition("showing_enable") { current.buttonText == "Enable" }
-                    val lightOff = condition("light_off") { current.lightOn == false }
+                    val showingEnable by condition { current.buttonText == "Enable" }
+                    val lightOff by condition { current.lightOn == false }
 
                     showingEnable and lightOff
                 }
 
                 val blinking = run {
-                    val showingDisable = condition("showing_disable") { current.buttonText == "Disable" }
+                    val showingDisable by condition { current.buttonText == "Disable" }
 
-                    val lightOn = condition("light_on") { current.lightOn }
-                    val lightOff = condition("light_off") { !current.lightOn }
+                    val lightOn by condition { current.lightOn }
+                    val lightOff by condition { !current.lightOn }
 
                     val isBlinking = (lightOn and next(lightOff)) or
                             (lightOff and next(lightOn))
