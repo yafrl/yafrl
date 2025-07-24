@@ -91,6 +91,8 @@ internal constructor(
         )
     }
 
+    fun <B> tag(behavior: Behavior<B>): Event<B> = map { behavior.sampleValue() }
+
     fun <B: Any> mapNotNull(f: (A) -> B?): Event<B> {
         return map { f(it) }.filter { it != null }.map { it!! }
     }
@@ -213,6 +215,10 @@ internal constructor(
                 *events
             )
         }
+
+        fun <A> merged(
+            events: List<Event<A>>
+        ) = merged(*events.toTypedArray())
 
         /**
          * Merges [Event]s using the supplied [MergeStrategy] to handle
