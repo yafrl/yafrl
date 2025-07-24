@@ -25,6 +25,7 @@ kotlin {
     }
     iosArm64()
     macosX64()
+    macosArm64()
     js(IR) {
         browser {
             testTask {
