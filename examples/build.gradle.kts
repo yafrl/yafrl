@@ -22,20 +22,39 @@ kotlin {
     jvm()
     iosArm64()
     macosX64()
+    macosArm64() {
+        binaries {
+            executable {
+                entryPoint = "ui.playGame"
+            }
+        }
+    }
     js().browser()
 
     sourceSets {
-        val jvmMain by getting {
+        val commonMain by getting {
             dependencies {
                 implementation(project(":yafrl-core"))
                 implementation(project(":yafrl-compose"))
+                implementation(libs.arrow.optics)
+                implementation(libs.kotest.property)
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
                 implementation(libs.kotlin.coroutines)
                 implementation(compose.material)
                 implementation(compose.desktop.currentOs)
                 implementation(compose.material)
                 implementation(libs.molecule)
-                implementation(libs.arrow.optics)
                 implementation(kotlin("test"))
+            }
+        }
+
+        val macosArm64Main by getting {
+            dependencies {
+                implementation("com.jakewharton.mosaic:mosaic-runtime:0.17.0")
             }
         }
 
@@ -44,6 +63,7 @@ kotlin {
                 implementation(project(":yafrl-core"))
                 implementation(kotlin("test"))
                 implementation(kotlin("test-annotations-common"))
+                implementation(project(":yafrl-testing"))
                 implementation(libs.molecule)
                 implementation(libs.kotest.engine)
                 implementation(libs.kotest.runner)
@@ -54,6 +74,13 @@ kotlin {
                 implementation(libs.mockk)
             }
         }
+    }
+}
+
+// Lets us be able to test the text adventure game from gradle.
+afterEvaluate {
+    tasks.withType<JavaExec> {
+        standardInput = System.`in`
     }
 }
 
