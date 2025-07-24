@@ -3,13 +3,17 @@ package io.github.yafrl.coroutines
 import io.github.yafrl.BindingSignal
 import io.github.yafrl.BroadcastEvent
 import io.github.yafrl.Event
+import io.github.yafrl.EventState
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.externalEvent
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.externalSignal
+import io.github.yafrl.sample
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -27,7 +31,27 @@ inline fun <reified A> Flow<A>.asEvent(): Event<A> {
     return event
 }
 
-// Note: Created to fix bug with test coverage.
+/**
+ * Construct a new [Flow] that updates whenever the [Event] fires
+ *  in yafrl's state graph.
+ *
+ * Note: Events will be emitted to the flow using the timeline's builtin
+ *  coroutine scope.
+ **/
+@OptIn(FragileYafrlAPI::class)
+fun <A> Event<A>.asFlow(): Flow<A> {
+    val result = MutableSharedFlow<A>()
+
+    Timeline.currentTimeline().scope.launch {
+        node.collect { newEvent ->
+            if (newEvent is EventState.Fired<A>) result.emit(newEvent.event)
+        }
+    }
+
+    return result
+}
+
+/** @suppress -- Internal: Created to fix bug with test coverage. */
 @FragileYafrlAPI
 fun <A> bindFlowToEvent(scope: CoroutineScope, flow: Flow<A>, event: BroadcastEvent<A>) {
     scope.launch {
@@ -42,7 +66,7 @@ fun <A> bindFlowToEvent(scope: CoroutineScope, flow: Flow<A>, event: BroadcastEv
  *  with the same values and update behavior of the passed [StateFlow].
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> StateFlow<A>.asState(): Signal<A> {
+inline fun <reified A> StateFlow<A>.asSignal(): Signal<A> {
     val state = externalSignal(value)
     val scope = Timeline.currentTimeline().scope
     bindStateFlowToState(scope, this, state)
@@ -50,7 +74,25 @@ inline fun <reified A> StateFlow<A>.asState(): Signal<A> {
     return state
 }
 
-// Note: Created to fix bug with test coverage
+/**
+ * Build a new [StateFlow] whose state matches that of the supplied [Signal].
+ *
+ * Useful for interop with pre-existing APIs using state flow.
+ **/
+@OptIn(FragileYafrlAPI::class)
+fun <A> Signal<A>.asStateFlow(): StateFlow<A> = sample {
+    val result = MutableStateFlow(
+        currentValue()
+    )
+
+    node.collectSync { newValue ->
+        result.value = newValue
+    }
+
+    result
+}
+
+/** @suppress Internal -- Created to fix bug with test coverage */
 @FragileYafrlAPI
 fun <A> bindStateFlowToState(scope: CoroutineScope, flow: StateFlow<A>, state: BindingSignal<A>) {
     scope.launch {
