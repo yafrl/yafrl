@@ -89,7 +89,11 @@ interface LTLSyntax<W> {
     }
 }
 
-data class ConditionScope<W>(val world: (Int) -> W, val time: Int) {
+data class ConditionScope<W>(val world: (Int) -> W, val time: Int, val maxTraceLength: Int) {
+    fun LTL<W>.holds(): Boolean {
+        return evaluateAtTime(world, time, maxTraceLength) == LTLResult.True
+    }
+
     val current: W by lazy { world(time) }
 
     val previous: W? by lazy {
@@ -190,7 +194,7 @@ sealed class LTL<W> {
 
     data class Condition<W>(val name: String?, val cond: ConditionScope<W>.() -> Boolean): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
-            val condition = ConditionScope(world, time).cond()
+            val condition = ConditionScope(world, time, maxTraceLength).cond()
             return if (condition) LTLResult.True else LTLResult.False
         }
 
