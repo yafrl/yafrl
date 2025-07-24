@@ -1,7 +1,7 @@
 
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.coroutines.asEvent
-import io.github.yafrl.coroutines.asState
+import io.github.yafrl.coroutines.asSignal
 import io.github.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -11,7 +11,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlin.test.assertEquals
 
@@ -42,7 +41,7 @@ class CoroutineIntegrationTests: FunSpec({
         runYafrl {
             val stateFlow = MutableStateFlow(0)
 
-            val state = stateFlow.asState()
+            val state = stateFlow.asSignal()
 
             assertEquals(0, state.currentValue())
 
