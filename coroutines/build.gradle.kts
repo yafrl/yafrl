@@ -27,13 +27,31 @@ kotlin {
             kotlinOptions.jvmTarget = "1.8"
         }
     }
-    iosArm64()
-    macosX64()
     js(IR).browser() {
         testTask {
             enabled = false
         }
     }
+
+    // Native: https://kotlinlang.org/docs/native-target-support.html
+    // -- Tier 1 --
+    linuxX64()
+    macosX64()
+    macosArm64()
+    iosSimulatorArm64()
+    iosX64()
+    // -- Tier 2 --
+    linuxArm64()
+    watchosSimulatorArm64()
+    watchosX64()
+    watchosArm32()
+    watchosArm64()
+    tvosSimulatorArm64()
+    tvosX64()
+    tvosArm64()
+    iosArm64()
+    // -- Tier 3 --
+    mingwX64()
 
     sourceSets {
         val commonMain by getting {
