@@ -5,11 +5,13 @@ import io.github.yafrl.SampleScope
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.sample
+import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.debugging.EventLogger
 import io.github.yafrl.timeline.Timeline
 import io.kotest.property.Arb
+import io.kotest.property.RandomSource
+import io.kotest.property.Sample
 import io.kotest.property.arbitrary.arbitrary
-import io.kotest.property.arbitrary.next
 import io.kotest.property.arbitrary.numericDouble
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
@@ -43,13 +45,14 @@ fun fpsClockGenerator(frameRate: Double = 60.0, delta: Duration = 2.0.millisecon
  **/
 fun atArbitraryState(
     traceLength: Int = 100,
+    rs: RandomSource = RandomSource.default(),
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
     check: SampleScope.() -> Unit
 ) {
     val timeline = Timeline.currentTimeline()
 
     repeat(traceLength) {
-        randomlyStepStateSpace(clockGenerator, timeline)
+        randomlyStepStateSpace(rs, clockGenerator, timeline)
     }
 
     // Run the test
@@ -62,12 +65,15 @@ fun atArbitraryState(
  * Performs a random valid action in the current [Timeline], simulating an
  *  arbitrary external action (i.e. events from a [io.github.yafrl.BroadcastEvent],
  *  or state updates from a [io.github.yafrl.BindingSignal].
+ *
+ * Returns the step that was performed when stepping through the state space.
  **/
 @OptIn(FragileYafrlAPI::class)
 internal fun randomlyStepStateSpace(
+    randomSource: RandomSource,
     clockGenerator: Arb<Duration>,
     timeline: Timeline
-) {
+): StateSpaceAction {
     val nodes = timeline.externalNodes
 
     val selected = Random.nextInt(nodes.entries.indices)
@@ -84,26 +90,38 @@ internal fun randomlyStepStateSpace(
             resolve(type)
         }
 
-        val event = EventState.Fired(arbitrary.next())
+        val sample = arbitrary.sample(randomSource)
+
+        val event = EventState.Fired(sample.value)
 
         // Update that event with a random value.
         timeline.updateNodeValue(
             node,
             event
         )
+
+        return StateSpaceAction.FireEvent(node.id, sample)
     } else {
         // Resolve the arbitrary instance from the node type.
 
         val arbitrary = resolve(kType)
 
-        val state = arbitrary.next()
+        val state = arbitrary.sample(randomSource)
 
         // Update that state with a random value.
         timeline.updateNodeValue(
             node,
-            state
+            state.value
         )
+
+        return StateSpaceAction.UpdateValue(node.id, state)
     }
+}
+
+sealed class StateSpaceAction {
+    data class FireEvent(val nodeID: NodeID, val value: Sample<Any?>) : StateSpaceAction()
+
+    data class UpdateValue(val nodeID: NodeID, val value: Sample<Any?>) : StateSpaceAction()
 }
 
 /**
@@ -122,6 +140,7 @@ fun <W> testPropositionHoldsFor(
     numIterations: Int = 100,
     maxTraceLength: Int = 50,
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
+    randomSource: RandomSource = RandomSource.default(),
     proposition: LTLSyntax<W>.() -> LTL<W>
 ) {
     val (numIterations, result) = propositionHoldsFor(
@@ -129,12 +148,13 @@ fun <W> testPropositionHoldsFor(
         numIterations,
         maxTraceLength,
         clockGenerator,
-        proposition
+        proposition,
+        randomSource
     )
 
     val timeline = Timeline.currentTimeline()
 
-    val formattedStates = (result ?: listOf()).map {
+    val formattedStates = (result?.first ?: listOf()).map {
         "\n   => $it"
     }
 
@@ -161,6 +181,9 @@ fun <W> testPropositionHoldsFor(
         .joinToString("")
 
     if (result != null) {
+        // TODO: Try to shrink the result to find a minimal example here
+
+
         throw IllegalStateException(
             "Proposition invalidated after ${numIterations} runs, " +
                     "with the following trace: \n\n - " + trace + "\n\n"
@@ -174,8 +197,9 @@ private fun <W> propositionHoldsFor(
     numIterations: Int,
     maxTraceLength: Int,
     clockGenerator: Arb<Duration>,
-    proposition: LTLSyntax<W>.() -> LTL<W>
-): Pair<Int, List<W>?> {
+    proposition: LTLSyntax<W>.() -> LTL<W>,
+    randomSource: RandomSource
+): Pair<Int, Pair<List<W>, List<StateSpaceAction>>?> {
     var iterations = 0
     repeat(numIterations) {
         iterations++
@@ -186,17 +210,20 @@ private fun <W> propositionHoldsFor(
 
         val state = setupState()
 
-        val trace = mutableListOf<W>()
+        val stateTrace = mutableListOf<W>()
+
+        val actionTrace = mutableListOf<StateSpaceAction>()
 
         val iterator = sequence {
             sample {
                 // Get initial state.
-                trace += state.currentValue()
+                stateTrace += state.currentValue()
                 yield(state.currentValue())
 
                 while (true) {
-                    randomlyStepStateSpace(clockGenerator, timeline)
-                    trace += state.currentValue()
+                    val action = randomlyStepStateSpace(randomSource, clockGenerator, timeline)
+                    actionTrace += action
+                    stateTrace += state.currentValue()
                     yield(state.currentValue())
                 }
             }
@@ -208,7 +235,7 @@ private fun <W> propositionHoldsFor(
             maxTraceLength
         )
 
-        if (testResult == LTLResult.False) return iterations to trace
+        if (testResult == LTLResult.False) return iterations to (stateTrace to actionTrace)
     }
 
     return iterations to null
