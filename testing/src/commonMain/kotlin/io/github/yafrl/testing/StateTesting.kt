@@ -213,36 +213,50 @@ fun <W> testPropositionHoldsFor(
             action.performAction(timeline)
         }
 
-        val formattedStates = shrunkStates.map {
-            "\n   => $it"
-        }
-
-        val formattedEvents = listOf("[initial state]") + shrunkActions
-            .map { event ->
-                val label = timeline.externalNodes[event.nodeID]!!.node.toString()
-
-                "\n - " + if (event.value == EventState.Fired(Unit)) {
-                    label
-                } else {
-                    val formattedArg = if (event.value is EventState.Fired<*>) {
-                        "${(event.value as EventState.Fired<*>).event}"
-                    } else {
-                        event.value
-                    }
-                    "$label[$formattedArg]"
-                }
-            }
-
-        val trace = formattedStates
-            .zip(formattedEvents) { state, event -> listOf(event, state) }
-            .flatten()
-            .joinToString("")
-
-        throw IllegalStateException(
-            "Proposition invalidated after ${numIterations} runs, " +
-                    "with the following trace: \n\n - " + trace + "\n\n"
+        throw LTLPropositionInvalidated(
+            numIterations,
+            shrunkStates,
+            shrunkActions
         )
     }
+}
+
+class LTLPropositionInvalidated(
+    numIterations: Int,
+    states: List<Any?>,
+    actions: List<StateSpaceAction>,
+) : AssertionError() {
+    private val timeline = Timeline.currentTimeline()
+
+    private val formattedStates = states.map {
+        "\n   => $it"
+    }
+
+    @OptIn(FragileYafrlAPI::class)
+    val formattedEvents = listOf("[initial state]") + actions
+        .map { event ->
+            val label = timeline.externalNodes[event.nodeID]!!.node.toString()
+
+            "\n - " + if (event.value == EventState.Fired(Unit)) {
+                label
+            } else {
+                val formattedArg = if (event.value.value is EventState.Fired<*>) {
+                    "${(event.value as EventState.Fired<*>).event}"
+                } else {
+                    event.value
+                }
+                "$label[$formattedArg]"
+            }
+        }
+
+    val trace = formattedStates
+        .zip(formattedEvents) { state, event -> listOf(event, state) }
+        .flatten()
+        .joinToString("")
+
+    override val message =
+        "Proposition invalidated after $numIterations runs, " +
+            "with the following trace: \n\n - " + trace + "\n\n"
 }
 
 /**

@@ -30,7 +30,7 @@ class StateTesting: FunSpec({
     test("State testing fails") {
         Timeline.initializeTimeline()
 
-        shouldThrow<IllegalStateException> {
+        shouldThrow<AssertionError> {
             testPropositionHoldsFor(
                 setupState = {
                     val addEvent = externalEvent<Unit>("add")
