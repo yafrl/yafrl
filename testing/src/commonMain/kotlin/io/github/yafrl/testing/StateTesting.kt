@@ -5,6 +5,7 @@ import io.github.yafrl.SampleScope
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.sample
+import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.debugging.EventLogger
 import io.github.yafrl.timeline.Timeline
@@ -13,6 +14,7 @@ import io.kotest.property.RandomSource
 import io.kotest.property.Sample
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.numericDouble
+import io.kotest.property.asSample
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
 import kotlin.random.nextInt
@@ -45,14 +47,15 @@ fun fpsClockGenerator(frameRate: Double = 60.0, delta: Duration = 2.0.millisecon
  **/
 fun atArbitraryState(
     traceLength: Int = 100,
-    rs: RandomSource = RandomSource.default(),
+    randomSource: RandomSource = RandomSource.default(),
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
     check: SampleScope.() -> Unit
 ) {
     val timeline = Timeline.currentTimeline()
 
     repeat(traceLength) {
-        randomlyStepStateSpace(rs, clockGenerator, timeline)
+        randomStateSpaceAction(randomSource, clockGenerator, timeline)
+            .performAction(timeline)
     }
 
     // Run the test
@@ -69,7 +72,7 @@ fun atArbitraryState(
  * Returns the step that was performed when stepping through the state space.
  **/
 @OptIn(FragileYafrlAPI::class)
-internal fun randomlyStepStateSpace(
+internal fun randomStateSpaceAction(
     randomSource: RandomSource,
     clockGenerator: Arb<Duration>,
     timeline: Timeline
@@ -92,14 +95,6 @@ internal fun randomlyStepStateSpace(
 
         val sample = arbitrary.sample(randomSource)
 
-        val event = EventState.Fired(sample.value)
-
-        // Update that event with a random value.
-        timeline.updateNodeValue(
-            node,
-            event
-        )
-
         return StateSpaceAction.FireEvent(node.id, sample)
     } else {
         // Resolve the arbitrary instance from the node type.
@@ -108,20 +103,62 @@ internal fun randomlyStepStateSpace(
 
         val state = arbitrary.sample(randomSource)
 
-        // Update that state with a random value.
-        timeline.updateNodeValue(
-            node,
-            state.value
-        )
-
         return StateSpaceAction.UpdateValue(node.id, state)
     }
 }
 
 sealed class StateSpaceAction {
-    data class FireEvent(val nodeID: NodeID, val value: Sample<Any?>) : StateSpaceAction()
+    abstract val value: Sample<Any?>
 
-    data class UpdateValue(val nodeID: NodeID, val value: Sample<Any?>) : StateSpaceAction()
+    abstract val nodeID: NodeID
+
+    abstract fun shrink(): List<StateSpaceAction>
+
+    abstract fun performAction(timeline: Timeline)
+
+    data class FireEvent(override val nodeID: NodeID, override val value: Sample<Any?>) : StateSpaceAction() {
+        override fun shrink(): List<StateSpaceAction> {
+            val shrinks = value.shrinks
+
+            return shrinks.children.value.map { childTree ->
+                FireEvent(nodeID = nodeID, value = childTree.asSample())
+            }
+        }
+
+        @OptIn(FragileYafrlAPI::class)
+        override fun performAction(timeline: Timeline) {
+            val event = EventState.Fired(value.value)
+
+            val node = timeline.graph.getNode(nodeID)!!
+
+            // Update that event with a random value.
+            timeline.updateNodeValue(
+                node,
+                event
+            )
+        }
+    }
+
+    data class UpdateValue(override val nodeID: NodeID, override val value: Sample<Any?>) : StateSpaceAction() {
+        override fun shrink(): List<StateSpaceAction> {
+            val shrinks = value.shrinks
+
+            return shrinks.children.value.map { childTree ->
+                UpdateValue(nodeID = nodeID, value = childTree.asSample())
+            }
+        }
+
+        @OptIn(FragileYafrlAPI::class)
+        override fun performAction(timeline: Timeline) {
+            val node = timeline.graph.getNode(nodeID)!!
+
+            // Update that event with a random value.
+            timeline.updateNodeValue(
+                node,
+                value.value
+            )
+        }
+    }
 }
 
 /**
@@ -154,35 +191,50 @@ fun <W> testPropositionHoldsFor(
 
     val timeline = Timeline.currentTimeline()
 
-    val formattedStates = (result?.first ?: listOf()).map {
-        "\n   => $it"
-    }
+    if (result != null) {
+        val actions = result.actions
 
-    val formattedEvents = listOf("[initial state]") + timeline
-        .reportEvents()
-        .map { event ->
-            val label = timeline.externalNodes[event.id]!!.node.toString()
+        val shrunkActions = shrinkActions(setupState, actions) { actions ->
+            LTL.evaluate(
+                proposition,
+                actions.asIterable().iterator(),
+                actions.size
+            ) != LTLResult.False
+        }!!
 
-            "\n - " + if (event.value == EventState.Fired(Unit)) {
-                label
-            } else {
-                val formattedArg = if (event.value is EventState.Fired<*>) {
-                    "${(event.value as EventState.Fired<*>).event}"
-                } else {
-                    event.value
-                }
-                "$label[$formattedArg]"
-            }
+        val shrunkStates = mutableListOf<W>()
+
+        val signal = setupState()
+
+        for (action in shrunkActions) {
+            shrunkStates += sample { signal.currentValue() }
+            action.performAction(timeline)
         }
 
-    val trace = formattedStates
-        .zip(formattedEvents) { state, event -> listOf(event, state) }
-        .flatten()
-        .joinToString("")
+        val formattedStates = shrunkStates.map {
+            "\n   => $it"
+        }
 
-    if (result != null) {
-        // TODO: Try to shrink the result to find a minimal example here
+        val formattedEvents = listOf("[initial state]") + shrunkActions
+            .map { event ->
+                val label = timeline.externalNodes[event.nodeID]!!.node.toString()
 
+                "\n - " + if (event.value == EventState.Fired(Unit)) {
+                    label
+                } else {
+                    val formattedArg = if (event.value is EventState.Fired<*>) {
+                        "${(event.value as EventState.Fired<*>).event}"
+                    } else {
+                        event.value
+                    }
+                    "$label[$formattedArg]"
+                }
+            }
+
+        val trace = formattedStates
+            .zip(formattedEvents) { state, event -> listOf(event, state) }
+            .flatten()
+            .joinToString("")
 
         throw IllegalStateException(
             "Proposition invalidated after ${numIterations} runs, " +
@@ -190,6 +242,77 @@ fun <W> testPropositionHoldsFor(
         )
     }
 }
+
+/**
+ * Attempts to find the minimal list of actions that reproduces a test failure using recursive
+ *  list shrinking on the actions.
+ *
+ * Note: Should probably be bounded by max shrinks.
+ *
+ * Note: Should probably use recursive list shrinking native to kotest if that ever makes it into
+ *  kotest natively.
+ **/
+fun <W> shrinkActions(
+    setupState: () -> Signal<W>,
+    actions: List<StateSpaceAction>,
+    test: (List<W>) -> Boolean,
+): List<StateSpaceAction>? {
+    val timeline = Timeline.currentTimeline()
+
+    // Adapted from my fork of kotest to work with the current (un-forked) version of Kotest.
+    val shrinks = when {
+        actions.isEmpty() -> emptyList()
+        actions.size == 1 -> listOfNotNull<List<StateSpaceAction>>(
+            actions.first().shrink()
+        )
+
+        else -> listOf(
+            actions.take(1), // just the first element
+            actions.dropLast(1),
+            actions.take(actions.size / 2),
+            actions.drop(1)
+        ).filter { it.size > 1 } + actions.flatMapIndexed { i, item ->
+            // For each index of the list, we can try shrinking any of the arguments
+            // In all of the possible ways it can be shrunk.
+            item.shrink().map { shrunkItem ->
+                val result = actions.toMutableList()
+
+                result.removeAt(i)
+
+                result.add(i, shrunkItem)
+
+                result
+            }
+        }
+    }
+
+    for (shrink in shrinks) {
+        val states = mutableListOf<W>()
+
+        val signal = setupState()
+
+        for (action in shrink) {
+            states += sample { signal.currentValue() }
+            action.performAction(timeline)
+        }
+
+        val testPassed = test(states)
+
+        if (!testPassed) {
+            // Recurse to see if we can get an even smaller result.
+            return shrinkActions(setupState, shrink, test)
+        }
+            // Otherwise, continue
+    }
+
+    // If no shrinks were found at this point, just return the shrunk actions.
+    return actions
+}
+
+data class LTLTestFailure<W>(
+    val states: List<W>,
+    val actions: List<StateSpaceAction>
+)
 
 // Returns trace on failure, null otherwise.
 private fun <W> propositionHoldsFor(
@@ -199,7 +322,7 @@ private fun <W> propositionHoldsFor(
     clockGenerator: Arb<Duration>,
     proposition: LTLSyntax<W>.() -> LTL<W>,
     randomSource: RandomSource
-): Pair<Int, Pair<List<W>, List<StateSpaceAction>>?> {
+): Pair<Int, LTLTestFailure<W>?> {
     var iterations = 0
     repeat(numIterations) {
         iterations++
@@ -221,7 +344,9 @@ private fun <W> propositionHoldsFor(
                 yield(state.currentValue())
 
                 while (true) {
-                    val action = randomlyStepStateSpace(randomSource, clockGenerator, timeline)
+                    val action = randomStateSpaceAction(randomSource, clockGenerator, timeline)
+                    action.performAction(timeline)
+
                     actionTrace += action
                     stateTrace += state.currentValue()
                     yield(state.currentValue())
@@ -235,7 +360,7 @@ private fun <W> propositionHoldsFor(
             maxTraceLength
         )
 
-        if (testResult == LTLResult.False) return iterations to (stateTrace to actionTrace)
+        if (testResult == LTLResult.False) return iterations to LTLTestFailure(stateTrace, actionTrace)
     }
 
     return iterations to null
