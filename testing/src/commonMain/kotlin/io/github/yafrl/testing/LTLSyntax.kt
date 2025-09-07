@@ -194,7 +194,14 @@ sealed class LTL<W> {
 
     data class Condition<W>(val name: String?, val cond: ConditionScope<W>.() -> Boolean): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
-            val condition = ConditionScope(world, time, maxTraceLength).cond()
+            // Conditions can fail if trying to access an out of bound index
+            val condition = try {
+                ConditionScope(world, time, maxTraceLength).cond()
+            } catch (_: NoSuchElementException) {
+                // If this happens, the expression is indeterminate
+                return LTLResult.Indeterminate
+            }
+
             return if (condition) LTLResult.True else LTLResult.False
         }
 

@@ -192,6 +192,8 @@ fun <W> testPropositionHoldsFor(
     val timeline = Timeline.currentTimeline()
 
     if (result != null) {
+        println("Got failing sequence of actions, attempting to shrink.")
+
         val actions = result.actions
 
         val shrunkActions = shrinkActions(setupState, actions) { actions ->
