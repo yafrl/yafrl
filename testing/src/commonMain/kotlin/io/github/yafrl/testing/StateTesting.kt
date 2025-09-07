@@ -214,17 +214,19 @@ fun <W> testPropositionHoldsFor(
         }
 
         throw LTLPropositionInvalidated(
-            numIterations,
-            shrunkStates,
-            shrunkActions
+            numIterations = numIterations,
+            states = shrunkStates,
+            origActions = actions,
+            actions = shrunkActions
         )
     }
 }
 
 class LTLPropositionInvalidated(
-    numIterations: Int,
-    states: List<Any?>,
-    actions: List<StateSpaceAction>,
+    val numIterations: Int,
+    val states: List<Any?>,
+    val origActions: List<StateSpaceAction>,
+    val actions: List<StateSpaceAction>,
 ) : AssertionError() {
     private val timeline = Timeline.currentTimeline()
 
@@ -255,8 +257,8 @@ class LTLPropositionInvalidated(
         .joinToString("")
 
     override val message =
-        "Proposition invalidated after $numIterations runs, " +
-            "with the following trace: \n\n - " + trace + "\n\n"
+        "Proposition invalidated after $numIterations runs and ${actions.size} actions (shrunk from ${origActions.size})" +
+            "with the following trace : \n\n - " + trace + "\n\n"
 }
 
 /**
