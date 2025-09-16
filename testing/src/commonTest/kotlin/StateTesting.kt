@@ -5,6 +5,7 @@ import io.github.yafrl.testing.LTLPropositionInvalidated
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
+import io.github.yafrl.timeline.debugging.EventLogger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -35,6 +36,8 @@ class StateTesting: FunSpec({
         shouldThrow<AssertionError> {
             testPropositionHoldsFor(
                 setupState = {
+                    Timeline.initializeTimeline()
+
                     val addEvent = externalEvent<Unit>("add")
 
                     val sum = Signal.fold(0, addEvent) { x, _ -> x + 1 }
@@ -50,17 +53,21 @@ class StateTesting: FunSpec({
         }
     }
 
-    // TODO: This test is not the best way to test our shrinking algorithm,
-    //  as the action length is already 5 before shrinking.
     test("State testing shrinks actions to minimal size") {
-        Timeline.initializeTimeline()
+        Timeline.initializeTimeline(
+            eventLogger = EventLogger.InMemory()
+        )
 
         try {
             testPropositionHoldsFor(
                 setupState = {
-                    val addEvent = externalEvent<Unit>("add")
+                    Timeline.initializeTimeline(
+                        eventLogger = EventLogger.InMemory()
+                    )
 
-                    val sum = Signal.fold(0, addEvent) { x, _ -> x + 1 }
+                    val inputEvent = externalEvent<Boolean>("input_event")
+
+                    val sum = Signal.fold(0, inputEvent) { x, b -> if(b) x + 1 else x }
 
                     sum
                 },
@@ -71,6 +78,7 @@ class StateTesting: FunSpec({
                 }
             )
         } catch (e: LTLPropositionInvalidated) {
+            println("${e.actions.map { it.value.value }}")
             e.actions.size shouldBe 5
         }
     }

@@ -443,10 +443,13 @@ class Timeline(
         node: Node<Any?>
     ): Any? = synchronized(this) {
         if (!node.dirty) {
+            if (debugLogging) println("Node ${node} was not dirty, returning ${node.rawValue}")
             return node.rawValue
         } else {
             node.rawValue = node.recompute()
             node.dirty = false
+
+            if (debugLogging) println("Recomputed node ${node.id}: ${node.rawValue}")
         }
 
         return node.rawValue

@@ -3,6 +3,7 @@ import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.externalEvent
 import io.github.yafrl.signal
 import io.github.yafrl.testing.testPropositionHoldsFor
+import io.github.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
 import kotlin.random.Random
 
@@ -53,7 +54,10 @@ class CountdownTimer(
 class CountdownTesting : FunSpec({
     test("Countdown timer spec") {
         testPropositionHoldsFor(
-            setupState = { CountdownTimer.new().snapshot() },
+            setupState = {
+                Timeline.initializeTimeline()
+                CountdownTimer.new().snapshot()
+            },
             proposition = {
                 val lessThanZero by condition { current.count < 0 }
 

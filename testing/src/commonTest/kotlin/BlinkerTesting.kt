@@ -73,7 +73,10 @@ data class BlinkerState(
 class BlinkerTesting : FunSpec ({
     test("Blinker specification") {
         testPropositionHoldsFor(
-            setupState = { Blinker.new().snapshot() },
+            setupState = {
+                Timeline.initializeTimeline()
+                Blinker.new().snapshot()
+            },
             proposition = {
                 val paused = run {
                     val showingEnable by condition { current.buttonText == "Enable" }

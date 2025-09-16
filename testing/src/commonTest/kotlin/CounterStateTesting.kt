@@ -34,6 +34,8 @@ class CounterStateTesting: FunSpec({
     }
 
     fun setupCounter() = run {
+        Timeline.initializeTimeline()
+
         val increment = externalEvent<Unit>("increment")
             .map { { count: Int -> count + 1 } }
 

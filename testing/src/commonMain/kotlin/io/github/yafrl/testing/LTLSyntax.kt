@@ -2,6 +2,7 @@ package io.github.yafrl.testing
 
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
+import kotlin.test.assertTrue
 
 /**
  * Syntax for building up LTL propositions.
@@ -139,7 +140,8 @@ sealed class LTL<W> {
                     }
                 }
 
-                cachedWorlds[time]!!
+                cachedWorlds[time]
+                    ?: throw IndexOutOfBoundsException("Tried to access $time but only ${cachedWorlds.size} have been cached.")
             }
 
             return evaluate(proposition, world, maxTraceLength)
@@ -197,9 +199,9 @@ sealed class LTL<W> {
             // Conditions can fail if trying to access an out of bound index
             val condition = try {
                 ConditionScope(world, time, maxTraceLength).cond()
-            } catch (_: NoSuchElementException) {
-                // If this happens, the expression is indeterminate
-                return LTLResult.Indeterminate
+            } catch (e: NoSuchElementException) {
+                // If this happens, the expression is presumably false
+                return LTLResult.PresumablyFalse
             }
 
             return if (condition) LTLResult.True else LTLResult.False
@@ -223,7 +225,7 @@ sealed class LTL<W> {
             maxTraceLength: Int
         ): LTLResult {
             // Couldn't find an example within the limit.
-            if (time > maxTraceLength) return LTLResult.Indeterminate
+            if (time > maxTraceLength) return LTLResult.PresumablyFalse
 
             if (cond.evaluateAtTime(world, time, maxTraceLength) == LTLResult.True) {
                 return LTLResult.True
@@ -235,29 +237,35 @@ sealed class LTL<W> {
         override fun toString() = "eventually($cond)"
     }
 
-    // x has to hold at least until y becomes true, which must hold at the current or a future position.
+    // x has to hold at least until y becomes true,
+    // which must hold at the current or a future position.
     data class Until<W>(val x: LTL<W>, val y: LTL<W>): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
-            // Couldn't invalidate proposition, return indeterminate.
-            if (time > maxTraceLength) return LTLResult.Indeterminate
-
             val yHolds = y.evaluateAtTime(world, time, maxTraceLength)
 
             // The second arg releases us of any responsibilities on x.
             if (yHolds == LTLResult.True) {
                 return LTLResult.True
-            } else {
-                val xHolds = x.evaluateAtTime(world, time, maxTraceLength)
+            }
 
-                return when (xHolds) {
-                    // Could be true, keep evaluating
-                    LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
-                    // Can't get any better than these results, return immediately.
-                    LTLResult.False -> {
+            val xHolds = x.evaluateAtTime(world, time, maxTraceLength)
+
+            // Couldn't invalidate proposition
+            if (time >= maxTraceLength - 1) {
+                if (xHolds >= LTLResult.PresumablyTrue) {
+                    return LTLResult.PresumablyTrue
+                } else {
+                    return LTLResult.PresumablyFalse
+                }
+            }
+
+            return when {
+                // Could be true, keep evaluating
+                xHolds > LTLResult.PresumablyFalse -> evaluateAtTime(world, time + 1, maxTraceLength)
+                // Can't get any better than these results, return immediately.
+                else -> {
 //                        println("Failed evaluating $x within until at time $time")
-                        LTLResult.False
-                    }
-                    LTLResult.Indeterminate -> LTLResult.Indeterminate
+                    LTLResult.False
                 }
             }
         }
@@ -269,28 +277,28 @@ sealed class LTL<W> {
     // y holds until (and including) the point where x becomes true (x "releases" y).
     // If x never becomes true, then y must hold forever
     //
-    data class Release<W>(val y: LTL<W>, val x: LTL<W>): LTL<W>() {
+    data class Release<W>(val x: LTL<W>, val y: LTL<W>): LTL<W>() {
         override fun evaluateAtTime(world: (Int) -> W, time: Int, maxTraceLength: Int): LTLResult {
-            // Couldn't invalidate proposition, return indeterminate.
-            if (time > maxTraceLength) return LTLResult.Indeterminate
-
             val yHolds = y.evaluateAtTime(world, time, maxTraceLength)
 
-            // The second arg releases us of any responsibilities on x.
-            if (yHolds == LTLResult.True) {
-                return LTLResult.True
-            } else {
-                val xHolds = x.evaluateAtTime(world, time, maxTraceLength)
+            val xHolds = x.evaluateAtTime(world, time, maxTraceLength)
 
-                return when (xHolds) {
-                    // Could be true, keep evaluating
-                    LTLResult.True -> evaluateAtTime(world, time + 1, maxTraceLength)
-                    // Can't get any better than these results, return immediately.
+            if (time >= maxTraceLength - 1) {
+                return (yHolds or xHolds) and LTLResult.PresumablyTrue
+            }
+
+            // The first arg releases us of any responsibilities on x.
+            if (xHolds >= LTLResult.PresumablyTrue) {
+                return xHolds
+            } else {
+                // If the first arg is not true, we must evaluate the second arg.
+                return when (yHolds) {
                     LTLResult.False -> {
                         // println("Failed evaluating $x within (... releases $y) at time $time")
                         LTLResult.False
                     }
-                    LTLResult.Indeterminate -> LTLResult.Indeterminate
+                    // Could be true, keep evaluating
+                    else -> evaluateAtTime(world, time + 1, maxTraceLength)
                 }
             }
         }
@@ -308,51 +316,51 @@ sealed class LTL<W> {
  *  verify.
  **/
 enum class LTLResult {
-    True, False, Indeterminate;
+    False, PresumablyFalse, PresumablyTrue, True;
 
     // Evaluate by truth table for ternary logic.
     infix fun and(other: LTLResult): LTLResult = when(this) {
-        True -> when(other) {
-            True -> True
+        True -> other
+
+        PresumablyTrue -> when(other) {
+            True -> PresumablyTrue
+            PresumablyTrue -> PresumablyTrue
+            PresumablyFalse -> PresumablyFalse
             False -> False
-            Indeterminate -> Indeterminate
         }
-        False -> when(other) {
-            True -> False
+        PresumablyFalse -> when(other) {
+            True -> PresumablyFalse
+            PresumablyTrue -> PresumablyFalse
+            PresumablyFalse -> PresumablyFalse
             False -> False
-            Indeterminate -> False
         }
-        Indeterminate -> when(other) {
-            True -> Indeterminate
-            False -> False
-            Indeterminate -> Indeterminate
-        }
+        False -> False
     }
 
     // Evaluate by truth table for ternary logic
     infix fun or(other: LTLResult): LTLResult = when(this) {
-        True -> when(other) {
+        True -> True
+        PresumablyTrue -> when(other) {
             True -> True
-            False -> True
-            Indeterminate -> True
+            PresumablyTrue -> PresumablyTrue
+            PresumablyFalse -> PresumablyTrue
+            False -> PresumablyTrue
         }
-        False -> when(other) {
+        PresumablyFalse -> when(other) {
             True -> True
-            False -> False
-            Indeterminate -> Indeterminate
+            PresumablyTrue -> PresumablyTrue
+            PresumablyFalse -> PresumablyFalse
+            False -> PresumablyFalse
         }
-        Indeterminate -> when(other) {
-            True -> True
-            False -> Indeterminate
-            Indeterminate -> Indeterminate
-        }
+        False -> other
     }
 
     // Evaluate by truth table for ternary logic
     operator fun not(): LTLResult = when(this) {
         True -> False
+        PresumablyTrue -> PresumablyFalse
+        PresumablyFalse -> PresumablyTrue
         False -> True
-        Indeterminate -> Indeterminate
     }
 
     // Use material implication for now. Not sure if this is what we want.

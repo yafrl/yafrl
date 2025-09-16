@@ -79,7 +79,7 @@ internal fun randomStateSpaceAction(
 ): StateSpaceAction {
     val nodes = timeline.externalNodes
 
-    val selected = Random.nextInt(nodes.entries.indices)
+    val selected = if (nodes.size == 1) 0 else Random.nextInt(nodes.entries.indices)
 
     val (kType, node) = nodes.entries.elementAt(selected).value
 
@@ -189,28 +189,31 @@ fun <W> testPropositionHoldsFor(
         randomSource
     )
 
-    val timeline = Timeline.currentTimeline()
-
     if (result != null) {
-        println("Got failing sequence of actions, attempting to shrink.")
+        println("Got failing sequence of actions of length ${result.actions.size}, attempting to shrink.")
 
         val actions = result.actions
 
         val shrunkActions = shrinkActions(setupState, actions) { actions ->
-            LTL.evaluate(
+            val result = LTL.evaluate(
                 proposition,
                 actions.asIterable().iterator(),
                 actions.size
-            ) != LTLResult.False
-        }!!
+            )
+
+            result >= LTLResult.PresumablyTrue
+        } ?: actions
 
         val shrunkStates = mutableListOf<W>()
 
         val signal = setupState()
+        val timeline = Timeline.currentTimeline()
+
+        shrunkStates += sample { signal.currentValue() }
 
         for (action in shrunkActions) {
-            shrunkStates += sample { signal.currentValue() }
             action.performAction(timeline)
+            shrunkStates += sample { signal.currentValue() }
         }
 
         throw LTLPropositionInvalidated(
@@ -243,9 +246,9 @@ class LTLPropositionInvalidated(
                 label
             } else {
                 val formattedArg = if (event.value.value is EventState.Fired<*>) {
-                    "${(event.value as EventState.Fired<*>).event}"
+                    "${(event.value.value as EventState.Fired<*>).event}"
                 } else {
-                    event.value
+                    event.value.value
                 }
                 "$label[$formattedArg]"
             }
@@ -258,7 +261,7 @@ class LTLPropositionInvalidated(
 
     override val message =
         "Proposition invalidated after $numIterations runs and ${actions.size} actions (shrunk from ${origActions.size})" +
-            "with the following trace : \n\n - " + trace + "\n\n"
+            " with the following trace : \n\n - " + trace + "\n\n"
 }
 
 /**
@@ -273,58 +276,93 @@ class LTLPropositionInvalidated(
 fun <W> shrinkActions(
     setupState: () -> Signal<W>,
     actions: List<StateSpaceAction>,
+    actionsPassed: Boolean = true,
     test: (List<W>) -> Boolean,
 ): List<StateSpaceAction>? {
-    val timeline = Timeline.currentTimeline()
-
     // Adapted from my fork of kotest to work with the current (un-forked) version of Kotest.
     val shrinks = when {
         actions.isEmpty() -> emptyList()
         actions.size == 1 -> listOfNotNull<List<StateSpaceAction>>(
             actions.first().shrink()
         )
+        else -> {
+            val removals = listOf(
+                // just the last element
+                actions.takeLast(1),
+                // Try removing the first half.
+                actions.drop(actions.size / 2)
+                // Try removing individual steps at all indices
+            ) + actions.indices.map { i ->
+                actions.toMutableList()
+                    .also { it.removeAt(i) }
+            }
 
-        else -> listOf(
-            actions.take(1), // just the first element
-            actions.dropLast(1),
-            actions.take(actions.size / 2),
-            actions.drop(1)
-        ).filter { it.size > 1 } + actions.flatMapIndexed { i, item ->
-            // For each index of the list, we can try shrinking any of the arguments
-            // In all of the possible ways it can be shrunk.
-            item.shrink().map { shrunkItem ->
-                val result = actions.toMutableList()
+            removals.filter { it.size >= 1 } + actions.flatMapIndexed { i, item ->
+                // For each index of the list, we can try shrinking any of the arguments
+                // In all of the possible ways it can be shrunk.
+                item.shrink().map { shrunkItem ->
+                    val result = actions.toMutableList()
 
-                result.removeAt(i)
+                    result.removeAt(i)
 
-                result.add(i, shrunkItem)
+                    result.add(i, shrunkItem)
 
-                result
+                    result
+                }
             }
         }
     }
+
+    var anyFailed = false
 
     for (shrink in shrinks) {
         val states = mutableListOf<W>()
 
         val signal = setupState()
 
+        val timeline = Timeline.currentTimeline()
+
+        states += sample { signal.currentValue() }
+
         for (action in shrink) {
-            states += sample { signal.currentValue() }
             action.performAction(timeline)
+            states += sample { signal.currentValue() }
         }
 
-        val testPassed = test(states)
+        println("Testing shrunk actions ${shrink.map { it.value.value }}")
+        println("  (with states: ${states})")
 
+        val testPassed = try {
+            test(states)
+        } catch (_: IndexOutOfBoundsException) {
+            // Skip -- trace is too small to reproduce.
+            continue
+        }
+
+        // Test didn't pass, so we can still try to shrink it further
         if (!testPassed) {
+            anyFailed = true
+
             // Recurse to see if we can get an even smaller result.
-            return shrinkActions(setupState, shrink, test)
+            val result = shrinkActions(setupState, shrink, testPassed, test)
+
+            if (result == null) {
+                continue
+            }
+
+            return result
         }
-            // Otherwise, continue
     }
 
-    // If no shrinks were found at this point, just return the shrunk actions.
-    return actions
+    val allPassed = !anyFailed
+
+    if (allPassed && !actionsPassed) {
+        // If every possible shrink failed, we have found the minimal list of actions
+        return actions
+    } else {
+        // Otherwise, we have failed.
+        return null
+    }
 }
 
 data class LTLTestFailure<W>(
@@ -345,11 +383,9 @@ private fun <W> propositionHoldsFor(
     repeat(numIterations) {
         iterations++
 
-        val timeline = Timeline.initializeTimeline(
-            eventLogger = EventLogger.InMemory()
-        )
-
         val state = setupState()
+
+        val timeline = Timeline.currentTimeline()
 
         val stateTrace = mutableListOf<W>()
 
