@@ -36,7 +36,11 @@ interface Graph {
     /** Adds a parent-child edge to the graph. */
     fun addChild(parent: NodeID, child: NodeID)
 
+    fun removeChild(parent: NodeID, child: NodeID)
+
     fun addChild(behavior: BehaviorID, child: NodeID)
+
+    fun removeChild(behavior: BehaviorID, child: NodeID)
 
     fun getBehaviorParentsOf(id: NodeID): List<BehaviorID>
 

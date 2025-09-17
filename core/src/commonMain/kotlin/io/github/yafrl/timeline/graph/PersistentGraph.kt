@@ -47,6 +47,14 @@ class PersistentGraph : Graph {
         _behaviorParents = _behaviorParents.put(child, parentList)
     }
 
+    override fun removeChild(behavior: BehaviorID, child: NodeID) {
+        val parentList = _behaviorParents.get(child)
+
+        if (parentList != null) {
+            _behaviorParents = _behaviorParents.put(child, parentList.remove(behavior))
+        }
+    }
+
     override fun getCurrentNodeMap(): Map<NodeID, Node<*>> {
         // No conversion needed because underlying data structure is persistent.
         return nodes
@@ -88,6 +96,14 @@ class PersistentGraph : Graph {
             children.put(parent, newChildren.add(child))
         } else {
             children.put(parent, persistentListOf(child))
+        }
+    }
+
+    override fun removeChild(parent: NodeID, child: NodeID) {
+        val newChildren = children[parent]
+
+        if (newChildren != null) {
+            children = children.put(parent, newChildren.remove(child))
         }
     }
 

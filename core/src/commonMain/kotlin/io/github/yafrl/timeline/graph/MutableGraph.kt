@@ -38,6 +38,12 @@ class MutableGraph: Graph {
         nodeParents!!.add(behavior)
     }
 
+    override fun removeChild(behavior: BehaviorID, child: NodeID) {
+        val nodeParents = behaviorParents[child]
+
+        nodeParents?.remove(behavior)
+    }
+
     override fun getCurrentNodeMap(): Map<NodeID, Node<*>> {
         // `toMap` to get a persistent copy.
         return nodes.toMap()
@@ -83,6 +89,12 @@ class MutableGraph: Graph {
         }
 
         childNodes!!.add(child)
+    }
+
+    override fun removeChild(parent: NodeID, child: NodeID) {
+        val childNodes = children[parent]
+
+        childNodes?.remove(child)
     }
 
     override fun getBehaviorParentsOf(id: NodeID): List<BehaviorID> {

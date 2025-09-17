@@ -368,6 +368,8 @@ fun <A> Signal<Signal<A>>.flatten(): Signal<A> {
 
     val flattened = internalBindingState(lazy { currentState.node.current() })
 
+    timeline.graph.addChild(currentState.node.id, flattened.node.id)
+
     var collector: ((A) -> Unit)? = null
 
     // Note: Order of registration for these collects is important here.
@@ -376,8 +378,14 @@ fun <A> Signal<Signal<A>>.flatten(): Signal<A> {
         // Remove the old collector when the state changes.
         collector?.let { currentState.node.unregisterSync(it) }
 
+        // Remove the old parent-child relationship
+        timeline.graph.removeChild(currentState.node.id, flattened.node.id)
+
         // Update the current value to the new state's current value.
         currentState = newState
+
+        // Add in the new parent-child relationship
+        timeline.graph.addChild(currentState.node.id, flattened.node.id)
 
         // Note: Needs to be updates to the raw value so we don't invoke a new frame.
         timeline.updateNodeValue(flattened.node, currentState.node.rawValue, internal = true)
