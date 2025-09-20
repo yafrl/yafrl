@@ -27,7 +27,7 @@ benchmark {
 }
 
 plugins {
-    kotlin("multiplatform") version "2.1.20"
+    kotlin("multiplatform") version libs.versions.kotlin.get()
     id("org.jetbrains.kotlinx.benchmark") version "0.4.14"
     kotlin("plugin.allopen") version "2.1.20"
 }

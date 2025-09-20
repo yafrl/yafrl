@@ -7,7 +7,7 @@ import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
-import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.logging.EventLogger
 import io.github.yafrl.timeline.Timeline
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
@@ -107,6 +107,9 @@ internal fun randomStateSpaceAction(
     }
 }
 
+/**
+ * Representation of a randomly generated action that can be made in a [Timeline].
+ **/
 sealed class StateSpaceAction {
     abstract val value: Sample<Any?>
 

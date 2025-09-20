@@ -8,7 +8,7 @@ import io.github.yafrl.externalEvent
 import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.Timeline
-import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.logging.EventLogger
 import io.kotest.core.spec.style.FunSpec
 import kotlin.random.Random
 import kotlin.test.assertEquals
@@ -44,8 +44,8 @@ class NondeterministicTests : FunSpec({
         // The event trace for this should contain what random value was sampled
         val events = timeline.eventLogger.reportEvents()
 
-        assertEquals(NodeID(0), events[0].id)
-        assertEquals(EventState.Fired(Unit), events[0].value)
+        assertEquals(NodeID(0), events[0].externalAction.id)
+        assertEquals(Unit, events[0].externalAction.value)
         assertEquals(1, events[0].behaviorsSampled.size)
         assertEquals(BehaviorID(0), events[0].behaviorsSampled.keys.first())
     }

@@ -3,6 +3,12 @@ package io.github.yafrl.timeline
 import io.github.yafrl.annotations.FragileYafrlAPI
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.jvm.JvmInline
 
 /**
@@ -57,17 +63,44 @@ open class Node<out A> internal constructor(
 
 /** Uniquely identifies nodes in a particular [Timeline]. */
 @JvmInline
-value class NodeID(private val rawValue: Int) {
+value class NodeID internal constructor(internal val rawValue: Int) {
     override fun toString(): String {
         return "node#${rawValue}"
     }
 }
 
+// Custom serializer due to kotlinJs internal compiler error
+object NodeIDSerializer : KSerializer<NodeID> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("NodeId", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: NodeID) {
+        encoder.encodeInt(value.rawValue)
+    }
+
+    override fun deserialize(decoder: Decoder): NodeID {
+        return NodeID(decoder.decodeInt())
+    }
+}
+
 /** Uniquely identifies sampled behaviors in a particular [Timeline]. */
 @JvmInline
-value class BehaviorID(private val rawValue: Int) {
+value class BehaviorID internal constructor(internal val rawValue: Int) {
     override fun toString(): String {
         return "behavior#${rawValue}"
     }
 }
 
+// Custom serializer due to kotlinJs internal compiler error
+object BehaviorIDSerializer : KSerializer<BehaviorID> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("BehaviorId", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: BehaviorID) {
+        encoder.encodeInt(value.rawValue)
+    }
+
+    override fun deserialize(decoder: Decoder): BehaviorID {
+        return BehaviorID(decoder.decodeInt())
+    }
+}

@@ -9,7 +9,8 @@ import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.externalEvent
 import io.github.yafrl.internalBindingState
 import io.github.yafrl.sample
-import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.debugging.ExternalAction
+import io.github.yafrl.timeline.logging.EventLogger
 import io.github.yafrl.timeline.debugging.ExternalBehavior
 import io.github.yafrl.timeline.debugging.ExternalEvent
 import io.github.yafrl.timeline.debugging.ExternalNode
@@ -372,7 +373,15 @@ class Timeline(
             latestFrame++
             currentFrame++
 
-            eventLogger.logEvent(ExternalEvent(behaviorsSampled, node.id, node.rawValue))
+            eventLogger.logEvent(
+                ExternalEvent(behaviorsSampled,
+                    if (node.rawValue is EventState.Fired<*>) {
+                        ExternalAction.FireEvent(node.id, (node.rawValue as EventState.Fired<*>).event)
+                    } else {
+                        ExternalAction.UpdateValue(node.id, node.rawValue)
+                    }
+                )
+            )
 
             if (debugLogging) println("${latestFrame}: Updating node ${node.label} to $newValue")
         }

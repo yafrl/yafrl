@@ -5,7 +5,7 @@ import io.github.yafrl.testing.LTLPropositionInvalidated
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
-import io.github.yafrl.timeline.debugging.EventLogger
+import io.github.yafrl.timeline.logging.EventLogger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe

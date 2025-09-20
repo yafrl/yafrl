@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.maven)
     alias(libs.plugins.kotest)
+    alias(libs.plugins.serialization)
 }
 
 tasks.withType<Test>().configureEach {
@@ -61,6 +62,8 @@ kotlin {
                 implementation(libs.kotlin.coroutines)
                 implementation(libs.kotlin.coroutines.test)
                 implementation(libs.kotlin.datetime)
+                implementation(libs.serialization)
+                implementation(libs.kotlinx.io)
             }
         }
         val commonTest by getting {

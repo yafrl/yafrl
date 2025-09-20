@@ -1,8 +1,6 @@
 package io.github.yafrl.timeline.debugging
 
 import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.behaviors.Behavior.Companion
-import io.github.yafrl.behaviors.Behavior.Companion.sampled
 import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
@@ -15,9 +13,18 @@ import kotlin.reflect.KType
  **/
 data class ExternalEvent(
     val behaviorsSampled: Map<BehaviorID, Any?>,
-    val id: NodeID,
-    val value: Any?
+    val externalAction: ExternalAction
 )
+
+sealed class ExternalAction {
+    abstract val id: NodeID
+
+    abstract val value: Any?
+
+    data class FireEvent(override val id: NodeID, override val value: Any?) : ExternalAction()
+
+    data class UpdateValue(override val id: NodeID, override val value: Any?) : ExternalAction()
+}
 
 /**
  * An external node is a node whose behavior is controlled externally to the

@@ -14,6 +14,8 @@ coroutines = "1.10.2"
 arrow = "2.0.1"
 molecule = "2.0.0"
 mockk = "1.13.17"
+serialization = "1.8.1"
+kotlinx-io = "0.7.0"
 
 [libraries]
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
@@ -23,10 +25,12 @@ kotest-assertions = { module = "io.kotest:kotest-assertions-core", version.ref =
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlin-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlin-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "immutable_collections" }
-kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime"}
+kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 molecule = { module = "app.cash.molecule:molecule-runtime", version.ref = "molecule" }
 arrow-optics = { module = "io.arrow-kt:arrow-optics", version.ref = "arrow" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+kotlinx-io = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
@@ -37,3 +41,4 @@ kotest = { id = "io.kotest.multiplatform", version.ref = "kotest" }
 compose-plugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 maven = { id = "com.vanniktech.maven.publish", version.ref = "maven_publish" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
