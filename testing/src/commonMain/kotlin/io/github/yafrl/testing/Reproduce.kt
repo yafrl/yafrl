@@ -1,6 +1,7 @@
 package io.github.yafrl.testing
 
 import io.github.yafrl.Signal
+import io.github.yafrl.timeline.debugging.ExternalActionSerializer
 import kotlinx.serialization.StringFormat
 
 /**
@@ -20,5 +21,25 @@ fun <W> findMinimalReproducingTrace(
     serializedTrace: String,
     format: StringFormat
 ): Result<List<StateSpaceAction>> {
-    TODO()
+    val actions = serializedTrace
+        .split("\n")
+        .map { format.decodeFromString(ExternalActionSerializer, it) }
+        .map { StateSpaceAction.fromExternalAction(it) }
+
+    val shrunkActions = shrinkActions(
+        setupState = setupState,
+        actions = actions,
+        test = { actions ->
+            val result = LTL.evaluate(
+                proposition,
+                actions.asIterable().iterator(),
+                actions.size
+            )
+
+            result >= LTLResult.PresumablyTrue
+        }
+    )
+        ?: return Result.failure(Exception("Could not shrink actions"))
+
+    return Result.success(shrunkActions)
 }
