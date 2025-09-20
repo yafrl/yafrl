@@ -9,6 +9,7 @@ import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.logging.EventLogger
 import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.debugging.ExternalAction
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
 import io.kotest.property.Sample
@@ -160,6 +161,29 @@ sealed class StateSpaceAction {
                 node,
                 value.value
             )
+        }
+    }
+
+    companion object {
+        /**
+         * Utility to convert an [ExternalAction] into a [StateSpaceAction]
+         *  so that shrinking can be used on it.
+         **/
+        fun fromExternalAction(action: ExternalAction): StateSpaceAction {
+            // TODO: Currently (because of how Kotest works right now) we cannot do
+            //  any recursive shrinking here, since we have no way of getting
+            //  Sample<A> from Arb<A> and a pre-existing A.
+
+            return when (action) {
+                is ExternalAction.FireEvent -> FireEvent(
+                    action.id,
+                    Sample(action.value)
+                )
+                is ExternalAction.UpdateValue -> UpdateValue(
+                    action.id,
+                    Sample(action.value)
+                )
+            }
         }
     }
 }
