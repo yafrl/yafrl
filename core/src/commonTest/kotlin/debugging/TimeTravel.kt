@@ -2,8 +2,6 @@ package debugging
 
 import io.github.yafrl.Signal
 import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.externalSignal
-import io.github.yafrl.externalEvent
 import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Timeline
@@ -13,80 +11,77 @@ import kotlin.test.assertEquals
 
 class TimeTravel: FunSpec({
     test("Time travel resets state") {
-        Timeline.initializeTimeline(
-            timeTravel = true
-        )
+        runYafrl(timeTravel = true) {
 
-        val count = externalSignal(0)
+            val count = externalSignal(0)
 
-        assertEquals(0, count.value)
+            assertEquals(0, count.value)
 
-        count.value += 1
+            count.value += 1
 
-        assertEquals(1, count.value)
+            assertEquals(1, count.value)
 
-        count.value += 1
+            count.value += 1
 
-        assertEquals(2, count.value)
+            assertEquals(2, count.value)
 
-        Timeline.currentTimeline().timeTravel.rollbackState()
+            timeline.timeTravel.rollbackState()
 
-        assertEquals(1, count.value)
+            assertEquals(1, count.value)
+        }
     }
 
     test("Time travel continues at previous state for binding state") {
-        Timeline.initializeTimeline(
-            timeTravel = true
-        )
+        runYafrl(timeTravel = true) {
 
-        val count = externalSignal(0)
+            val count = externalSignal(0)
 
-        assertEquals(0, count.value)
+            assertEquals(0, count.value)
 
-        count.value += 1
+            count.value += 1
 
-        assertEquals(1, count.value)
+            assertEquals(1, count.value)
 
-        count.value += 1
+            count.value += 1
 
-        assertEquals(2, count.value)
+            assertEquals(2, count.value)
 
-        Timeline.currentTimeline().timeTravel.rollbackState()
+            timeline.timeTravel.rollbackState()
 
-        assertEquals(1, count.value)
+            assertEquals(1, count.value)
 
-        count.value += 1
+            count.value += 1
 
-        assertEquals(2, count.value)
+            assertEquals(2, count.value)
+        }
     }
 
     test("Time travel continues at previous state for folded events") {
-        Timeline.initializeTimeline(
-            timeTravel = true
-        )
+        runYafrl(timeTravel = true) {
 
-        val clicks = externalEvent<Unit>()
+            val clicks = externalEvent<Unit>()
 
-        val count = clicks.scan(0) { it, _ -> it + 1 }
+            val count = clicks.scan(0) { it, _ -> it + 1 }
 
-        sample {
-            assertEquals(0, count.currentValue())
+            sample {
+                assertEquals(0, count.currentValue())
 
-            clicks.send(Unit)
+                clicks.send(Unit)
 
-            assertEquals(1, count.currentValue())
+                assertEquals(1, count.currentValue())
 
-            clicks.send(Unit)
+                clicks.send(Unit)
 
-            assertEquals(2, count.currentValue())
+                assertEquals(2, count.currentValue())
 
-            Timeline.currentTimeline().timeTravel.rollbackState()
+                timeline.timeTravel.rollbackState()
 
-            assertEquals(1, count.currentValue())
+                assertEquals(1, count.currentValue())
 
-            clicks.send(Unit)
+                clicks.send(Unit)
 
-            assertEquals(2, count.currentValue())
+                assertEquals(2, count.currentValue())
+            }
         }
     }
 
@@ -114,7 +109,7 @@ class TimeTravel: FunSpec({
 
             buttonClick.send(Unit)
 
-            Timeline.currentTimeline().timeTravel.rollbackState()
+            timeline.timeTravel.rollbackState()
 
             val afterReset = text.currentValue()
 

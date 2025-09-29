@@ -2,13 +2,8 @@ package behaviors
 
 import io.github.yafrl.BroadcastEvent
 import io.github.yafrl.annotations.ExperimentalYafrlAPI
-import io.github.yafrl.asBehavior
 import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.behaviors.integrate
 import io.github.yafrl.behaviors.plus
-import io.github.yafrl.externalSignal
-import io.github.yafrl.externalEvent
-import io.github.yafrl.impulse
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
@@ -26,7 +21,7 @@ class ImpulseTests: FunSpec({
     test("Impulses integrate to same value for arbitrary delta time") {
         checkAll(Arb.numericDouble(1.0, 15.0)) { dt ->
             runYafrl {
-                val clock = Timeline.currentTimeline().clock as BroadcastEvent
+                val clock = timeline.clock as BroadcastEvent
 
                 val impulseEvent = externalEvent<Double>()
 
@@ -47,7 +42,7 @@ class ImpulseTests: FunSpec({
 
     test("Impulses are maintained under flatmap") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
             val switch = externalSignal(true)
 
@@ -78,7 +73,7 @@ class ImpulseTests: FunSpec({
 
     test("Impulses are maintained under map") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
             val impulseEvent = externalEvent<Unit>()
             val impulse = impulseEvent.impulse(0.0, 1.0)
@@ -96,7 +91,7 @@ class ImpulseTests: FunSpec({
 
     test("Impulses are maintained under transform") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
             val impulseEvent = externalEvent<Unit>()
             val impulse = impulseEvent.impulse(0.0, 1.0)
@@ -122,7 +117,7 @@ class ImpulseTests: FunSpec({
 
     test("Impulses are maintained when summed") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
             val impulseEvent1 = externalEvent<Unit>("event1")
             val impulseEvent2 = externalEvent<Unit>("event2")
@@ -145,7 +140,7 @@ class ImpulseTests: FunSpec({
 
     test("Impulses are maintained when summed with other behaviors.") {
        runYafrl {
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+        val clock = timeline.clock as BroadcastEvent
 
         val impulseEvent1 = externalEvent<Unit>("event1")
 
@@ -165,7 +160,7 @@ class ImpulseTests: FunSpec({
 
     test("Sampled behavior has no impulses") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
             val sampled = Behavior.sampled { 0.0 }
                 .integrate()
@@ -178,7 +173,7 @@ class ImpulseTests: FunSpec({
 
     test("Continuous behavior has no impulses") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
             val sampled = Behavior.continuous { 0.0 }
                 .integrate()

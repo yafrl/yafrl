@@ -1,21 +1,13 @@
 package states
 
-import io.github.yafrl.Signal.Companion.const
-import io.github.yafrl.timeline.Timeline
-import io.github.yafrl.externalSignal
+import io.github.yafrl.Signal
 import io.github.yafrl.runYafrl
 import io.kotest.core.spec.style.FunSpec
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlin.test.assertEquals
 
 class FlatMapTests: FunSpec({
     test("flat map switches between states properly") {
         runYafrl {
-            Timeline.initializeTimeline(
-                CoroutineScope(Dispatchers.Default)
-            )
-
             val state1 = externalSignal(0)
 
             val state2 = externalSignal(1)
@@ -54,7 +46,7 @@ class FlatMapTests: FunSpec({
 
             val flatmapped = state1.flatMap { x ->
                 state2.flatMap { y ->
-                    const(x + y)
+                    Signal.const(x + y)
                 }
             }
 

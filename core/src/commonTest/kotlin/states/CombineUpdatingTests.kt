@@ -1,10 +1,8 @@
 package states
 
-import io.github.yafrl.Signal.Companion.combineAll
+import io.github.yafrl.Signal
 import io.github.yafrl.timeline.Timeline
-import io.github.yafrl.externalSignal
 import io.github.yafrl.runYafrl
-import io.github.yafrl.sequenceState
 import io.kotest.core.spec.style.FunSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,12 +11,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CombineUpdatingTests : FunSpec({
-    beforeTest {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
-        )
-    }
-
     test("Combined state updates when parents update") {
         runYafrl {
             val x = externalSignal(0)
@@ -41,20 +33,22 @@ class CombineUpdatingTests : FunSpec({
 
     @OptIn(ExperimentalNativeApi::class)
     test("Combined does not update unless queried") {
-        val x = externalSignal(0)
+        runYafrl {
+            val x = externalSignal(0)
 
-        val y = externalSignal(0)
+            val y = externalSignal(0)
 
-        var evaluated = false
+            var evaluated = false
 
-        x.combineWith(y) { x, y ->
-            evaluated = true
-            x + y
+            x.combineWith(y) { x, y ->
+                evaluated = true
+                x + y
+            }
+
+            x.value = 1
+
+            assertTrue(!evaluated)
         }
-
-        x.value = 1
-
-        assertTrue(!evaluated)
     }
 
     test("Combined state 3-arg updates when parents update") {
@@ -167,7 +161,7 @@ class CombineUpdatingTests : FunSpec({
 
             val r = externalSignal(0)
 
-            val sum = combineAll(x, y, z, w, q, r)
+            val sum = Signal.combineAll(x, y, z, w, q, r)
                 .map { it.sum() }
 
             assertEquals(0, sum.currentValue())

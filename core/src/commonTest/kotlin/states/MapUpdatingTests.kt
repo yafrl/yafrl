@@ -11,16 +11,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MapUpdatingTests: FunSpec({
-    beforeTest {
-        Timeline.initializeTimeline(
-            CoroutineScope(Dispatchers.Default)
-        )
-    }
-
     test("Build node") {
-        val node = externalSignal(0)
+        runYafrl {
+            val node = externalSignal(0)
 
-        assertEquals(0, node.value)
+            assertEquals(0, node.value)
+        }
     }
 
     test("Build held node") {
@@ -63,23 +59,25 @@ class MapUpdatingTests: FunSpec({
 
     @OptIn(ExperimentalNativeApi::class)
     test("Map does not update unless queried") {
-        var mapEvaluated = false
+        runYafrl {
+            var mapEvaluated = false
 
-        val node = externalSignal(0)
+            val node = externalSignal(0)
 
-        node.map {
-            mapEvaluated = true
-            it + 2
+            node.map {
+                mapEvaluated = true
+                it + 2
+            }
+
+            node.value = 3
+
+            assertTrue(!mapEvaluated)
         }
-
-        node.value = 3
-
-        assertTrue(!mapEvaluated)
     }
 
     @OptIn(FragileYafrlAPI::class, ExperimentalNativeApi::class)
     test("Map updates if listened to") {
-        runTest {
+        runYafrl {
             var mapEvaluated = false
 
             val node = externalSignal(0)

@@ -4,9 +4,10 @@ import io.github.yafrl.Event
 import io.github.yafrl.EventState
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.externalEvent
+import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 import kotlin.reflect.typeOf
 
 object TextAdventureExample {
@@ -78,7 +79,7 @@ object TextAdventureExample {
     //  by different actions and return a meaningful result that can be used in the rest of the game
     //  e.x. rewards from a dungeon.
 
-    fun scene(state: GameState): Signal<GameState> = with(state.room) {
+    fun TimelineScope.scene(state: GameState): Signal<GameState> = with(state.room) {
         val transitions = Event.merged(
             actions.map { (label, transition: Action) ->
                 // Create an event that uses the transition label, and performs
@@ -91,21 +92,19 @@ object TextAdventureExample {
         Signal.fold(state, transitions) { state, action -> action(state) }
     }
 
-    val game = scene(
-        GameState(
-            inventory = mapOf(),
-            room = Room.Field
-        )
-    )
-
-    val room = game
-        .map { it.room }
-
     // This example shows that any yafrl program can be investigated and debugged via the terminal
     //  if desired.
     @OptIn(FragileYafrlAPI::class)
-    fun playGame() {
-        val timeline = Timeline.currentTimeline()
+    fun playGame() = runYafrl {
+        val game = scene(
+            GameState(
+                inventory = mapOf(),
+                room = Room.Field
+            )
+        )
+
+        val room = game
+            .map { it.room }
 
         sample {
             var currentRoom = room.currentValue()

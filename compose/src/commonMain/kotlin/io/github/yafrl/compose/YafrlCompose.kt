@@ -16,13 +16,11 @@ import androidx.compose.ui.unit.dp
 import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.Event
 import io.github.yafrl.Signal
-import io.github.yafrl.throttled
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.asBehavior
-import io.github.yafrl.externalEvent
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.current
 import io.github.yafrl.sample
+import io.github.yafrl.timeline.TimelineScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -43,13 +41,13 @@ fun YafrlCompose(
     debugLogs: Boolean = false,
     showFPS: Boolean = false,
     lazy: Boolean = true,
-    body: @Composable () -> Unit
+    body: @Composable TimelineScope.() -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
     var clockInitialized by remember { mutableStateOf(false) }
 
-    remember {
+    val timeline = remember {
         Timeline.initializeTimeline(
             scope = CoroutineScope(Dispatchers.Default),
             debug = debugLogs,
@@ -65,87 +63,89 @@ fun YafrlCompose(
         )
     }
 
-    Column {
-        if (timeTravelDebugger) {
-            val pausedState = remember { Timeline.currentTimeline().pausedState }
+    with(TimelineScope(timeline)) {
+        Column {
+            if (timeTravelDebugger) {
+                val pausedState = remember { timeline.pausedState }
 
-            val paused by remember {
-                pausedState.composeState()
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp)
-            ) {
-                Button(
-                    modifier = Modifier
-                        .padding(6.dp),
-                    enabled = paused || !clockInitialized,
-                    content = { Text("<") },
-                    onClick = {
-                        Timeline.currentTimeline()
-                            .timeTravel.rollbackState()
-                    }
-                )
-
-                Button(
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .width(120.dp)
-                        .semantics { contentDescription = "Pause button" },
-                    enabled = clockInitialized,
-                    content = {
-                        if (!paused) {
-                            Text("Pause")
-                        } else {
-                            Text("Un-pause")
-                        }
-                    },
-                    onClick = {
-                        pausedState.value = !paused
-                    }
-                )
-
-
-                Button(
-                    modifier = Modifier.padding(6.dp),
-                    enabled = paused || !clockInitialized,
-                    content = { Text(">") },
-                    onClick = {
-                        Timeline.currentTimeline()
-                            .timeTravel.nextState()
-                    }
-                )
-            }
-        }
-
-        if (showFPS && clockInitialized) {
-            val runningAverage = remember {
-                Timeline.currentTimeline().clock
-                    .window(10)
-                    .map {
-                        if (it.isNotEmpty()) it.sumOf { it.inWholeMilliseconds } / it.size else null
-                    }
-                    .throttled(0.5.seconds)
-            }
-
-            val fps by remember {
-                Signal.fold("--", runningAverage) { _, avgFrameTime ->
-                    if (avgFrameTime != null) {
-                        (1000f / avgFrameTime).roundToInt().toString()
-                    } else {
-                        "--"
-                    }
+                val paused by remember {
+                    pausedState.composeState(timeline)
                 }
-                    .composeState()
+
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(6.dp)
+                ) {
+                    Button(
+                        modifier = Modifier
+                            .padding(6.dp),
+                        enabled = paused || !clockInitialized,
+                        content = { Text("<") },
+                        onClick = {
+                            timeline
+                                .timeTravel.rollbackState()
+                        }
+                    )
+
+                    Button(
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .width(120.dp)
+                            .semantics { contentDescription = "Pause button" },
+                        enabled = clockInitialized,
+                        content = {
+                            if (!paused) {
+                                Text("Pause")
+                            } else {
+                                Text("Un-pause")
+                            }
+                        },
+                        onClick = {
+                            pausedState.value = !paused
+                        }
+                    )
+
+
+                    Button(
+                        modifier = Modifier.padding(6.dp),
+                        enabled = paused || !clockInitialized,
+                        content = { Text(">") },
+                        onClick = {
+                            timeline
+                                .timeTravel.nextState()
+                        }
+                    )
+                }
             }
 
-            Text(text = "FPS: $fps")
-        }
+            if (showFPS && clockInitialized) {
+                val runningAverage = remember {
+                    timeline.clock
+                        .window(10)
+                        .map {
+                            if (it.isNotEmpty()) it.sumOf { it.inWholeMilliseconds } / it.size else null
+                        }
+                        .throttled(0.5.seconds)
+                }
 
-        body()
+                val fps by remember {
+                    Signal.fold("--", runningAverage) { _, avgFrameTime ->
+                        if (avgFrameTime != null) {
+                            (1000f / avgFrameTime).roundToInt().toString()
+                        } else {
+                            "--"
+                        }
+                    }
+                        .composeState(timeline)
+                }
+
+                Text(text = "FPS: $fps")
+            }
+
+            body()
+        }
     }
 }
 
@@ -154,12 +154,14 @@ fun YafrlCompose(
  *  in Jetpack Compose, by converting it to a [androidx.compose.runtime.State].
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> Signal<A>.composeState(): androidx.compose.runtime.State<A> {
-    val state = mutableStateOf(value = node.current())
+fun <A> Signal<A>.composeState(timeline: Timeline): androidx.compose.runtime.State<A> {
+    val state = mutableStateOf(value = node.current(timeline))
 
-    collectSync { updatedState ->
-        if (updatedState != state.value) {
-            state.value = updatedState
+    with(TimelineScope(timeline)) {
+        collectSync { updatedState ->
+            if (updatedState != state.value) {
+                state.value = updatedState
+            }
         }
     }
 
@@ -172,7 +174,7 @@ fun <A> Signal<A>.composeState(): androidx.compose.runtime.State<A> {
  *
  * Each event consists of the [Duration] of the most recent frame.
  **/
-fun newComposeFrameClock(
+fun TimelineScope.newComposeFrameClock(
     scope: CoroutineScope,
     paused: Behavior<Boolean>
 ): Event<Duration> = sample {

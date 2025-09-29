@@ -22,9 +22,10 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.yafrl.Event
 import io.github.yafrl.Signal
-import io.github.yafrl.externalEvent
 import io.github.yafrl.compose.YafrlCompose
 import io.github.yafrl.compose.composeState
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 import kotlin.collections.plus
 
 object TodosComponent {
@@ -34,7 +35,7 @@ object TodosComponent {
         val contents: String
     )
 
-    class ViewModel() {
+    class ViewModel(timeline: Timeline): TimelineScope(timeline) {
         fun addNew() = clicks.send(Unit)
 
         fun dismissCompleted() = dismissEvent.send(Unit)
@@ -128,9 +129,9 @@ object TodosComponent {
 
     @Composable
     fun view() = YafrlCompose {
-        val viewModel = remember { ViewModel() }
+        val viewModel = remember { ViewModel(timeline) }
 
-        val todoItems by remember { viewModel.items.composeState() }
+        val todoItems by remember { viewModel.items.composeState(timeline) }
 
         Column {
             Row(

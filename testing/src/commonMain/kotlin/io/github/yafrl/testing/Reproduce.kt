@@ -1,6 +1,7 @@
 package io.github.yafrl.testing
 
 import io.github.yafrl.Signal
+import io.github.yafrl.timeline.TimelineScope
 import io.github.yafrl.timeline.debugging.ExternalActionSerializer
 import kotlinx.serialization.StringFormat
 
@@ -16,7 +17,7 @@ import kotlinx.serialization.StringFormat
  *  would be unlikely to manually generate.
  **/
 fun <W> findMinimalReproducingTrace(
-    setupState: () -> Signal<W>,
+    setupState: TimelineScope.() -> Signal<W>,
     proposition: LTLSyntax<W>.() -> LTL<W>,
     serializedTrace: String,
     format: StringFormat

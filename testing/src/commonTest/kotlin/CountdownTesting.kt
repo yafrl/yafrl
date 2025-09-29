@@ -1,9 +1,10 @@
+
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.externalEvent
 import io.github.yafrl.signal
 import io.github.yafrl.testing.testPropositionHoldsFor
 import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 import io.kotest.core.spec.style.FunSpec
 import kotlin.random.Random
 
@@ -18,7 +19,7 @@ class CountdownTimer(
     )
 
     @OptIn(FragileYafrlAPI::class)
-    fun snapshot() = run {
+    fun snapshot(scope: TimelineScope) = with(scope) {
         val buttonClicks = startButton.clicks.asSignal()
         signal {
             Snapshot(
@@ -30,7 +31,7 @@ class CountdownTimer(
     }
 
     companion object {
-        fun new() = run {
+        fun new(scope: TimelineScope) = with(scope) {
             val buttonClicks = externalEvent<Unit>()
 
             val button = Button(
@@ -55,8 +56,7 @@ class CountdownTesting : FunSpec({
     test("Countdown timer spec") {
         testPropositionHoldsFor(
             setupState = {
-                Timeline.initializeTimeline()
-                CountdownTimer.new().snapshot()
+                CountdownTimer.new(this).snapshot(this)
             },
             proposition = {
                 val lessThanZero by condition { current.count < 0 }

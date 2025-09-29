@@ -6,9 +6,7 @@ import io.github.yafrl.Event
 import io.github.yafrl.EventState
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.externalEvent
 import io.github.yafrl.timeline.Timeline
-import io.github.yafrl.externalSignal
 import io.github.yafrl.sample
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -23,12 +21,14 @@ import kotlinx.coroutines.launch
  *  emitting a frame whenever the passed [Flow] updates.
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> Flow<A>.asEvent(): Event<A> {
-    val event = externalEvent<A>()
-    val scope = Timeline.currentTimeline().scope
-    bindFlowToEvent(scope, this , event)
+inline fun <reified A> Flow<A>.asEvent(timeline: Timeline): Event<A> {
+    return with(timeline.timelineScope) {
+        val event = externalEvent<A>()
+        val scope = timeline.scope
+        bindFlowToEvent(scope, this@asEvent, event)
 
-    return event
+        event
+    }
 }
 
 /**
@@ -39,16 +39,16 @@ inline fun <reified A> Flow<A>.asEvent(): Event<A> {
  *  coroutine scope.
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> Event<A>.asFlow(): Flow<A> {
+fun <A> Event<A>.asFlow(timeline: Timeline): Flow<A> = with(timeline.timelineScope) {
     val result = MutableSharedFlow<A>()
 
-    Timeline.currentTimeline().scope.launch {
+    timeline.scope.launch {
         node.collect { newEvent ->
             if (newEvent is EventState.Fired<A>) result.emit(newEvent.event)
         }
     }
 
-    return result
+    result
 }
 
 /** @suppress -- Internal: Created to fix bug with test coverage. */
@@ -66,12 +66,12 @@ fun <A> bindFlowToEvent(scope: CoroutineScope, flow: Flow<A>, event: BroadcastEv
  *  with the same values and update behavior of the passed [StateFlow].
  **/
 @OptIn(FragileYafrlAPI::class)
-inline fun <reified A> StateFlow<A>.asSignal(): Signal<A> {
+inline fun <reified A> StateFlow<A>.asSignal(timeline: Timeline): Signal<A> = with(timeline.timelineScope) {
     val state = externalSignal(value)
-    val scope = Timeline.currentTimeline().scope
-    bindStateFlowToState(scope, this, state)
+    val scope = timeline.scope
+    bindStateFlowToState(scope, this@asSignal, state)
 
-    return state
+    state
 }
 
 /**
@@ -80,16 +80,18 @@ inline fun <reified A> StateFlow<A>.asSignal(): Signal<A> {
  * Useful for interop with pre-existing APIs using state flow.
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> Signal<A>.asStateFlow(): StateFlow<A> = sample {
-    val result = MutableStateFlow(
-        currentValue()
-    )
+fun <A> Signal<A>.asStateFlow(timeline: Timeline): StateFlow<A> = with(timeline.timelineScope) {
+    sample {
+        val result = MutableStateFlow(
+            currentValue()
+        )
 
-    node.collectSync { newValue ->
-        result.value = newValue
+        node.collectSync { newValue ->
+            result.value = newValue
+        }
+
+        result
     }
-
-    result
 }
 
 /** @suppress Internal -- Created to fix bug with test coverage */

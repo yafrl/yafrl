@@ -26,6 +26,8 @@ import io.github.yafrl.*
 import io.github.yafrl.behaviors.*
 import io.github.yafrl.compose.YafrlCompose
 import io.github.yafrl.compose.composeState
+import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 import io.github.yafrl.vector.Float2
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -80,10 +82,14 @@ object PolygonExample {
     )
 
     class ViewModel(
-        val createPolygonButton: BroadcastEvent<Unit> = externalEvent<Unit>("create_polygon_click"),
-        val clicks: BroadcastEvent<Unit> = externalEvent<Unit>("click"),
-        val mousePosition: BindingSignal<Float2> = externalSignal<Float2>(Float2(0f, 0f), "mouse_position")
-    ) {
+        timeline: Timeline,
+        val createPolygonButton: BroadcastEvent<Unit> = timeline.timelineScope
+            .externalEvent<Unit>("create_polygon_click"),
+        val clicks: BroadcastEvent<Unit> = timeline.timelineScope
+            .externalEvent<Unit>("click"),
+        val mousePosition: BindingSignal<Float2> = timeline.timelineScope
+            .externalSignal<Float2>(Float2(0f, 0f), "mouse_position")
+    ) : TimelineScope(timeline) {
         val editingPolygon = Signal.fold<Option<PolygonID>, _>(None, createPolygonButton) { editing, _ ->
             if (editing.isSome()) editing else Some(PolygonID.new())
         }
@@ -181,13 +187,13 @@ object PolygonExample {
 
     @Composable
     fun view() = YafrlCompose {
-        val viewModel = remember { ViewModel() }
+        val viewModel = remember { ViewModel(timeline) }
 
-        val polygons by remember { viewModel.polygons.composeState() }
-        val vertices by remember { viewModel.vertices.composeState() }
-        val mousePosition by remember { viewModel.mousePosition.composeState() }
+        val polygons by remember { viewModel.polygons.composeState(timeline) }
+        val vertices by remember { viewModel.vertices.composeState(timeline) }
+        val mousePosition by remember { viewModel.mousePosition.composeState(timeline) }
         // TODO: Laziness bug. This has to be observed
-        val editingPolygon by remember { viewModel.editingPolygon.composeState() }
+        val editingPolygon by remember { viewModel.editingPolygon.composeState(timeline) }
 
         Column {
             Button(

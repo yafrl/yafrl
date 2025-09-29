@@ -22,7 +22,7 @@ class CoroutineIntegrationTests: FunSpec({
         runYafrl {
             val flow = MutableSharedFlow<Unit>()
 
-            val event = flow.asEvent()
+            val event = flow.asEvent(timeline)
 
             val events = event.scan(listOf<Unit>()) { xs, x -> xs + x }
 
@@ -41,7 +41,7 @@ class CoroutineIntegrationTests: FunSpec({
         runYafrl {
             val stateFlow = MutableStateFlow(0)
 
-            val state = stateFlow.asSignal()
+            val state = stateFlow.asSignal(timeline)
 
             assertEquals(0, state.currentValue())
 

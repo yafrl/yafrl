@@ -6,7 +6,6 @@ import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.compose.YafrlCompose
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import io.github.yafrl.externalSignal
 import io.github.yafrl.compose.composeState
 import org.junit.Rule
 import org.junit.runner.RunWith
@@ -25,12 +24,16 @@ class YafrlComposeTests {
         println("In test")
         composeTestRule.mainClock.autoAdvance = false
 
+        lateinit var _timeline: Timeline
+
         println("Setting content")
         composeTestRule.setContent {
             YafrlCompose(
                 timeTravelDebugger = true,
                 showFPS = true
             ) {
+                _timeline = timeline
+
                 Text("Here comes the content!")
 
                 val valueState = remember {
@@ -38,7 +41,7 @@ class YafrlComposeTests {
                 }
 
                 val value by remember {
-                    valueState.composeState()
+                    valueState.composeState(timeline)
                 }
 
                 Text("Value: $value")
@@ -47,9 +50,9 @@ class YafrlComposeTests {
         println("Got content")
 
         // Ensure clock is active
-        Timeline.currentTimeline().clock
+        _timeline.clock
 
-        val pausedState = Timeline.currentTimeline().pausedState
+        val pausedState = _timeline.pausedState
 
         // Verify initial state
         assertEquals(false, pausedState.value)

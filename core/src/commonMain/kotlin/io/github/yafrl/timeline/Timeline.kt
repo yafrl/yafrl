@@ -6,12 +6,9 @@ import io.github.yafrl.EventState
 import io.github.yafrl.SampleScope
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.externalEvent
-import io.github.yafrl.internalBindingState
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.debugging.ExternalAction
 import io.github.yafrl.timeline.logging.EventLogger
-import io.github.yafrl.timeline.debugging.ExternalBehavior
 import io.github.yafrl.timeline.debugging.ExternalEvent
 import io.github.yafrl.timeline.debugging.ExternalNode
 import io.github.yafrl.timeline.debugging.SnapshotDebugger
@@ -44,8 +41,10 @@ class Timeline(
     @property:FragileYafrlAPI val graph: Graph,
     private val initTimeTravel: (Timeline) -> TimeTravelDebugger,
     private val lazy: Boolean,
-    initClock: (Signal<Boolean>) -> Event<Duration>
+    initClock: TimelineScope.(Signal<Boolean>) -> Event<Duration>
 ) : SynchronizedObject(), EventLogger by eventLogger {
+    val timelineScope = TimelineScope(this)
+
     /**
      * Index to keep track of the latest frame that has been created in the timeline.
      **/
@@ -61,30 +60,36 @@ class Timeline(
 
     @OptIn(FragileYafrlAPI::class)
     val time: Duration
-        get() = fetchNodeValue(timeBehavior.node) as Duration
+        get() = fetchNodeValue(with(timelineScope) { timeBehavior.node }) as Duration
 
     val timeBehavior by lazy {
-        clock.scan(0.0.seconds) { x, y ->
-            x + y
+        with(timelineScope) {
+            clock.scan(0.0.seconds) { x, y ->
+                x + y
+            }
         }
     }
 
     // Needs to be internal because we can't undo a "pause" event.
     @OptIn(FragileYafrlAPI::class)
     val pausedState by lazy {
-        internalBindingState(
-            lazy { false },
-            "__internal_paused"
-        )
+        with(timelineScope) {
+            internalBindingState(
+                lazy { false },
+                "__internal_paused"
+            )
+        }
     }
 
     // The clock is lazily initialized so that if an explicit clock is not used,
     //  it will not start ticking.
     val clock: Event<Duration> by lazy {
-        initClock(pausedState)
-        // Theoretically gate should work for this, but not
-        // currently working.
-        //.gate(pausedState)
+        with(timelineScope) {
+            initClock(pausedState)
+            // Theoretically gate should work for this, but not
+            // currently working.
+            //.gate(pausedState)
+        }
     }
 
     private var latestNodeID = -1
@@ -250,7 +255,7 @@ class Timeline(
             },
             onRollback = { node, frame ->
                 // TODO: Not sure if this is the right scope.
-                sample {
+                timelineScope.sample {
                     val resetTo = frame - createdFrame
 
                     events = events.take(resetTo.toInt())
@@ -465,8 +470,6 @@ class Timeline(
     }
 
     companion object {
-        private var _timeline: Timeline? = null
-
         /**
          * Initialize a new yafrl [Timeline] with the specified configuration options.
          *
@@ -489,7 +492,7 @@ class Timeline(
             lazy: Boolean = true,
             eventLogger: EventLogger = EventLogger.Disabled,
             // Use a trivial (discrete) clock by default.
-            initClock: (Signal<Boolean>) -> Event<Duration> = {
+            initClock: TimelineScope.(Signal<Boolean>) -> Event<Duration> = {
                 externalEvent<Duration>("clock")
             }
         ): Timeline {
@@ -499,7 +502,7 @@ class Timeline(
                 if (timeTravel) SnapshotDebugger(timeline) else TimeTravelDebugger.Disabled
             }
 
-            _timeline = Timeline(
+            return Timeline(
                 scope,
                 timeTravel,
                 debug,
@@ -509,13 +512,6 @@ class Timeline(
                 lazy,
                 initClock
             )
-
-            return _timeline!!
-        }
-
-        fun currentTimeline(): Timeline {
-            return _timeline
-                ?: error("Timeline must be initialized with Timeline.initializeTimeline().")
         }
     }
 
@@ -525,7 +521,7 @@ class Timeline(
      **/
     @OptIn(FragileYafrlAPI::class)
     internal fun <R> trackedSample(body: SampleScope.() -> R): R {
-        val scope = object: SampleScope {
+        val scope = object: SampleScope(this) {
             override fun <A> Behavior<A>.sampleValue(): A {
                 if (this is Behavior.Sampled<A>) {
                     if (behaviorsSampled.contains(this.id)) {
@@ -546,14 +542,11 @@ class Timeline(
                 // For a signal we can just add a dependency on the node.
                 // graph.addChild(node.id, id)
 
-                return node.current()
+                return node.current(timeline)
             }
 
-            override val clock: Event<Duration>
-                get() = this@Timeline.clock
-
-            override val timeBehavior: Signal<Duration>
-                get() = this@Timeline.timeBehavior
+            override val timeline: Timeline
+                get() = this@Timeline
         }
 
         return scope.body()
@@ -568,8 +561,6 @@ class Timeline(
  *  instead.
  **/
 @FragileYafrlAPI
-fun <A> Node<A>.current(): A {
-    val graph = Timeline.currentTimeline()
-
-    return graph.fetchNodeValue(this) as A
+fun <A> Node<A>.current(timeline: Timeline): A {
+    return timeline.fetchNodeValue(this) as A
 }

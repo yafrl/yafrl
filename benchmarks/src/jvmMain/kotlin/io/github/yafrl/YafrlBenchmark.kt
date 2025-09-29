@@ -6,8 +6,7 @@ import kotlinx.benchmark.*
 @State(Scope.Benchmark)
 class YafrlBenchmark {
     @Benchmark
-    fun benchmark_mapping_node(): Int {
-        Timeline.initializeTimeline()
+    fun benchmark_mapping_node(): Int = runYafrl {
 
         val input = externalEvent<Int>()
 
@@ -15,11 +14,11 @@ class YafrlBenchmark {
 
         input.send(15)
 
-        return sample { mapped.currentValue() }
+        sample { mapped.currentValue() }
     }
 
     @Benchmark
-    fun benchmark_combining_node_initial_value() {
+    fun benchmark_combining_node_initial_value() = runYafrl {
         Timeline.initializeTimeline()
 
         val input = externalSignal<Int>(0)

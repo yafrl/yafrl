@@ -16,7 +16,7 @@ class PolygonTest {
    // @Test // Disabled -- test is currently broken.
    fun polygonSpec() = testPropositionHoldsFor(
       setupState = {
-         val viewModel = PolygonExample.ViewModel()
+         val viewModel = PolygonExample.ViewModel(timeline)
 
          signal {
             PolygonState(

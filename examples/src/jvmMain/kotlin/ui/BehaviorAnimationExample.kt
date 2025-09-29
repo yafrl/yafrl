@@ -15,10 +15,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.behaviors.Behavior.Companion.integral
-import io.github.yafrl.behaviors.Behavior.Companion.const
 import io.github.yafrl.compose.YafrlCompose
 import io.github.yafrl.compose.composeState
+import io.github.yafrl.timeline.TimelineScope
 import io.github.yafrl.vector.Float2
 import io.github.yafrl.vector.VectorSpace
 import java.lang.Math.toDegrees
@@ -32,7 +31,7 @@ import kotlin.math.sin
  * Creates a [Float2] vector rotating counter-clockwise at the specified angular [velocity]
  *  rotating about (0, 0).
  **/
-fun angular(velocity: Behavior<Float>) = integral(velocity).map { angle ->
+fun TimelineScope.angular(velocity: Behavior<Float>) = Behavior.integral(velocity).map { angle ->
     Float2(cos(angle), sin(angle))
 }
 
@@ -57,8 +56,8 @@ fun toColor(position: Float2): Color {
     return Color.hsv(hue, 1f, luminance)
 }
 
-fun buttonColor() =
-    angular(velocity = const(0.03f))
+fun TimelineScope.buttonColor() =
+    angular(velocity = Behavior.const(0.03f))
         .map { with(VectorSpace.float2()) { 225f * it } }
         .map { toColor(it) }
         .sampleState()
@@ -78,7 +77,7 @@ fun main(args: Array<String>) {
         ) {
             YafrlCompose {
                 val color by remember {
-                    buttonColor().composeState()
+                    buttonColor().composeState(timeline)
                 }
 
                 Box(

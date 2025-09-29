@@ -1,10 +1,8 @@
 package vectors
 
-import io.github.yafrl.behaviors.Behavior.Companion.const
 import io.github.yafrl.*
-import io.github.yafrl.behaviors.integrate
+import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.behaviors.plus
-import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.vector.Double2
 import io.github.yafrl.vector.Double3
 import io.github.yafrl.vector.Float2
@@ -37,9 +35,9 @@ class VectorTests : FunSpec({
 
             val initialPosition = Float2(20f, 100f)
 
-            val gravity = const(gravityAcceleration).integrate()
+            val gravity = Behavior.const(gravityAcceleration).integrate()
 
-            val position = const(initialPosition) + gravity.integrate()
+            val position = Behavior.const(initialPosition) + gravity.integrate()
 
             assertEquals(
                 Float2(20f, 100f),
@@ -69,9 +67,9 @@ class VectorTests : FunSpec({
 
             val initialPosition = Float3(20f, 30f, 100f)
 
-            val gravity = const(gravityAcceleration).integrate()
+            val gravity = Behavior.const(gravityAcceleration).integrate()
 
-            val position = const(initialPosition) + gravity.integrate()
+            val position = Behavior.const(initialPosition) + gravity.integrate()
 
             assertEquals(
                 Float3(20f, 30f, 100f),

@@ -15,16 +15,19 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.yafrl.Event
 import io.github.yafrl.Signal
-import io.github.yafrl.externalEvent
 import io.github.yafrl.compose.YafrlCompose
 import io.github.yafrl.compose.composeState
+import io.github.yafrl.timeline.TimelineScope
 
 object CounterComponent {
     class ViewModel(
+        scope: TimelineScope,
         clicks: Event<Unit>
     ) {
-        val count = Signal.fold(0, clicks) { state, _click ->
-            state + 1
+        val count = with(scope) {
+            Signal.fold(0, clicks) { state, _click ->
+                state + 1
+            }
         }
     }
 
@@ -33,9 +36,9 @@ object CounterComponent {
         timeTravelDebugger = true
     ) {
         val clicks = remember { externalEvent<Unit>() }
-        val viewModel = remember { ViewModel(clicks) }
+        val viewModel = remember { ViewModel(this, clicks) }
 
-        val count by remember { viewModel.count.composeState() }
+        val count by remember { viewModel.count.composeState(timeline) }
 
         Column {
             Row(

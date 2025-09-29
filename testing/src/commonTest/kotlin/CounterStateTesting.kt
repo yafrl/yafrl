@@ -1,11 +1,11 @@
+
 import io.github.yafrl.Event
-import io.github.yafrl.externalEvent
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.signal
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.testPropositionHoldsFor
+import io.github.yafrl.timeline.TimelineScope
 import io.kotest.core.spec.style.FunSpec
 import kotlin.test.assertTrue
 
@@ -18,24 +18,21 @@ data class CounterTestState(
 @OptIn(FragileYafrlAPI::class)
 class CounterStateTesting: FunSpec({
     test("Test state-testing a counter") {
-        Timeline.initializeTimeline()
+        atArbitraryState(
+            setupState = {
+                val clicks = externalEvent<Unit>()
 
-        val clicks = externalEvent<Unit>()
-
-        val counter = Signal.fold(0, clicks) { state, _ ->
-            state + 1
-        }
-
-        atArbitraryState {
-            assertTrue {
-                counter.currentValue() >= 0
+                Signal.fold(0, clicks) { state, _ ->
+                    state + 1
+                }
+            },
+            check = { count ->
+                assertTrue { count >= 0 }
             }
-        }
+        )
     }
 
-    fun setupCounter() = run {
-        Timeline.initializeTimeline()
-
+    fun setupCounter(scope: TimelineScope) = with(scope) {
         val increment = externalEvent<Unit>("increment")
             .map { { count: Int -> count + 1 } }
 

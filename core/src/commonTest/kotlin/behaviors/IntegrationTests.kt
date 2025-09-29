@@ -1,16 +1,8 @@
 package behaviors
 
-import io.github.yafrl.behaviors.Behavior.Companion.integral
 import io.github.yafrl.BroadcastEvent
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.behaviors.Behavior.Companion.const
-import io.github.yafrl.asBehavior
 import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.behaviors.integrate
-import io.github.yafrl.behaviors.integrateWith
-import io.github.yafrl.externalEvent
-import io.github.yafrl.timeline.Timeline
-import io.github.yafrl.externalSignal
 import io.github.yafrl.behaviors.plus
 import io.github.yafrl.runYafrl
 import io.github.yafrl.vector.ScalarSpace
@@ -32,10 +24,10 @@ class IntegrationTests: FunSpec({
 
             val modifier = externalSignal<Float>(0f)
 
-            val deltaTime = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
+            val deltaTime = timeline.clock as BroadcastEvent<Duration>
 
-            val position = integral(
-                const(1f) + integral(modifier.asBehavior())
+            val position = Behavior.integral(
+                Behavior.const(1f) + Behavior.integral(modifier.asBehavior())
             )
 
             assertEquals(0f, position.sampleValue())
@@ -56,12 +48,14 @@ class IntegrationTests: FunSpec({
 
     test("Integrated behavior throws on non-monotonic inputs") {
         shouldThrow<Throwable> {
-            val integrated = Behavior.continuous { 0.0 }
-                .integrate()
+            runYafrl {
+                val integrated = Behavior.continuous { 0.0 }
+                    .integrate()
 
-            integrated.sampleValueAt(1.0.seconds)
+                integrated.sampleValueAt(1.0.seconds)
 
-            integrated.sampleValueAt(0.0.seconds)
+                integrated.sampleValueAt(0.5.seconds)
+            }
         }
     }
 
@@ -79,7 +73,7 @@ class IntegrationTests: FunSpec({
 
     test("Can specify custom accumulator for integration") {
         runYafrl {
-            val clock = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
+            val clock = timeline.clock as BroadcastEvent<Duration>
 
             val integrated = Behavior.continuous { time -> 1.0 }
                 .integrateWith(0.0, accum = { x, y -> min(5.0, x + y) })
@@ -93,11 +87,13 @@ class IntegrationTests: FunSpec({
     }
 
     test("Exact integral is correct") {
-        val polynomial = Behavior.polynomial(listOf(1.0, 1.0)) // 1 + t
+        runYafrl {
+            val polynomial = Behavior.polynomial(listOf(1.0, 1.0)) // 1 + t
 
-        val integral = polynomial
-            .exactIntegral { x, y -> x + y }
+            val integral = polynomial
+                .exactIntegral { x, y -> x + y }
 
-        assertEquals(listOf(0.0, 1.0, 0.5), integral.coefficients) // t + t^2 / 2
+            assertEquals(listOf(0.0, 1.0, 0.5), integral.coefficients) // t + t^2 / 2
+        }
     }
 })

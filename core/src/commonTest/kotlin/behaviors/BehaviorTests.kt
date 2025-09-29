@@ -2,7 +2,7 @@ package behaviors
 
 import io.github.yafrl.BroadcastEvent
 import io.github.yafrl.behaviors.*
-import io.github.yafrl.externalEvent
+import io.github.yafrl.runYafrl
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.sample
 import io.kotest.core.spec.style.FunSpec
@@ -18,132 +18,134 @@ import kotlin.time.Duration.Companion.seconds
 
 class BehaviorTests : FunSpec({
     test("Mapped behavior works as intended") {
-        Timeline.initializeTimeline(this)
+        runYafrl {
+            val behavior = Behavior.continuous { time ->
+                val seconds = time.inWholeMilliseconds / 1000f
 
-        val behavior = Behavior.continuous { time ->
-            val seconds = time.inWholeMilliseconds / 1000f
+                sin(seconds)
+            }
 
-            sin(seconds)
-        }
+            val mapped = behavior.map { it * 2 }
 
-        val mapped = behavior.map { it * 2 }
+            sample {
+                val value = behavior.sampleValue()
+                val mappedValue = mapped.sampleValue()
 
-        sample {
-            val value = behavior.sampleValue()
-            val mappedValue = mapped.sampleValue()
+                val difference = abs(value * 2 - mappedValue)
 
-            val difference = abs(value * 2 - mappedValue)
-
-            assertTrue("Difference between mapped and unmapped value was $difference") {
-                difference < 0.1f
+                assertTrue("Difference between mapped and unmapped value was $difference") {
+                    difference < 0.1f
+                }
             }
         }
     }
 
     test("Sample retains value until event") {
-        Timeline.initializeTimeline(
-            scope = this,
-            initClock = {
-                externalEvent<Duration>("event")
+        runYafrl {
+            val event = timeline.clock as BroadcastEvent<Duration>
+
+            val behavior = Behavior.continuous { time ->
+                val seconds = time.inWholeMilliseconds / 1000f
+
+                seconds * 2
             }
-        )
 
-        val event = Timeline.currentTimeline().clock as BroadcastEvent<Duration>
+            val sampled = behavior.sampleState()
 
-        val behavior = Behavior.continuous { time ->
-            val seconds = time.inWholeMilliseconds / 1000f
+            sample {
+                val initial = sampled.currentValue()
 
-            seconds * 2
-        }
+                delay(10.milliseconds)
 
-        val sampled = behavior.sampleState()
+                assertEquals(initial, sampled.currentValue())
 
-        sample {
-            val initial = sampled.currentValue()
+                event.send(0.1.seconds)
 
-            delay(10.milliseconds)
-
-            assertEquals(initial, sampled.currentValue())
-
-            event.send(0.1.seconds)
-
-            assertNotEquals(initial, sampled.currentValue())
+                assertNotEquals(initial, sampled.currentValue())
+            }
         }
     }
 
     test("Time transformation transforms time") {
-        Timeline.initializeTimeline()
+        runYafrl {
 
-        val clock = Timeline.currentTimeline().clock as BroadcastEvent
+            val clock = timeline.clock as BroadcastEvent
 
-        val behavior = Behavior.continuous { time -> 2 * time.inWholeSeconds }
+            val behavior = Behavior.continuous { time -> 2 * time.inWholeSeconds }
 
-        val transformed = behavior
-            .transformTime { time -> (3 * time.inWholeMilliseconds).milliseconds }
+            val transformed = behavior
+                .transformTime { time -> (3 * time.inWholeMilliseconds).milliseconds }
 
-        sample {
-            assertEquals(0, transformed.sampleValue())
+            sample {
+                assertEquals(0, transformed.sampleValue())
 
-            clock.send(1.0.seconds)
+                clock.send(1.0.seconds)
 
-            assertEquals(1.0.seconds, Timeline.currentTimeline().time)
+                assertEquals(1.0.seconds, timeline.time)
 
-            assertEquals(6, transformed.sampleValue())
+                assertEquals(6, transformed.sampleValue())
+            }
         }
     }
 
     test("FlatMap switches between behaviors") {
-        var selected = true
-        var value1 = 0
-        var value2 = 1
+        runYafrl {
+            var selected = true
+            var value1 = 0
+            var value2 = 1
 
-        val selectedBehavior = Behavior.sampled { selected }
+            val selectedBehavior = Behavior.sampled { selected }
 
-        val behavior1 = Behavior.sampled { value1 }
-        val behavior2 = Behavior.sampled { value2 }
+            val behavior1 = Behavior.sampled { value1 }
+            val behavior2 = Behavior.sampled { value2 }
 
-        val behavior = selectedBehavior.flatMap { selected ->
-            if (selected) behavior1 else behavior2
-        }
+            val behavior = selectedBehavior.flatMap { selected ->
+                if (selected) behavior1 else behavior2
+            }
 
-        sample {
-            assertEquals(0, behavior.sampleValue())
+            sample {
+                assertEquals(0, behavior.sampleValue())
 
-            selected = false
+                selected = false
 
-            assertEquals(1, behavior.sampleValue())
+                assertEquals(1, behavior.sampleValue())
+            }
         }
     }
 
     test("Polynomials sum exactly") {
-        val behavior1 = Behavior.polynomial(listOf(1.0,2.0))
-        val behavior2 = Behavior.polynomial(listOf(3.0,4.0))
-        val behavior3 = Behavior.polynomial(listOf(1.0))
+        runYafrl {
+            val behavior1 = Behavior.polynomial(listOf(1.0, 2.0))
+            val behavior2 = Behavior.polynomial(listOf(3.0, 4.0))
+            val behavior3 = Behavior.polynomial(listOf(1.0))
 
-        val summed = behavior1 + behavior2 + behavior3
+            val summed = behavior1 + behavior2 + behavior3
 
-        assertTrue(summed is Behavior.Polynomial)
+            assertTrue(summed is Behavior.Polynomial)
 
-        // Test opposite order
+            // Test opposite order
 
-        val summed2 = behavior3 + behavior2 + behavior1
+            val summed2 = behavior3 + behavior2 + behavior1
 
-        assertTrue(summed2 is Behavior.Polynomial)
+            assertTrue(summed2 is Behavior.Polynomial)
+        }
     }
 
     test("Until switches between behaviors") {
-        val next = externalEvent<Behavior<Int>>()
+        runYafrl {
+            val next = externalEvent<Behavior<Int>>()
 
-        val initial = Behavior.continuous { 1 }
+            val initial = Behavior.continuous { 1 }
 
-        val behavior = initial.until(next)
+            val behavior = initial.until(next)
 
-        sample {
-            assertEquals(1, behavior.sampleValue())
+            sample {
+                assertEquals(1, behavior.sampleValue())
 
-            next.send(Behavior.continuous { 2 })
+                next.send(Behavior.continuous { 2 })
 
-            assertEquals(2, behavior.sampleValue())
+                assertEquals(2, behavior.sampleValue())
+            }
         }
     }
 })

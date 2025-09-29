@@ -1,8 +1,10 @@
 package io.github.yafrl.testing
 
 import io.github.yafrl.Signal
+import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 
 /**
  * Attempts to find the minimal list of actions that reproduces a test failure using recursive
@@ -14,7 +16,7 @@ import io.github.yafrl.timeline.Timeline
  *  kotest natively.
  **/
 fun <W> shrinkActions(
-    setupState: () -> Signal<W>,
+    setupState: TimelineScope.() -> Signal<W>,
     actions: List<StateSpaceAction>,
     actionsPassed: Boolean = true,
     test: (List<W>) -> Boolean,
@@ -58,15 +60,15 @@ fun <W> shrinkActions(
     for (shrink in shrinks) {
         val states = mutableListOf<W>()
 
-        val signal = setupState()
+        runYafrl {
+            val signal = setupState()
 
-        val timeline = Timeline.currentTimeline()
-
-        states += sample { signal.currentValue() }
-
-        for (action in shrink) {
-            action.performAction(timeline)
             states += sample { signal.currentValue() }
+
+            for (action in shrink) {
+                action.performAction(timeline)
+                states += sample { signal.currentValue() }
+            }
         }
 
         println("Testing shrunk actions ${shrink.map { it.value.value }}")

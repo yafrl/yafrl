@@ -3,9 +3,10 @@ package io.github.yafrl
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 import io.github.yafrl.timeline.current
 
-interface SignalScope {
+interface SignalBuilder {
     fun <A> Signal<A>.bind(): A
 }
 
@@ -13,7 +14,7 @@ interface SignalScope {
  * Monadic builder syntax for [Signal]s, inspired by those formerly used by
  *  [arrow-kt](https://old.arrow-kt.io/docs/patterns/monad_comprehensions/).
  *
- * [signal] introduces a scope allowing for the use of the [SignalScope.bind] method.
+ * [signal] introduces a scope allowing for the use of the [SignalBuilder.bind] method.
  *  This works similarly to [Signal.value], but calls to bind within the block are
  *  recomputed whenever any of the [Signal]s that bind was called on have updated
  *  values.
@@ -70,27 +71,25 @@ interface SignalScope {
  *  uses of [Signal.flatMap].
  **/
 @OptIn(FragileYafrlAPI::class)
-fun <A> signal(body: SignalScope.() -> A): Signal<A> {
+fun <A> TimelineScope.signal(body: SignalBuilder.() -> A): Signal<A> {
     val parentNodes = mutableListOf<Node<Any?>>()
 
     // Run the body once to determine parent nodes, and get initial value
-    val initialScope = object: SignalScope {
+    val initialScope = object: SignalBuilder {
         override fun <A> Signal<A>.bind(): A {
             parentNodes += node
-            return node.current()
+            return node.current(timeline)
         }
     }
 
     initialScope.body()
 
     // When recomputing, just return the latest values of all of the states.
-    val recomputeScope = object: SignalScope {
+    val recomputeScope = object: SignalBuilder {
         override fun <A> Signal<A>.bind(): A {
-            return node.current()
+            return node.current(timeline)
         }
     }
-
-    val timeline = Timeline.currentTimeline()
 
     return Signal(
         timeline.createCombinedNode(

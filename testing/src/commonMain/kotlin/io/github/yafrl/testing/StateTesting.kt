@@ -4,11 +4,13 @@ import io.github.yafrl.EventState
 import io.github.yafrl.SampleScope
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.logging.EventLogger
 import io.github.yafrl.timeline.Timeline
+import io.github.yafrl.timeline.TimelineScope
 import io.github.yafrl.timeline.debugging.ExternalAction
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
@@ -46,13 +48,14 @@ fun fpsClockGenerator(frameRate: Double = 60.0, delta: Duration = 2.0.millisecon
  *
  * Useful for checking simple invariants in an FRP system.
  **/
-fun atArbitraryState(
+fun <T> atArbitraryState(
     traceLength: Int = 100,
     randomSource: RandomSource = RandomSource.default(),
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
-    check: SampleScope.() -> Unit
-) {
-    val timeline = Timeline.currentTimeline()
+    setupState: TimelineScope.() -> Signal<T>,
+    check: (T) -> Unit
+) = runYafrl {
+    val signal = setupState()
 
     repeat(traceLength) {
         randomStateSpaceAction(randomSource, clockGenerator, timeline)
@@ -60,9 +63,7 @@ fun atArbitraryState(
     }
 
     // Run the test
-    sample {
-        check()
-    }
+    check(signal.currentValue())
 }
 
 /**
@@ -179,6 +180,7 @@ sealed class StateSpaceAction {
                     action.id,
                     Sample(action.value)
                 )
+
                 is ExternalAction.UpdateValue -> UpdateValue(
                     action.id,
                     Sample(action.value)
@@ -200,7 +202,7 @@ sealed class StateSpaceAction {
  **/
 @OptIn(FragileYafrlAPI::class)
 fun <W> testPropositionHoldsFor(
-    setupState: () -> Signal<W>,
+    setupState: TimelineScope.() -> Signal<W>,
     numIterations: Int = 100,
     maxTraceLength: Int = 50,
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
@@ -233,33 +235,34 @@ fun <W> testPropositionHoldsFor(
 
         val shrunkStates = mutableListOf<W>()
 
-        val signal = setupState()
-        val timeline = Timeline.currentTimeline()
+        runYafrl {
+            val signal = setupState()
 
-        shrunkStates += sample { signal.currentValue() }
-
-        for (action in shrunkActions) {
-            action.performAction(timeline)
             shrunkStates += sample { signal.currentValue() }
-        }
 
-        throw LTLPropositionInvalidated(
-            numIterations = numIterations,
-            states = shrunkStates,
-            origActions = actions,
-            actions = shrunkActions
-        )
+            for (action in shrunkActions) {
+                action.performAction(timeline)
+                shrunkStates += sample { signal.currentValue() }
+            }
+
+            throw LTLPropositionInvalidated(
+                timeline = timeline,
+                numIterations = numIterations,
+                states = shrunkStates,
+                origActions = actions,
+                actions = shrunkActions
+            )
+        }
     }
 }
 
 class LTLPropositionInvalidated(
+    private val timeline: Timeline,
     val numIterations: Int,
     val states: List<Any?>,
     val origActions: List<StateSpaceAction>,
     val actions: List<StateSpaceAction>,
 ) : AssertionError() {
-    private val timeline = Timeline.currentTimeline()
-
     private val formattedStates = states.map {
         "\n   => $it"
     }
@@ -288,9 +291,8 @@ class LTLPropositionInvalidated(
 
     override val message =
         "Proposition invalidated after $numIterations runs and ${actions.size} actions (shrunk from ${origActions.size})" +
-            " with the following trace : \n\n - " + trace + "\n\n"
+                " with the following trace : \n\n - " + trace + "\n\n"
 }
-
 
 
 data class LTLTestFailure<W>(
@@ -300,7 +302,7 @@ data class LTLTestFailure<W>(
 
 // Returns trace on failure, null otherwise.
 private fun <W> propositionHoldsFor(
-    setupState: () -> Signal<W>,
+    setupState: TimelineScope.() -> Signal<W>,
     numIterations: Int,
     maxTraceLength: Int,
     clockGenerator: Arb<Duration>,
@@ -311,30 +313,30 @@ private fun <W> propositionHoldsFor(
     repeat(numIterations) {
         iterations++
 
-        val state = setupState()
-
-        val timeline = Timeline.currentTimeline()
-
         val stateTrace = mutableListOf<W>()
 
         val actionTrace = mutableListOf<StateSpaceAction>()
 
-        val iterator = sequence {
-            sample {
-                // Get initial state.
-                stateTrace += state.currentValue()
-                yield(state.currentValue())
+        val iterator = runYafrl {
+            val state = setupState()
 
-                while (true) {
-                    val action = randomStateSpaceAction(randomSource, clockGenerator, timeline)
-                    action.performAction(timeline)
-
-                    actionTrace += action
+            sequence {
+                sample {
+                    // Get initial state.
                     stateTrace += state.currentValue()
                     yield(state.currentValue())
+
+                    while (true) {
+                        val action = randomStateSpaceAction(randomSource, clockGenerator, timeline)
+                        action.performAction(timeline)
+
+                        actionTrace += action
+                        stateTrace += state.currentValue()
+                        yield(state.currentValue())
+                    }
                 }
-            }
-        }.asIterable().iterator()
+            }.asIterable().iterator()
+        }
 
         val testResult = LTL.evaluate(
             proposition,
@@ -342,7 +344,12 @@ private fun <W> propositionHoldsFor(
             maxTraceLength
         )
 
-        if (testResult == LTLResult.False) return iterations to LTLTestFailure(stateTrace, actionTrace)
+        if (testResult == LTLResult.False) {
+            return iterations to LTLTestFailure(
+                stateTrace,
+                actionTrace
+            )
+        }
     }
 
     return iterations to null

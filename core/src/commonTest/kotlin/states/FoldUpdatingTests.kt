@@ -1,12 +1,8 @@
 package states
 
 import io.github.yafrl.Signal
-import io.github.yafrl.externalEvent
 import io.github.yafrl.runYafrl
-import io.github.yafrl.timeline.Timeline
 import io.kotest.core.spec.style.FunSpec
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlin.test.assertEquals
 
 class FoldUpdatingTests: FunSpec({

@@ -11,10 +11,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import io.github.yafrl.Event
-import io.github.yafrl.externalEvent
 import io.github.yafrl.compose.YafrlCompose
 import io.github.yafrl.compose.composeState
-import io.github.yafrl.externalSignal
+import io.github.yafrl.timeline.TimelineScope
 
 class NavigationComponent {
     sealed class ScreenData {
@@ -24,19 +23,22 @@ class NavigationComponent {
     }
 
     class ViewModel(
+        scope: TimelineScope,
         counter1Clicks: Event<Unit>,
         counter2Clicks: Event<Unit>,
         currentScreen: io.github.yafrl.Signal<String>
     ) {
-        val counter1 = CounterComponent.ViewModel(counter1Clicks).count
+        val counter1 = CounterComponent.ViewModel(scope, counter1Clicks).count
 
-        val counter2 = CounterComponent.ViewModel(counter2Clicks).count
+        val counter2 = CounterComponent.ViewModel(scope, counter2Clicks).count
 
-        val screenData = currentScreen.flatMap { screen: String ->
-            if (screen == "Screen 1") {
-                counter1.map { ScreenData.Counter1(it) }
-            } else {
-                counter2.map { ScreenData.Counter2(it) }
+        val screenData = with(scope) {
+            currentScreen.flatMap { screen: String ->
+                if (screen == "Screen 1") {
+                    counter1.map { ScreenData.Counter1(it) }
+                } else {
+                    counter2.map { ScreenData.Counter2(it) }
+                }
             }
         }
     }
@@ -53,13 +55,13 @@ class NavigationComponent {
 
         val selectedState = remember { tabIndexState.map { tabs[it] } }
 
-        val tabIndex by remember { tabIndexState.composeState() }
+        val tabIndex by remember { tabIndexState.composeState(timeline) }
 
-        val viewModel = remember { ViewModel(clicks1, clicks2, selectedState) }
+        val viewModel = remember { ViewModel(this, clicks1, clicks2, selectedState) }
 
         val screenData by remember {
             viewModel.screenData
-                .composeState()
+                .composeState(timeline)
         }
 
         TabRow(

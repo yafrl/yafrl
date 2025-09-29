@@ -56,6 +56,7 @@ kotlin {
                 implementation(libs.kotlin.coroutines)
                 implementation(libs.kotest.property)
                 implementation(libs.kotest.assertions)
+                implementation(libs.serialization)
             }
         }
         val jvmTest by getting {

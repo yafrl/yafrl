@@ -1,8 +1,7 @@
 package io.github.yafrl
 
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.behaviors.Behavior
-import io.github.yafrl.behaviors.switcher
+import io.github.yafrl.timeline.HasTimeline
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.current
@@ -60,6 +59,10 @@ open class Signal<out A> @FragileYafrlAPI constructor(
         return this
     }
 
+    companion object
+}
+
+open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
     /**
      * Launches a handler that asynchronously listens to updates
      *  on the state.
@@ -67,12 +70,12 @@ open class Signal<out A> @FragileYafrlAPI constructor(
      * Comparable to [Flow.collect][kotlinx.coroutines.flow.Flow.collect].
      **/
     @FragileYafrlAPI
-    suspend fun collectAsync(collector: FlowCollector<A>) {
+    suspend fun <A> Signal<A>.collectAsync(collector: FlowCollector<A>) {
         node.collect(collector)
     }
 
     @FragileYafrlAPI
-    fun collectSync(collector: (A) -> Unit) {
+    fun <A> Signal<A>.collectSync(collector: (A) -> Unit) {
         node.collectSync(collector)
     }
 
@@ -83,17 +86,15 @@ open class Signal<out A> @FragileYafrlAPI constructor(
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <B> map(f: SampleScope.(A) -> B): Signal<B> {
-        val graph = Timeline.currentTimeline()
-
-        return Signal(graph.createMappedNode(node, f))
+    fun <A, B> Signal<A>.map(f: SampleScope.(A) -> B): Signal<B> {
+        return Signal(timeline.createMappedNode(node, f))
     }
 
-    fun <B> flatMap(f: SampleScope.(A) -> Signal<B>): Signal<B> {
+    fun <A, B> Signal<A>.flatMap(f: SampleScope.(A) -> Signal<B>): Signal<B> {
         return map(f).flatten()
     }
 
-    fun <B> switchMap(f: SampleScope.(A) -> Event<B>): Event<B> {
+    fun <A, B> Signal<A>.switchMap(f: SampleScope.(A) -> Event<B>): Event<B> {
         return map(f).switch()
     }
 
@@ -101,11 +102,9 @@ open class Signal<out A> @FragileYafrlAPI constructor(
      * Get the [Event] with just the updates associated with a [Signal].
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun updated(): Event<A> {
-        val graph = Timeline.currentTimeline()
-
+    fun <A> Signal<A>.updated(): Event<A> {
         return Event(
-            graph.createMappedNode(
+            timeline.createMappedNode(
                 parent = node,
                 initialValue = { EventState.None },
                 f = { EventState.Fired(it) }
@@ -127,9 +126,7 @@ open class Signal<out A> @FragileYafrlAPI constructor(
      * ```
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <B, C> combineWith(state2: Signal<B>, op: (A, B) -> C): Signal<C> {
-        val timeline = Timeline.currentTimeline()
-
+    fun <A, B, C> Signal<A>.combineWith(state2: Signal<B>, op: (A, B) -> C): Signal<C> {
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node),
             combine = { values ->
@@ -144,9 +141,7 @@ open class Signal<out A> @FragileYafrlAPI constructor(
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun <B, C, D> combineWith(state2: Signal<B>, state3: Signal<C>, op: (A, B, C) -> D): Signal<D> {
-        val timeline = Timeline.currentTimeline()
-
+    fun <A, B, C, D> Signal<A>.combineWith(state2: Signal<B>, state3: Signal<C>, op: (A, B, C) -> D): Signal<D> {
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node, state3.node),
             combine = { values ->
@@ -162,14 +157,12 @@ open class Signal<out A> @FragileYafrlAPI constructor(
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun <B, C, D, E> combineWith(
+    fun <A, B, C, D, E> Signal<A>.combineWith(
         state2: Signal<B>,
         state3: Signal<C>,
         state4: Signal<D>,
         op: (A, B, C, D) -> E
     ): Signal<E> {
-        val timeline = Timeline.currentTimeline()
-
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node, state3.node, state4.node),
             combine = { values ->
@@ -186,15 +179,13 @@ open class Signal<out A> @FragileYafrlAPI constructor(
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun <B, C, D, E, F> combineWith(
+    fun <A, B, C, D, E, F> Signal<A>.combineWith(
         state2: Signal<B>,
         state3: Signal<C>,
         state4: Signal<D>,
         state5: Signal<E>,
         op: (A, B, C, D, E) -> F
     ): Signal<F> {
-        val timeline = Timeline.currentTimeline()
-
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node, state3.node, state4.node, state5.node),
             combine = { values ->
@@ -211,226 +202,269 @@ open class Signal<out A> @FragileYafrlAPI constructor(
         return Signal(combined)
     }
 
-    companion object {
-        @OptIn(FragileYafrlAPI::class)
-        fun <A> const(value: A): Signal<A> {
-            return internalBindingState(lazy { value })
-        }
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> Signal.Companion.const(value: A): Signal<A> {
+        return internalBindingState(lazy { value })
+    }
 
-        /**
-         * Construct a [Signal] by suppling an [initial] value, a set of [events]
-         *  driving the updates of the [Signal], together with a [reducer] describing
-         *  how new events update the existing state.
-         *
-         *  Example:
-         *
-         * ```
-         * enum class CounterEvent {
-         *     Increment,
-         *     Decrement;
-         * }
-         *
-         * val events: Event<CounterEvent> = ...
-         *
-         * val counter: State<Int> = State.fold(0, incrementEvents) { state, event ->
-         *     when (event) {
-         *         is CounterEvent.Increment -> state + 1
-         *         is CounterEvent.Decrement -> state - 1
-         *     }
-         * }
-         * ```
-         **/
-        @OptIn(FragileYafrlAPI::class)
-        fun <A, B> fold(initial: A, events: Event<B>, reducer: SampleScope.(A, B) -> A): Signal<A> {
-            val graph = Timeline.currentTimeline()
+    /**
+     * Construct a [Signal] by suppling an [initial] value, a set of [events]
+     *  driving the updates of the [Signal], together with a [reducer] describing
+     *  how new events update the existing state.
+     *
+     *  Example:
+     *
+     * ```
+     * enum class CounterEvent {
+     *     Increment,
+     *     Decrement;
+     * }
+     *
+     * val events: Event<CounterEvent> = ...
+     *
+     * val counter: State<Int> = State.fold(0, incrementEvents) { state, event ->
+     *     when (event) {
+     *         is CounterEvent.Increment -> state + 1
+     *         is CounterEvent.Decrement -> state - 1
+     *     }
+     * }
+     * ```
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    fun <A, B> Signal.Companion.fold(initial: A, events: Event<B>, reducer: SampleScope.(A, B) -> A): Signal<A> {
+        return Signal(
+            timeline.createFoldNode(initial, events.node, reducer)
+        )
+    }
 
-            return Signal(
-                graph.createFoldNode(initial, events.node, reducer)
-            )
-        }
+    fun <A> Signal.Companion.fold(
+        initial: A,
+        vararg actions: Event<(A) -> A>
+    ) = fold(initial, Event.merged(*actions)) { state, action ->
+        action(state)
+    }
 
-        fun <A> fold(
-            initial: A,
-            vararg actions: Event<(A) -> A>
-        ) = fold(initial, Event.merged(*actions)) { state, action ->
-            action(state)
-        }
-
-
-        @OptIn(FragileYafrlAPI::class)
-        fun <A> combineAll(
-            vararg states: Signal<A>
-        ): Signal<List<A>> {
-            val timeline = Timeline.currentTimeline()
-
-            val combined = timeline.createCombinedNode(
-                parentNodes = states.map { it.node },
-                combine = { values ->
-                    values.map { it as A }
-                }
-            )
-
-            return Signal(combined)
-        }
-
-        /**
-         * Produce a new [Signal] by providing an initial value, which is held
-         *  constant until the [update] function occurs, at which point
-         *  it will hold that value until the next update.
-         */
-        @OptIn(FragileYafrlAPI::class)
-        fun <A> hold(initial: A, update: Event<A>): Signal<A> {
-            val timeline = Timeline.currentTimeline()
-
-            val state = internalBindingState(lazy { initial })
-
-            update.node.collectSync { updated ->
-                if (updated is EventState.Fired<A>) {
-                    timeline.updateNodeValue(state.node, updated.event, internal = true)
-                }
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> Signal.Companion.combineAll(
+        vararg states: Signal<A>
+    ): Signal<List<A>> {
+        val combined = timeline.createCombinedNode(
+            parentNodes = states.map { it.node },
+            combine = { values ->
+                values.map { it as A }
             }
+        )
 
-            return state
+        return Signal(combined)
+    }
+
+    /**
+     * Produce a new [Signal] by providing an initial value, which is held
+     *  constant until the [update] function occurs, at which point
+     *  it will hold that value until the next update.
+     */
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> Signal.Companion.hold(initial: A, update: Event<A>): Signal<A> {
+        val state = internalBindingState(lazy { initial })
+
+        update.node.collectSync { updated ->
+            if (updated is EventState.Fired<A>) {
+                timeline.updateNodeValue(state.node, updated.event, internal = true)
+            }
+        }
+
+        return state
+    }
+
+    operator fun Signal<Float>.plus(other: Signal<Float>): Signal<Float> {
+        return combineWith(other) { x, y -> x + y }
+    }
+
+    @JvmName("plusFloat2")
+    operator fun Signal<Float2>.plus(other: Signal<Float2>): Signal<Float2> = with(VectorSpace.float2()) {
+        return combineWith(other) { x, y ->
+            x + y
         }
     }
-}
 
-operator fun Signal<Float>.plus(other: Signal<Float>): Signal<Float> {
-    return combineWith(other) { x, y -> x + y }
-}
-
-@JvmName("plusFloat2")
-operator fun Signal<Float2>.plus(other: Signal<Float2>): Signal<Float2> = with(VectorSpace.float2()) {
-    return combineWith(other) { x, y ->
-        x + y
-    }
-}
-
-@JvmName("plusFloat23")
-operator fun Signal<Float3>.plus(other: Signal<Float3>): Signal<Float3> = with(VectorSpace.float3()) {
-    return combineWith(other) { x, y ->
-        x + y
-    }
-}
-
-/**
- * Utility to convert a [Signal] into a behavior whose values are interpreted as the
- *  piecewise function of the values of the [Signal].
- **/
-@OptIn(FragileYafrlAPI::class)
-inline fun <reified A> Signal<A>.asBehavior(): Behavior<A> {
-    if (VectorSpace.hasInstance<A>()) {
-        // Use a switcher so we can get an exact polynomial integral piecewise.
-        return map { Behavior.const(it) }.switcher()
-    } else {
-        // If no instance exists, just use sampled so we do not try to get an
-        // instance that does not exist at runtime.
-        return Behavior.sampled { node.current() }
-    }
-}
-
-/**
- * Constructs a flattened [Event] from a changing [Signal] of events over time.
- *
- * Compare with switchDyn in reflex.
- **/
-@OptIn(FragileYafrlAPI::class)
-fun <A> Signal<Event<A>>.switch(): Event<A> {
-    val resultEvents = internalBroadcastEvent<A>()
-
-    var currentEvent = node.current()
-    val eventListener = { event: EventState<A> ->
-        if (event is EventState.Fired<A>) resultEvents.send(event.event)
+    @JvmName("plusFloat23")
+    operator fun Signal<Float3>.plus(other: Signal<Float3>): Signal<Float3> = with(VectorSpace.float3()) {
+        return combineWith(other) { x, y ->
+            x + y
+        }
     }
 
-    currentEvent.node.collectSync(eventListener)
+    /**
+     * Constructs a flattened [Event] from a changing [Signal] of events over time.
+     *
+     * Compare with switchDyn in reflex.
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> Signal<Event<A>>.switch(): Event<A> {
+        val resultEvents = internalBroadcastEvent<A>()
 
-    node.collectSync { newEvents ->
-        currentEvent.node.unregisterSync(eventListener)
-        currentEvent = newEvents
-        newEvents.node.collectSync(eventListener)
+        var currentEvent = node.current(timeline)
+        val eventListener = { event: EventState<A> ->
+            if (event is EventState.Fired<A>) resultEvents.send(event.event)
+        }
+
+        currentEvent.node.collectSync(eventListener)
+
+        node.collectSync { newEvents ->
+            currentEvent.node.unregisterSync(eventListener)
+            currentEvent = newEvents
+            newEvents.node.collectSync(eventListener)
+        }
+
+        return resultEvents
     }
 
-    return resultEvents
-}
+    /**
+     * Construct a `State<A>` from a nested `State<State<A>>` by updating whenever
+     *  either the inner or outer [Signal] updates.
+     *
+     * Compare with the Monad instance of [Dynamic](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#t:Dynamic) in [reflex-frp](https://reflex-frp.org/).
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> Signal<Signal<A>>.flatten(): Signal<A> {
+        var currentState = node.current(timeline)
 
-/**
- * Construct a `State<A>` from a nested `State<State<A>>` by updating whenever
- *  either the inner or outer [Signal] updates.
- *
- * Compare with the Monad instance of [Dynamic](https://hackage.haskell.org/package/reflex-0.9.3.3/docs/Reflex-Class.html#t:Dynamic) in [reflex-frp](https://reflex-frp.org/).
- **/
-@OptIn(FragileYafrlAPI::class)
-fun <A> Signal<Signal<A>>.flatten(): Signal<A> {
-    val timeline = Timeline.currentTimeline()
+        val flattened = internalBindingState(lazy { currentState.node.current(timeline) })
 
-    var currentState = node.current()
-
-    val flattened = internalBindingState(lazy { currentState.node.current() })
-
-    timeline.graph.addChild(currentState.node.id, flattened.node.id)
-
-    var collector: ((A) -> Unit)? = null
-
-    // Note: Order of registration for these collects is important here.
-
-    collectSync { newState ->
-        // Remove the old collector when the state changes.
-        collector?.let { currentState.node.unregisterSync(it) }
-
-        // Remove the old parent-child relationship
-        timeline.graph.removeChild(currentState.node.id, flattened.node.id)
-
-        // Update the current value to the new state's current value.
-        currentState = newState
-
-        // Add in the new parent-child relationship
         timeline.graph.addChild(currentState.node.id, flattened.node.id)
 
-        // Note: Needs to be updates to the raw value so we don't invoke a new frame.
-        timeline.updateNodeValue(flattened.node, currentState.node.rawValue, internal = true)
+        var collector: ((A) -> Unit)? = null
 
-        // Collect on value updates to the new state
+        // Note: Order of registration for these collects is important here.
+
+        collectSync { newState ->
+            // Remove the old collector when the state changes.
+            collector?.let { currentState.node.unregisterSync(it) }
+
+            // Remove the old parent-child relationship
+            timeline.graph.removeChild(currentState.node.id, flattened.node.id)
+
+            // Update the current value to the new state's current value.
+            currentState = newState
+
+            // Add in the new parent-child relationship
+            timeline.graph.addChild(currentState.node.id, flattened.node.id)
+
+            // Note: Needs to be updates to the raw value so we don't invoke a new frame.
+            timeline.updateNodeValue(flattened.node, currentState.node.rawValue, internal = true)
+
+            // Collect on value updates to the new state
+            collector = { newValue ->
+                timeline.updateNodeValue(flattened.node, newValue, internal = true)
+            }
+            currentState.collectSync(collector!!)
+        }
+
+        // Collect on value updates to the initial state.
         collector = { newValue ->
             timeline.updateNodeValue(flattened.node, newValue, internal = true)
         }
-        currentState.collectSync(collector!!)
+        currentState.collectSync(collector)
+
+        return flattened
     }
 
-    // Collect on value updates to the initial state.
-    collector = { newValue ->
-        timeline.updateNodeValue(flattened.node, newValue, internal = true)
+    /**
+     * Builds a [Signal] that updates with a list of all input states
+     *  whenever any of the input states updates.
+     *
+     * Example usage:
+     *
+     * ```
+     * val stateA = bindingState("1")
+     *
+     * val stateB = bindingState("2")
+     *
+     * val combined = listOf(stateA, stateB).sequenceState()
+     *
+     * assert(combined.value == listOf("1", "2")
+     *
+     * stateA.value = "A"
+     *
+     * assert(combined.value == listOf("A", "2")
+     * ```
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> List<Signal<A>>.sequenceState(): Signal<List<A>> {
+        return Signal.combineAll(
+            *this.toTypedArray()
+        )
     }
-    currentState.collectSync(collector)
 
-    return flattened
-}
+    /**
+     * Construct an external [BindingSignal] -- which is a [Signal] whose value can be updated to new
+     *  values arbitrarily.
+     *
+     * external [BindingSignal]s can be thought of (together with external [BroadcastEvent]s)
+     *  as the "inputs" to the Yafrl FRP state graph, and thus should typically only be used
+     *  as a means of integrating with external systems -- rather than for business logic.
+     *
+     * If you need a [BindingSignal] for internal use to implement some buisness logic,
+     *  this practice is generally discouraged, but [internalBindingState] can be used
+     *  for this purpose if it is necessary.
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    inline fun <reified A> externalSignal(
+        value: A,
+        label: String? = null
+    ): BindingSignal<A> = externalSignal(value, typeOf<A>(), label)
 
-/**
- * Builds a [Signal] that updates with a list of all input states
- *  whenever any of the input states updates.
- *
- * Example usage:
- *
- * ```
- * val stateA = bindingState("1")
- *
- * val stateB = bindingState("2")
- *
- * val combined = listOf(stateA, stateB).sequenceState()
- *
- * assert(combined.value == listOf("1", "2")
- *
- * stateA.value = "A"
- *
- * assert(combined.value == listOf("A", "2")
- * ```
- **/
-@OptIn(FragileYafrlAPI::class)
-fun <A> List<Signal<A>>.sequenceState(): Signal<List<A>> {
-    return Signal.combineAll(
-        *this.toTypedArray()
-    )
+    @OptIn(FragileYafrlAPI::class)
+    fun <A> externalSignal(value: A, kType: KType, label: String? = null): BindingSignal<A> {
+        val state = internalBindingState(lazy { value }, label)
+
+        timeline.externalNodes[state.node.id] = ExternalNode(kType, state.node)
+
+        return state
+    }
+
+    /**
+     * Internal version of [externalSignal] used for states which should be considered
+     * "internal" implementation details of the graph.
+     **/
+    @FragileYafrlAPI
+    fun <A> internalBindingState(value: Lazy<A>, label: String? = null): BindingSignal<A> {
+        return BindingSignal(
+            timeline,
+            timeline.createNode(
+                value = value,
+                label = label
+            )
+        )
+    }
+
+    /**
+     * Method version of [Signal.fold], for easier use in method chains.
+     **/
+    fun <A, B> Event<A>.scan(initial: B, reducer: SampleScope.(B, A) -> B): Signal<B> {
+        return Signal.fold(initial, this, reducer)
+    }
+
+    /** Method version of [Signal.hold].  */
+    fun <A> Event<A>.hold(initial: @UnsafeVariance A): Signal<A> {
+        return Signal.hold(initial, this)
+    }
+
+    /**
+     * Takes and event, and constructs a moving window of [size]
+     *  when events occur.
+     *
+     * This is useful for things like calculating moving averages
+     *  for the values of an [Event].
+     **/
+    fun <A> Event<A>.window(size: Int): Event<List<A>> = Signal.fold(listOf<A>(), this) { window, newValue ->
+        if (window.size < size) {
+            window + listOf(newValue)
+        } else {
+            window.drop(1) + listOf(newValue)
+        }
+    }
+        .updated()
 }
 
 /**
@@ -439,59 +473,13 @@ fun <A> List<Signal<A>>.sequenceState(): Signal<List<A>> {
  * Constructed with the [externalSignal] function.
  **/
 class BindingSignal<A> internal constructor(
+    private val timeline: Timeline,
     node: Node<A>
 ): Signal<A>(node) {
     @OptIn(FragileYafrlAPI::class)
     var value: A
-        get() = super.node.current()
+        get() = super.node.current(timeline)
         set(value) {
-            val graph = Timeline.currentTimeline()
-
-            return graph.updateNodeValue(node, value)
+            return timeline.updateNodeValue(node, value)
         }
-}
-
-/**
- * Construct an external [BindingSignal] -- which is a [Signal] whose value can be updated to new
- *  values arbitrarily.
- *
- * external [BindingSignal]s can be thought of (together with external [BroadcastEvent]s)
- *  as the "inputs" to the Yafrl FRP state graph, and thus should typically only be used
- *  as a means of integrating with external systems -- rather than for business logic.
- *
- * If you need a [BindingSignal] for internal use to implement some buisness logic,
- *  this practice is generally discouraged, but [internalBindingState] can be used
- *  for this purpose if it is necessary.
- **/
-@OptIn(FragileYafrlAPI::class)
-inline fun <reified A> externalSignal(
-    value: A,
-    label: String? = null
-): BindingSignal<A> = externalSignal(value, typeOf<A>(), label)
-
-@OptIn(FragileYafrlAPI::class)
-fun <A> externalSignal(value: A, kType: KType, label: String? = null): BindingSignal<A> {
-    val timeline = Timeline.currentTimeline()
-
-    val state = internalBindingState(lazy { value }, label)
-
-    timeline.externalNodes[state.node.id] = ExternalNode(kType, state.node)
-
-    return state
-}
-
-/**
- * Internal version of [externalSignal] used for states which should be considered
- * "internal" implementation details of the graph.
- **/
-@FragileYafrlAPI
-fun <A> internalBindingState(value: Lazy<A>, label: String? = null): BindingSignal<A> {
-    val graph = Timeline.currentTimeline()
-
-    return BindingSignal(
-        graph.createNode(
-            value = value,
-            label = label
-        )
-    )
 }

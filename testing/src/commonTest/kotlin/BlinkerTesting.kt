@@ -1,12 +1,10 @@
+
 import io.github.yafrl.BroadcastEvent
 import io.github.yafrl.Event
 import io.github.yafrl.Signal
-import io.github.yafrl.behaviors.not
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.asBehavior
-import io.github.yafrl.externalEvent
-import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.testing.testPropositionHoldsFor
+import io.github.yafrl.timeline.TimelineScope
 import io.kotest.core.spec.style.FunSpec
 
 data class Button(
@@ -19,7 +17,7 @@ data class Blinker(
     val lightOn: Signal<Boolean>
 ) {
     companion object {
-        fun new() = run {
+        fun new(scope: TimelineScope) = with(scope) {
             val buttonClicks = externalEvent<Unit>("button_click")
 
             val isBlinking = Signal.fold(false, buttonClicks) { state, _ -> !state }
@@ -31,7 +29,7 @@ data class Blinker(
                 buttonClicks
             )
 
-            val clock = Timeline.currentTimeline().clock
+            val clock = timeline.clock
 
             // The light should toggle when it is blinking
             val toggleBlink = clock
@@ -54,7 +52,7 @@ data class Blinker(
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun snapshot() = run {
+    fun snapshot(scope: TimelineScope) = with(scope) {
         button.text.combineWith(
             button.clicks.asSignal(),
             lightOn
@@ -74,8 +72,7 @@ class BlinkerTesting : FunSpec ({
     test("Blinker specification") {
         testPropositionHoldsFor(
             setupState = {
-                Timeline.initializeTimeline()
-                Blinker.new().snapshot()
+                Blinker.new(this).snapshot(this)
             },
             proposition = {
                 val paused = run {

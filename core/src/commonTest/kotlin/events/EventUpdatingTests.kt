@@ -4,15 +4,12 @@ import io.github.yafrl.*
 import io.github.yafrl.EventState
 import io.github.yafrl.annotations.ExperimentalYafrlAPI
 import io.github.yafrl.annotations.FragileYafrlAPI
-import io.github.yafrl.behaviors.not
 import io.github.yafrl.behaviors.plus
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.current
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.retry
 import io.kotest.core.spec.style.FunSpec
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlin.test.assertEquals
@@ -23,28 +20,22 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(FragileYafrlAPI::class, ExperimentalYafrlAPI::class)
 class EventUpdatingTests : FunSpec({
-    beforeTest {
-        Timeline.initializeTimeline()
-    }
-
     test("Event updates immediately") {
-        val timeline = Timeline.currentTimeline()
+        runYafrl {
+            val events = externalEvent<Int>()
 
-        val events = externalEvent<Int>()
+            events.send(1)
 
-        events.send(1)
-
-        assertEquals(
-            EventState.Fired(1),
-            timeline.fetchNodeValue(events.node)
-        )
+            assertEquals(
+                EventState.Fired(1),
+                timeline.fetchNodeValue(events.node)
+            )
+        }
     }
 
     @OptIn(FragileYafrlAPI::class)
     test("Mapped event updates if collected") {
-        runTest {
-            val timeline = Timeline.currentTimeline()
-
+        runYafrl {
             val events = externalEvent<Int>()
 
             val mappedEvents = events
@@ -64,29 +55,33 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("Mapped event is lazy") {
-        val events = externalEvent<Int>()
+        runYafrl {
+            val events = externalEvent<Int>()
 
-        val mappedEvents = events
-            .map { it + 2 }
+            val mappedEvents = events
+                .map { it + 2 }
 
-        events.send(1)
+            events.send(1)
 
-        assertEquals(
-            EventState.None,
-            mappedEvents.node.rawValue
-        )
+            assertEquals(
+                EventState.None,
+                mappedEvents.node.rawValue
+            )
+        }
     }
 
     test("filtered event does not emit on filtered elements") {
-        val events = externalEvent<Int>()
+        runYafrl {
+            val events = externalEvent<Int>()
 
-        // Should only let event events through.
-        val filtered = events
-            .filter { it % 2 == 0 }
+            // Should only let event events through.
+            val filtered = events
+                .filter { it % 2 == 0 }
 
-        events.send(1)
+            events.send(1)
 
-        assertEquals(EventState.None, filtered.node.rawValue)
+            assertEquals(EventState.None, filtered.node.rawValue)
+        }
     }
 
     test("mapNotNull emits only non null elements") {
@@ -113,145 +108,145 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("filtered event using condition") {
-        Timeline.initializeTimeline(debug = true)
+        runYafrl {
+            val events = externalEvent<Unit>("events")
 
-        val timeline = Timeline.currentTimeline()
+            var condition = false
 
-        val events = externalEvent<Unit>("events")
+            val filtered = events
+                .filter { condition }
 
-        var condition = false
+            println("Sending event")
+            events.send(Unit)
 
-        val filtered = events
-            .filter { condition }
+            assertEquals(EventState.None, timeline.fetchNodeValue(filtered.node))
 
-        println("Sending event")
-        events.send(Unit)
+            println("Setting condition to true")
+            condition = true
 
-        assertEquals(EventState.None, timeline.fetchNodeValue(filtered.node))
+            println("Sending again")
+            events.send(Unit)
 
-        println("Setting condition to true")
-        condition = true
-
-        println("Sending again")
-        events.send(Unit)
-
-        assertEquals(EventState.Fired(Unit), timeline.fetchNodeValue(filtered.node))
+            assertEquals(EventState.Fired(Unit), timeline.fetchNodeValue(filtered.node))
+        }
     }
 
     test("Event should not be fired on next tick") {
-        val event1 = externalEvent<Unit>()
+        runYafrl {
+            val event1 = externalEvent<Unit>()
 
-        val event2 = externalEvent<Unit>()
+            val event2 = externalEvent<Unit>()
 
-        // Emit an event
-        event1.send(Unit)
+            // Emit an event
+            event1.send(Unit)
 
-        // In this frame, we should see the event has fired.
-        assertEquals(EventState.Fired(Unit), event1.node.rawValue)
+            // In this frame, we should see the event has fired.
+            assertEquals(EventState.Fired(Unit), event1.node.rawValue)
 
-        // Simulate a new frame by emitting a second event
-        event2.send(Unit)
+            // Simulate a new frame by emitting a second event
+            event2.send(Unit)
 
-        // The first event should no longer be "fired" in this frame.
-        assertEquals(EventState.None, event1.node.rawValue)
+            // The first event should no longer be "fired" in this frame.
+            assertEquals(EventState.None, event1.node.rawValue)
+        }
     }
 
     test("Mapped event should not be fired on next tick") {
-        val timeline = Timeline.currentTimeline()
+        runYafrl {
+            val event1 = externalEvent<Unit>()
 
-        val event1 = externalEvent<Unit>()
+            val mapped = event1.map { "test" }
 
-        val mapped = event1.map { "test" }
+            val event2 = externalEvent<Unit>()
 
-        val event2 = externalEvent<Unit>()
+            // Emit an event
+            event1.send(Unit)
 
-        // Emit an event
-        event1.send(Unit)
+            // In this frame, we should see the event has fired.
+            assertEquals(EventState.Fired("test"), timeline.fetchNodeValue(mapped.node))
 
-        // In this frame, we should see the event has fired.
-        assertEquals(EventState.Fired("test"), timeline.fetchNodeValue(mapped.node))
+            // Simulate a new frame by emitting a second event
+            event2.send(Unit)
 
-        // Simulate a new frame by emitting a second event
-        event2.send(Unit)
-
-        // The first event should no longer be "fired" in this frame.
-        assertEquals(EventState.None, mapped.node.rawValue)
+            // The first event should no longer be "fired" in this frame.
+            assertEquals(EventState.None, mapped.node.rawValue)
+        }
     }
 
     test("Default merge handling is Leftmost") {
-        val graph = Timeline.currentTimeline()
+        runYafrl {
+            val count = externalEvent<Int>()
 
-        val count = externalEvent<Int>()
+            val fizz = count
+                .filter { it % 3 == 0 }
+                .map { "fizz" }
 
-        val fizz = count
-            .filter { it % 3 == 0 }
-            .map { "fizz" }
+            val buzz = count
+                .filter { it % 5 == 0 }
+                .map { "buzz" }
 
-        val buzz = count
-            .filter { it % 5 == 0 }
-            .map { "buzz" }
+            val fizzbuzz = Event.merged(fizz, buzz)
 
-        val fizzbuzz = Event.merged(fizz, buzz)
+            count.send(3)
+            assertEquals(
+                EventState.Fired("fizz"),
+                timeline.fetchNodeValue(fizzbuzz.node)
+            )
 
-        count.send(3)
-        assertEquals(
-            EventState.Fired("fizz"),
-            graph.fetchNodeValue(fizzbuzz.node)
-        )
+            count.send(5)
+            assertEquals(
+                EventState.Fired("buzz"),
+                timeline.fetchNodeValue(fizzbuzz.node)
+            )
 
-        count.send(5)
-        assertEquals(
-            EventState.Fired("buzz"),
-            graph.fetchNodeValue(fizzbuzz.node)
-        )
-
-        count.send(15)
-        assertEquals(
-            EventState.Fired("fizz"),
-            graph.fetchNodeValue(fizzbuzz.node)
-        )
+            count.send(15)
+            assertEquals(
+                EventState.Fired("fizz"),
+                timeline.fetchNodeValue(fizzbuzz.node)
+            )
+        }
     }
 
     test("Custom merge works for fizzbuzz") {
-        val graph = Timeline.currentTimeline()
+        runYafrl {
+            val count = externalEvent<Int>()
 
-        val count = externalEvent<Int>()
+            val fizz = count
+                .filter { it % 3 == 0 }
+                .map { "fizz" }
 
-        val fizz = count
-            .filter { it % 3 == 0 }
-            .map { "fizz" }
+            val buzz = count
+                .filter { it % 5 == 0 }
+                .map { "buzz" }
 
-        val buzz = count
-            .filter { it % 5 == 0 }
-            .map { "buzz" }
+            val append = MergeStrategy { values ->
+                values.joinToString("") { it }
+            }
 
-        val append = MergeStrategy { values ->
-            values.joinToString("") { it }
+            val fizzbuzz = Event.mergedWith(
+                append,
+                fizz,
+                buzz
+            )
+
+            count.send(3)
+            assertEquals(
+                EventState.Fired("fizz"),
+                timeline.fetchNodeValue(fizzbuzz.node)
+            )
+
+            count.send(5)
+            assertEquals(
+                EventState.Fired("buzz"),
+                timeline.fetchNodeValue(fizzbuzz.node)
+            )
+
+            count.send(15)
+            assertEquals(
+                EventState.Fired("fizzbuzz"),
+                timeline.fetchNodeValue(fizzbuzz.node)
+            )
         }
-
-        val fizzbuzz = Event.mergedWith(
-            append,
-            fizz,
-            buzz
-        )
-
-        count.send(3)
-        assertEquals(
-            EventState.Fired("fizz"),
-            graph.fetchNodeValue(fizzbuzz.node)
-        )
-
-        count.send(5)
-        assertEquals(
-            EventState.Fired("buzz"),
-            graph.fetchNodeValue(fizzbuzz.node)
-        )
-
-        count.send(15)
-        assertEquals(
-            EventState.Fired("fizzbuzz"),
-            graph.fetchNodeValue(fizzbuzz.node)
-        )
     }
 
     test("Event does not fire if gated") {
@@ -353,20 +348,20 @@ class EventUpdatingTests : FunSpec({
 
             event.send(Unit)
 
-            assertEquals(EventState.Fired(Unit), throttled.node.current())
+            assertEquals(EventState.Fired(Unit), throttled.node.current(timeline))
         }
     }
 
     test("Async events eventually emit") {
-        val clicks = externalEvent<Unit>()
-
-        val response = onEvent(clicks) {
-            delay(100.milliseconds)
-            42
-        }
-            .hold(0)
-
         runYafrl {
+            val clicks = externalEvent<Unit>()
+
+            val response = onEvent(clicks) {
+                delay(100.milliseconds)
+                42
+            }
+                .hold(0)
+
             clicks.send(Unit)
 
             eventually {
@@ -377,11 +372,7 @@ class EventUpdatingTests : FunSpec({
 
     test("Impulse behaves as expected") {
         runYafrl {
-            val event2 = externalEvent<Duration>()
-
-            Timeline.initializeTimeline(initClock = {
-                event2
-            })
+            val event2 = timeline.clock as BroadcastEvent
 
             val event1 = externalEvent<Unit>()
 
@@ -457,36 +448,32 @@ class EventUpdatingTests : FunSpec({
     }
 
     test("mergeAll updates if either of the events updates") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val event1 = externalEvent<Int>()
+            val event2 = externalEvent<Int>()
 
-        val timeline = Timeline.currentTimeline()
+            val merged = Event.mergeAll(event1, event2)
 
-        val event1 = externalEvent<Int>()
-        val event2 = externalEvent<Int>()
+            event1.send(1)
 
-        val merged = Event.mergeAll(event1, event2)
+            assertEquals(EventState.Fired(listOf(1)), timeline.fetchNodeValue(merged.node))
 
-        event1.send(1)
+            event2.send(2)
 
-        assertEquals(EventState.Fired(listOf(1)), timeline.fetchNodeValue(merged.node))
-
-        event2.send(2)
-
-        assertEquals(EventState.Fired(listOf(2)), timeline.fetchNodeValue(merged.node))
+            assertEquals(EventState.Fired(listOf(2)), timeline.fetchNodeValue(merged.node))
+        }
     }
 
     test("mergeAll updates with all events") {
-        Timeline.initializeTimeline()
+        runYafrl {
+            val event1 = externalEvent<Int>()
+            val event2 = event1.map { it + 1 }
 
-        val timeline = Timeline.currentTimeline()
+            val merged = Event.mergeAll(event1, event2)
 
-        val event1 = externalEvent<Int>()
-        val event2 = event1.map { it + 1 }
+            event1.send(1)
 
-        val merged = Event.mergeAll(event1, event2)
-
-        event1.send(1)
-
-        assertEquals(EventState.Fired(listOf(1, 2)), timeline.fetchNodeValue(merged.node))
+            assertEquals(EventState.Fired(listOf(1, 2)), timeline.fetchNodeValue(merged.node))
+        }
     }
 })
