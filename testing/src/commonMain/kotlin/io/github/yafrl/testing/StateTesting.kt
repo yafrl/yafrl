@@ -91,7 +91,9 @@ internal fun randomStateSpaceAction(
         // Resolve the arbitrary instance from the node type.
         val arbitrary = if (type == typeOf<Duration>()) {
             clockGenerator
-        } else {
+        } else if (type == typeOf<Unit>()) {
+            arbitrary { Unit }
+        } else  {
             resolve(type)
         }
 
