@@ -1,5 +1,6 @@
 package io.github.yafrl.timeline.debugging
 
+import io.github.yafrl.CallSite
 import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.BehaviorIDSerializer
 import io.github.yafrl.timeline.NodeID
@@ -186,6 +187,7 @@ object ExternalEventSerializer : KSerializer<ExternalEvent> {
             val mapDesc = MapSerializer(BehaviorIDSerializer, TaggedAnySerializer).descriptor
             element("behaviorsSampled", mapDesc)
             element("externalAction", ExternalActionSerializer.descriptor)
+            element("callSite", CallSite.serializer().descriptor)
         }
 
     override fun serialize(encoder: Encoder, value: ExternalEvent) {
@@ -193,6 +195,9 @@ object ExternalEventSerializer : KSerializer<ExternalEvent> {
         val c = encoder.beginStructure(descriptor)
         c.encodeSerializableElement(descriptor, 0, mapSer, value.behaviorsSampled)
         c.encodeSerializableElement(descriptor, 1, ExternalActionSerializer, value.externalAction)
+        if (value.callSite != null) {
+            c.encodeSerializableElement(descriptor, 2, CallSite.serializer(), value.callSite)
+        }
         c.endStructure(descriptor)
     }
 
@@ -202,12 +207,14 @@ object ExternalEventSerializer : KSerializer<ExternalEvent> {
 
         var behaviors: Map<BehaviorID, Any?>? = null
         var action: ExternalAction? = null
+        var callSite: CallSite? = null
 
         loop@ while (true) {
             when (val ix = c.decodeElementIndex(descriptor)) {
                 CompositeDecoder.DECODE_DONE -> break@loop
                 0 -> behaviors = c.decodeSerializableElement(descriptor, 0, mapSer)
                 1 -> action = c.decodeSerializableElement(descriptor, 1, ExternalActionSerializer)
+                2 -> callSite = c.decodeSerializableElement(descriptor, 2, CallSite.serializer())
                 else -> throw SerializationException("Unknown index $ix")
             }
         }
@@ -215,7 +222,8 @@ object ExternalEventSerializer : KSerializer<ExternalEvent> {
 
         return ExternalEvent(
             behaviorsSampled = behaviors ?: emptyMap(),
-            externalAction = action ?: throw SerializationException("Missing 'externalAction'")
+            externalAction = action ?: throw SerializationException("Missing 'externalAction'"),
+            callSite = callSite
         )
     }
 }

@@ -1,5 +1,6 @@
 package io.github.yafrl.timeline.debugging
 
+import io.github.yafrl.CallSite
 import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.Node
@@ -13,7 +14,8 @@ import kotlin.reflect.KType
  **/
 data class ExternalEvent(
     val behaviorsSampled: Map<BehaviorID, Any?>,
-    val externalAction: ExternalAction
+    val externalAction: ExternalAction,
+    val callSite: CallSite?
 )
 
 sealed class ExternalAction {

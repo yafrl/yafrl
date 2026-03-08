@@ -18,6 +18,19 @@ import io.github.yafrl.Signal
 import io.github.yafrl.compose.YafrlCompose
 import io.github.yafrl.compose.composeState
 import io.github.yafrl.timeline.TimelineScope
+import io.github.yafrl.timeline.logging.EventLogger
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+
+val appFormat = Json {
+    useArrayPolymorphism = true
+
+    serializersModule = SerializersModule {
+        polymorphic(Any::class, String::class, String.serializer())
+        polymorphic(Any::class, Unit::class, Unit.serializer())
+    }
+}
 
 object CounterComponent {
     class ViewModel(
@@ -33,7 +46,8 @@ object CounterComponent {
 
     @Composable
     fun View() = YafrlCompose(
-        timeTravelDebugger = true
+        timeTravelDebugger = true,
+        eventLogger = EventLogger.File("/tmp/counter_log.txt", appFormat)
     ) {
         val clicks = remember { externalEvent<Unit>() }
         val viewModel = remember { ViewModel(this, clicks) }

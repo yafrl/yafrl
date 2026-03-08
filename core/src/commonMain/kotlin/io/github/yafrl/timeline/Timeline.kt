@@ -1,11 +1,13 @@
 package io.github.yafrl.timeline
 
+import io.github.yafrl.CallSite
 import io.github.yafrl.Event
 import io.github.yafrl.Signal
 import io.github.yafrl.EventState
 import io.github.yafrl.SampleScope
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.behaviors.Behavior
+import io.github.yafrl.caller
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.debugging.ExternalAction
 import io.github.yafrl.timeline.logging.EventLogger
@@ -336,7 +338,8 @@ class Timeline(
         node: Node<Any?>,
         newValue: Any?,
         internal: Boolean = false,
-        resetting: Boolean = false
+        resetting: Boolean = false,
+        callSite: CallSite? = caller()
     ) = synchronized(this) {
         if (!resetting && !internal) {
             behaviorsSampled = mutableMapOf()
@@ -384,7 +387,8 @@ class Timeline(
                         ExternalAction.FireEvent(node.id, (node.rawValue as EventState.Fired<*>).event)
                     } else {
                         ExternalAction.UpdateValue(node.id, node.rawValue)
-                    }
+                    },
+                    callSite
                 )
             )
 

@@ -21,6 +21,7 @@ import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.current
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.TimelineScope
+import io.github.yafrl.timeline.logging.EventLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -41,6 +42,7 @@ fun YafrlCompose(
     debugLogs: Boolean = false,
     showFPS: Boolean = false,
     lazy: Boolean = true,
+    eventLogger: EventLogger = EventLogger.Disabled,
     body: @Composable TimelineScope.() -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -53,6 +55,7 @@ fun YafrlCompose(
             debug = debugLogs,
             timeTravel = timeTravelDebugger,
             lazy = lazy,
+            eventLogger = eventLogger,
             initClock = { pausedState ->
                 scope.launch {
                     clockInitialized = true

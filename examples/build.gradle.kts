@@ -38,6 +38,7 @@ kotlin {
                 implementation(project(":yafrl-compose"))
                 implementation(libs.arrow.optics)
                 implementation(libs.kotest.property)
+                implementation(libs.serialization)
             }
         }
 
