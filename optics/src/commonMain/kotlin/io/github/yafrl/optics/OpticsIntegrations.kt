@@ -48,15 +48,6 @@ fun <A, B> BindingSignal<A>.focus(timeline: Timeline, lens: Lens<A, B>): Binding
 
 typealias SignalFunction<A, B> = (Signal<A>) -> Signal<B>
 
-
-// This would correspond to "Costrong" I think
-fun <A, B> SignalFunction<A, A>.focus(timeline: Timeline, lens: Lens<A, B>): SignalFunction<B, B> = { input ->
-    with(timeline.timelineScope) {
-        val res = input.map { lens.set(it, sample { input.currentValue() }) }
-        res
-    }
-}
-
 /**
  * Embed a signal function into a larger signal function using a lens.
  **/
