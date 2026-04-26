@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.atomicfu)
     alias(libs.plugins.dokka)
-    alias(libs.plugins.kotest)
+    alias(libs.plugins.purity)
 }
 
 repositories {
@@ -57,6 +57,7 @@ kotlin {
                 implementation(libs.kotest.property)
                 implementation(libs.kotest.assertions)
                 implementation(libs.serialization)
+                // implementation(libs.purity.annotations)
             }
         }
         val jvmTest by getting {

@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - kotlinx.coroutines integration"
@@ -10,7 +11,6 @@ plugins {
     alias(libs.plugins.maven)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
-    alias(libs.plugins.kotest)
 }
 
 repositories {
@@ -23,8 +23,8 @@ tasks.withType<Test>().configureEach {
 
 kotlin {
     jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
         }
     }
     js(IR).browser() {

@@ -14,13 +14,13 @@ import org.jetbrains.dokka.gradle.tasks.DokkaBaseTask
 
 buildscript {
     dependencies {
-        classpath("org.jetbrains.dokka:dokka-base:2.0.0")
+        classpath("org.jetbrains.dokka:dokka-base:2.2.0")
     }
 }
 
 plugins {
     kotlin("multiplatform") version libs.versions.kotlin.get()
-    id("org.jetbrains.dokka") version "2.0.0"
+    id("org.jetbrains.dokka") version "2.2.0"
     id("com.vanniktech.maven.publish") version "0.31.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.1"
 }
@@ -30,6 +30,7 @@ allprojects {
     group = "io.github.yafrl"
 
     repositories {
+        mavenLocal()
         mavenCentral()
         google()
     }
@@ -94,7 +95,7 @@ subprojects {
             pom {
                 name.set(project.name)
                 description.set(
-                    project.findProperty("projectDescription") as String
+                    project.provider { project.findProperty("projectDescription") as? String ?: "" }
                 )
                 inceptionYear.set("2025")
                 url.set("https://github.com/yafrl/yafrl/")

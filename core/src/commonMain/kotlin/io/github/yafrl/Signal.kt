@@ -472,7 +472,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
  *
  * Constructed with the [externalSignal] function.
  **/
-class BindingSignal<A> internal constructor(
+class BindingSignal<A> @OptIn(FragileYafrlAPI::class) internal constructor(
     private val timeline: Timeline,
     node: Node<A>
 ): Signal<A>(node) {

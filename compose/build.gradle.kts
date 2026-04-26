@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.maven)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
+    alias(libs.plugins.purity)
 }
 
 repositories {
@@ -34,6 +35,7 @@ kotlin {
                 implementation(compose.material)
                 // TODO: Probably want to split the stuff that depends on this into another module.
                 implementation(libs.arrow.optics)
+                // implementation(libs.purity.annotations)
             }
         }
         val jvmTest by getting {

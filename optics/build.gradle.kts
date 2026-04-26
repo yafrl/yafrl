@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.maven)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
-    alias(libs.plugins.kotest)
+    alias(libs.plugins.purity)
 }
 
 repositories {
@@ -48,6 +48,7 @@ kotlin {
             dependencies {
                 implementation(project(":yafrl-core"))
                 implementation(libs.arrow.optics)
+                // implementation(libs.purity.annotations)
             }
         }
         val commonTest by getting {

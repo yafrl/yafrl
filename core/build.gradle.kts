@@ -1,5 +1,5 @@
 import com.vanniktech.maven.publish.SonatypeHost
-import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - core library"
@@ -10,8 +10,8 @@ plugins {
     alias(libs.plugins.dokka)
     alias(libs.plugins.kover)
     alias(libs.plugins.maven)
-    alias(libs.plugins.kotest)
     alias(libs.plugins.serialization)
+    alias(libs.plugins.purity)
 }
 
 tasks.withType<Test>().configureEach {
@@ -20,8 +20,8 @@ tasks.withType<Test>().configureEach {
 
 kotlin {
     jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_11)
         }
     }
     js(IR) {
@@ -64,6 +64,7 @@ kotlin {
                 implementation(libs.kotlin.datetime)
                 implementation(libs.serialization)
                 implementation(libs.kotlinx.io)
+                // implementation(libs.purity.annotations)
             }
         }
         val commonTest by getting {
