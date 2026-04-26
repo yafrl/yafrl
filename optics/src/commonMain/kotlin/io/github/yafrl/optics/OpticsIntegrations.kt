@@ -6,6 +6,8 @@ import io.github.yafrl.BindingSignal
 import io.github.yafrl.Event
 import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
+import io.github.yafrl.sample
+import io.github.yafrl.signal
 import io.github.yafrl.timeline.Timeline
 
 /** Embed an event in a larger set of events via a [Prism]. */
@@ -44,3 +46,67 @@ fun <A, B> BindingSignal<A>.focus(timeline: Timeline, lens: Lens<A, B>): Binding
     return state
 }
 
+typealias SignalFunction<A, B> = (Signal<A>) -> Signal<B>
+
+
+// This would correspond to "Costrong" I think
+fun <A, B> SignalFunction<A, A>.focus(timeline: Timeline, lens: Lens<A, B>): SignalFunction<B, B> = { input ->
+    with(timeline.timelineScope) {
+        val res = input.map { lens.set(it, sample { input.currentValue() }) }
+        res
+    }
+}
+
+/**
+ * Embed a signal function into a larger signal function using a lens.
+ **/
+fun <A, B> SignalFunction<B, B>.embed(timeline: Timeline, lens: Lens<A, B>): SignalFunction<A, A> = { input ->
+    with(timeline.timelineScope) {
+        // Take the transformation
+        val focusedTransform: SignalFunction<B, B> = this@embed
+
+        // Apply it to the focused input to get an output signal on the foci
+        val focusedOutput: Signal<B> = focusedTransform(
+            input.map { lens.get(it) }
+        )
+
+        // Use the lens setter to create a signal of endomorphisms of the whole
+        val wholeTransform: Signal<(A) -> A> = focusedOutput.map { y: B ->
+            { x: A -> lens.set(x, y) }
+        }
+
+        // Use the applicative instance to apply the transformation on the whole to the input.
+        signal {
+            wholeTransform.bind()
+                .invoke(input.bind())
+        }
+    }
+}
+
+interface ProductBuilder<A> {
+    fun <B> SignalFunction<B, B>.bind(lens: Lens<A, B>)
+}
+
+/**
+ * Build a signal transformer from the product of several signal transformers.
+ **/
+fun <A> Signal.Companion.product(
+    timeline: Timeline,
+    builder: ProductBuilder<A>.() -> Unit
+): (Signal<A>) -> Signal<A> {
+    val signals = mutableListOf<SignalFunction<A, A>>()
+
+    val scope = object : ProductBuilder<A> {
+        override fun <B> SignalFunction<B, B>.bind(lens: Lens<A, B>) {
+            signals.add(embed(timeline, lens))
+        }
+    }
+
+    scope.builder()
+
+    val id = { x: Signal<A> -> x }
+
+    return signals.fold(id) { x, y ->
+        { it: Signal<A> -> x.invoke(y.invoke(it)) }
+    }
+}
