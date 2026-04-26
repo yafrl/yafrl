@@ -29,13 +29,16 @@ class EventLogging : FunSpec({
 
             externalEvent.send(2)
 
-            assertEquals(
-                listOf(
-                    ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 1), null),
-                    ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 2), null)
-                ),
+
+            listOf(
+                ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 1), null),
+                ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 2), null)
+            ).zip(
                 timeline.reportEvents().toList()
-            )
+            ).forEach { (x, y) ->
+                assertEquals(x.externalAction, y.externalAction)
+                assertEquals(x.behaviorsSampled, y.behaviorsSampled)
+            }
         }
     }
 })

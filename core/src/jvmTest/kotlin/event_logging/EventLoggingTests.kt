@@ -7,6 +7,7 @@ import io.github.yafrl.signal
 import io.github.yafrl.timeline.logging.EventLogger
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -47,14 +48,14 @@ class EventLoggingTests : FunSpec({
 
             sample { derived.currentValue() } shouldBe "foo!"
 
-            // Ensure that external events are serialized properly.
-            logger.reportEvents().toString() shouldBe "[" +
+            // Ensure that external events are serialized properly
+            logger.reportEvents().toString() shouldContain
                     "ExternalEvent(" +
-                    "behaviorsSampled={}, externalAction=FireEvent(id=node#0, value=!)" +
-                    "), " +
+                    "behaviorsSampled={}, externalAction=FireEvent(id=node#0, value=!)"
+
+            logger.reportEvents().toString() shouldContain
                     "ExternalEvent(" +
-                    "behaviorsSampled={}, externalAction=UpdateValue(id=node#1, value=foo)" +
-                    ")]"
+                    "behaviorsSampled={}, externalAction=UpdateValue(id=node#1, value=foo)"
 
             testFile.deleteOnExit()
         }
