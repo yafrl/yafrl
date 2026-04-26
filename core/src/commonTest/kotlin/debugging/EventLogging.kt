@@ -31,8 +31,8 @@ class EventLogging : FunSpec({
 
             assertEquals(
                 listOf(
-                    ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 1)),
-                    ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 2))
+                    ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 1), null),
+                    ExternalEvent(mapOf(), ExternalAction.FireEvent(NodeID(0), 2), null)
                 ),
                 timeline.reportEvents().toList()
             )
