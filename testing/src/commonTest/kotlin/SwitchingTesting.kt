@@ -5,6 +5,7 @@ import io.github.yafrl.testing.fpsClockGenerator
 import io.github.yafrl.testing.randomStateSpaceAction
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.property.RandomSource
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(FragileYafrlAPI::class)
@@ -30,6 +31,18 @@ class SwitchingTesting : FunSpec({
                 )
                 action.performAction(timeline)
             }
+        }
+    }
+
+    test("Falls back to all nodes when no external node has children") {
+        runYafrl {
+            // An isolated external signal with no downstream connections has no graph children.
+            // activeNodes will be empty, so randomStateSpaceAction must fall back to allNodes.
+            val isolated = externalSignal(0)
+
+            val action = randomStateSpaceAction(RandomSource.default(), fpsClockGenerator(), timeline)
+
+            assertEquals(isolated.node.id, action.nodeID, "Should select the only external node")
         }
     }
 
