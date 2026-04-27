@@ -79,7 +79,14 @@ internal fun randomStateSpaceAction(
     clockGenerator: Arb<Duration>,
     timeline: Timeline
 ): StateSpaceAction {
-    val nodes = timeline.externalNodes
+    val allNodes = timeline.externalNodes
+
+    // Only simulate nodes that are currently "active" (have at least one downstream child).
+    // Nodes with no children are disabled -- e.g. an inactive branch of a flatMap/switch.
+    val activeNodes = allNodes.filter { (nodeId, _) ->
+        timeline.graph.getChildrenOf(nodeId).isNotEmpty()
+    }
+    val nodes = if (activeNodes.isEmpty()) allNodes else activeNodes
 
     val selected = if (nodes.size == 1) 0 else Random.nextInt(nodes.entries.indices)
 
