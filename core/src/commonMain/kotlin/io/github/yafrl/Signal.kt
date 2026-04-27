@@ -309,11 +309,14 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
         }
 
         currentEvent.node.collectSync(eventListener)
+        timeline.graph.addChild(currentEvent.node.id, resultEvents.node.id)
 
         node.collectSync { newEvents ->
+            timeline.graph.removeChild(currentEvent.node.id, resultEvents.node.id)
             currentEvent.node.unregisterSync(eventListener)
             currentEvent = newEvents
             newEvents.node.collectSync(eventListener)
+            timeline.graph.addChild(currentEvent.node.id, resultEvents.node.id)
         }
 
         return resultEvents
