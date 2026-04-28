@@ -51,13 +51,18 @@ sealed interface Behavior<out A> {
     /**
      * Calculates the value at the specified time.
      *
-     * **Note**: If not used properly, this API can cause runtime crashes, as for
-     *  efficiency reasons, some behaviors assume times will be accessed in a
-     *  strictly monotonic increasing order.
+     * **Note**: This API does not guarantee per-frame constancy unless [time]
+     *  matches the current frame's time, and if not used properly it can cause
+     *  runtime crashes, as for efficiency reasons, some behaviors assume times
+     *  will be accessed in a strictly monotonic increasing order.
      *
-     * Please use [SampleScope.sampleValue] instead to get the value of a behavior
-     *  at the current frame. Or see [transformTime] if you need to modify the
-     *  time sampling behavior of a [Behavior].
+     * Please use [SampleScope.sampleValue] instead to get the value of a
+     *  behavior at the current frame -- that path enforces the per-frame
+     *  constancy guarantee (within a single frame, repeated samples of the
+     *  same [Behavior] always return the same value).
+     *
+     * Or see [transformTime] if you need to modify the time sampling behavior
+     *  of a [Behavior].
      **/
     @FragileYafrlAPI
     fun sampleValueAt(time: Duration): A
@@ -184,15 +189,34 @@ sealed interface Behavior<out A> {
 
     /**
      * A non-numeric behavior derived from sampling an external signal.
+     *
+     * [Sampled] is the only behavior type whose underlying source can be impure
+     *  / non-deterministic. To preserve the per-frame constancy guarantee
+     *  (within one frame, repeated samples of the same [Behavior] return the
+     *  same value), [sampleValueAt] consults [Timeline.behaviorsSampled] —
+     *  populating it on first access in a frame and re-using the cached value
+     *  on subsequent accesses until the next frame begins.
+     *
+     *  Note that the [time] argument to [sampleValueAt] is intentionally
+     *   ignored: a [Sampled] reads the *current* external value, not a value
+     *   at an arbitrary time.
      **/
     class Sampled<A>(
+        internal val timeline: Timeline,
         val id: BehaviorID,
         private val instance: () -> VectorSpace<A>,
         private val current: () -> A
     ) : Behavior<A> {
+        @OptIn(FragileYafrlAPI::class)
         @FragileYafrlAPI
         override fun sampleValueAt(time: Duration): A {
-            return current()
+            if (timeline.behaviorsSampled.contains(id)) {
+                @Suppress("UNCHECKED_CAST")
+                return timeline.behaviorsSampled[id] as A
+            }
+            val value = current()
+            timeline.behaviorsSampled[id] = value
+            return value
         }
 
         override fun measureImpulses(time: Duration, dt: Duration): A = with(instance()) {
@@ -386,6 +410,7 @@ open class BehaviorScope(timeline: Timeline) : SignalScope(timeline) {
     @OptIn(FragileYafrlAPI::class)
     inline fun <reified A> Behavior.Companion.sampled(noinline current: SampleScope.() -> A): Behavior<A> {
         val result = Sampled(
+            timeline,
             timeline.newBehaviorID(),
             { VectorSpace.instance<A>() },
             {
