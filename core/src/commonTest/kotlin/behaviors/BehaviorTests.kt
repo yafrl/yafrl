@@ -90,24 +90,24 @@ class BehaviorTests : FunSpec({
 
     test("FlatMap switches between behaviors") {
         runYafrl {
-            var selected = true
-            var value1 = 0
-            var value2 = 1
+            // Use externalSignal so that switching the selector creates a new frame,
+            // which is what makes the per-frame cache eligible to re-evaluate
+            // (see PerFrameConstancyTests for the constancy guarantee itself).
+            val selected = externalSignal(true)
+            val value1 = externalSignal(0)
+            val value2 = externalSignal(1)
 
-            val selectedBehavior = Behavior.sampled { selected }
-
-            val behavior1 = Behavior.sampled { value1 }
-            val behavior2 = Behavior.sampled { value2 }
-
-            val behavior = selectedBehavior.flatMap { selected ->
-                if (selected) behavior1 else behavior2
+            val behavior = selected.asBehavior().flatMap { s ->
+                if (s) value1.asBehavior() else value2.asBehavior()
             }
 
             sample {
                 assertEquals(0, behavior.sampleValue())
+            }
 
-                selected = false
+            selected.value = false
 
+            sample {
                 assertEquals(1, behavior.sampleValue())
             }
         }

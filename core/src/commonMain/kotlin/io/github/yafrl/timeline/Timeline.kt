@@ -520,6 +520,20 @@ class Timeline(
     }
 
     /**
+     * Looks up [behavior]'s value for the current frame.
+     *
+     * Per-frame constancy of [Behavior.Sampled] is enforced by
+     *  [Behavior.Sampled.sampleValueAt] itself (which consults
+     *  [behaviorsSampled]), so this helper just dispatches to the standard
+     *  [Behavior.sampleValueAt] at the current frame's [time].
+     **/
+    @OptIn(FragileYafrlAPI::class)
+    @PublishedApi
+    internal fun <A> cachedSampleValue(behavior: Behavior<A>): A {
+        return behavior.sampleValueAt(time)
+    }
+
+    /**
      * Introduces a new [SampleScope] that is being used to modify a newly created node
      *  so that we can keep track of the dependencies between nodes.
      **/
@@ -527,19 +541,7 @@ class Timeline(
     internal fun <R> trackedSample(body: SampleScope.() -> R): R {
         val scope = object: SampleScope(this) {
             override fun <A> Behavior<A>.sampleValue(): A {
-                if (this is Behavior.Sampled<A>) {
-                    if (behaviorsSampled.contains(this.id)) {
-                        return behaviorsSampled[id] as A
-                    }
-
-                    val value = sampleValueAt(time)
-
-                    behaviorsSampled[id] = value
-
-                    return value
-                } else {
-                    return sampleValueAt(time)
-                }
+                return cachedSampleValue(this)
             }
 
             override fun <A> Signal<A>.currentValue(): A {
