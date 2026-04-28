@@ -501,23 +501,61 @@ open class BehaviorScope(timeline: Timeline) : SignalScope(timeline) {
     @OptIn(FragileYafrlAPI::class)
     fun <T> Behavior<T>.integrateWith(vectorSpace: VectorSpace<T>, initial: T, accum: SampleScope.(T, T) -> T): Behavior<T> {
         return when(this) {
-            // Polynomials can be integrated exactly.
-            // TODO: Adding this messes up the yafrl-gdx example for some reason
-            // is Behavior.Polynomial -> this.exactIntegral(accum)
+            // Polynomials can be integrated exactly. We shift the antiderivative
+            //  so that its value at the moment of integration equals [initial] --
+            //  otherwise integrals constructed mid-timeline (e.g. for objects
+            //  spawned after t=0) would silently inherit accumulation from the
+            //  whole prior history.
+            is Behavior.Polynomial<T> -> {
+                val wrappedAccum: (T, T) -> T = { x, y ->
+                    TimelineScope(timeline).sample { accum(x, y) }
+                }
+                val antideriv = this.exactIntegral(wrappedAccum)
+                val t0 = timeline.time
+                val ft0 = antideriv.sampleValueAt(t0)
+                val space = antideriv.vectorSpace
+                with(space) {
+                    Behavior.Polynomial(
+                        space,
+                        listOf(initial - ft0) + antideriv.coefficients.drop(1)
+                    )
+                }
+            }
 
-            // Switchers / Until can be integrated piece-wise to get a more exact
-            //  result in the case of polynomials.
-            // TODO: Adding this in messes up the integration tests. Must not be accurate.
-//        is Until -> Until(
-//            lazy { initialBehavior.value.integrateWith(vectorSpace, initial, accum) },
-//            event.map { it.integrateWith(vectorSpace, initial, accum) }
-//        )
+            // Sum integrates termwise: ∫(f + g) = ∫f + ∫g. Splitting allows the
+            //  symbolic Polynomial branch above to apply to whichever sides are
+            //  polynomials, while the rest fall through to numeric integration.
+            //  The whole [initial] is attached to the second side so that the
+            //  combined sum starts at [initial] when sampled at t0.
+            is Behavior.Sum<T> -> Behavior.Sum(
+                vectorSpace.with { x, y ->
+                    TimelineScope(timeline).sample { accum(x, y) }
+                },
+                first.integrateWith(vectorSpace, vectorSpace.zero, accum),
+                second.integrateWith(vectorSpace, initial, accum)
+            )
 
-//        is Behavior.Sum -> Behavior.Sum(
-//            vectorSpace.with(accum),
-//            first.integrateWith(vectorSpace, zero, accum),
-//            second.integrateWith(vectorSpace, initial, accum)
-//        )
+            // Until is integrated piece-wise. The current piece is the integral
+            //  of whichever sub-behavior is active, and on each switch we start
+            //  a new sub-integral whose `initial` is the previous integral's
+            //  value at the switch time -- so the integral stays continuous.
+            //  Each sub-integral is constructed at the switch time, which means
+            //  the symbolic Polynomial branch above kicks in with the correct
+            //  shift for that segment.
+            is Until<T> -> {
+                val outerScope = this@BehaviorScope
+                IntegratedUntil(
+                    timeline = timeline,
+                    originalEvent = this.event,
+                    initialIntegral = this.initialBehavior.value
+                        .integrateWith(vectorSpace, initial, accum),
+                    integrateBranch = { switchValue, branch ->
+                        with(outerScope) {
+                            branch.integrateWith(vectorSpace, switchValue, accum)
+                        }
+                    }
+                )
+            }
 
             // Generic numeric integral that takes impulses into account
             else -> IntegratedBehavior(
@@ -561,4 +599,39 @@ internal class Until<A>(
     // TODO: What about when this updates?
     override val parentBehaviors: List<BehaviorID>
         get() = initialBehavior.value.parentBehaviors
+}
+
+/**
+ * Integral of an [Until]: tracks a `runningIntegral` that switches to a
+ *  freshly constructed sub-integral on each event firing, with the new
+ *  sub-integral's initial value set to the previous integral's value at
+ *  the switch time so the result stays continuous across switches.
+ **/
+@OptIn(FragileYafrlAPI::class)
+internal class IntegratedUntil<A>(
+    private val timeline: Timeline,
+    originalEvent: Event<Behavior<A>>,
+    private val initialIntegral: Behavior<A>,
+    integrateBranch: (switchValue: A, branch: Behavior<A>) -> Behavior<A>
+) : Behavior<A> {
+    private var runningIntegral: Behavior<A> = initialIntegral
+
+    init {
+        originalEvent.node.collectSync { nodeValue ->
+            if (nodeValue is EventState.Fired) {
+                val switchTime = timeline.time
+                val valueAtSwitch = runningIntegral.sampleValueAt(switchTime)
+                runningIntegral = integrateBranch(valueAtSwitch, nodeValue.event)
+            }
+        }
+    }
+
+    override fun sampleValueAt(time: Duration): A =
+        runningIntegral.sampleValueAt(time)
+
+    override fun measureImpulses(time: Duration, dt: Duration): A =
+        runningIntegral.measureImpulses(time, dt)
+
+    override val parentBehaviors: List<BehaviorID>
+        get() = initialIntegral.parentBehaviors
 }
