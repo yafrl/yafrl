@@ -96,4 +96,109 @@ class IntegrationTests: FunSpec({
             assertEquals(listOf(0.0, 1.0, 0.5), integral.coefficients) // t + t^2 / 2
         }
     }
+
+    test("Symbolic integration of a constant respects time of construction") {
+        runYafrl {
+            val clock = timeline.clock as BroadcastEvent<Duration>
+
+            val gravity = Behavior.const(-10.0)
+
+            val player = Behavior.integral(gravity) // constructed at t = 0
+
+            clock.send(10.0.seconds)
+
+            val spawned = Behavior.integral(gravity) // constructed at t = 10s
+
+            clock.send(1.0.seconds)
+
+            // Player has been falling for 11s, spawned for 1s -- both should
+            //  reflect only their own lifetimes, not absolute time since t=0.
+            assertTrue("Expected player ≈ -110 but was ${player.sampleValue()}") {
+                abs(player.sampleValue() - (-110.0)) < 0.01
+            }
+            assertTrue("Expected spawned ≈ -10 but was ${spawned.sampleValue()}") {
+                abs(spawned.sampleValue() - (-10.0)) < 0.01
+            }
+        }
+    }
+
+    test("Symbolic integration respects the initial constant of integration") {
+        runYafrl {
+            val clock = timeline.clock as BroadcastEvent<Duration>
+
+            val integrated = Behavior.const(2.0).integrate(initial = 5.0)
+
+            assertTrue("Expected initial ≈ 5.0 but was ${integrated.sampleValue()}") {
+                abs(integrated.sampleValue() - 5.0) < 0.01
+            }
+
+            clock.send(1.0.seconds)
+
+            assertTrue("Expected ≈ 7.0 but was ${integrated.sampleValue()}") {
+                abs(integrated.sampleValue() - 7.0) < 0.01
+            }
+        }
+    }
+
+    test("Until integration is piecewise and continuous across switches") {
+        runYafrl {
+            val clock = timeline.clock as BroadcastEvent<Duration>
+            val switchTo = externalEvent<Behavior<Double>>()
+
+            // Velocity is 1.0 initially, jumps to 3.0 on switch.
+            val velocity = Behavior.const(1.0).until(switchTo)
+            val position = velocity.integrate()
+
+            assertTrue("Expected 0.0 but was ${position.sampleValue()}") {
+                abs(position.sampleValue() - 0.0) < 0.01
+            }
+
+            clock.send(2.0.seconds)
+
+            // At t=2: position = 1.0 * 2 = 2.0
+            assertTrue("Expected 2.0 but was ${position.sampleValue()}") {
+                abs(position.sampleValue() - 2.0) < 0.01
+            }
+
+            // Switch velocity to 3.0 at t=2.
+            switchTo.send(Behavior.const(3.0))
+
+            clock.send(1.0.seconds)
+
+            // At t=3: position = 2.0 (accumulated) + 3.0 * 1 = 5.0.
+            //  Continuity: the post-switch integral starts at 2.0, not 0.
+            assertTrue("Expected 5.0 but was ${position.sampleValue()}") {
+                abs(position.sampleValue() - 5.0) < 0.01
+            }
+        }
+    }
+
+    test("Sum integration is termwise and respects time of construction") {
+        runYafrl {
+            val clock = timeline.clock as BroadcastEvent<Duration>
+
+            // Force a Behavior.Sum by combining a Polynomial with a non-polynomial
+            //  branch (a continuous function), since polynomial+polynomial collapses.
+            val gravity = Behavior.const(-10.0)
+            val drift = Behavior.continuous { 1.0 }
+            val acceleration = gravity + drift
+
+            val player = acceleration.integrate() // at t = 0
+
+            clock.send(5.0.seconds)
+
+            val spawned = acceleration.integrate() // at t = 5s
+
+            clock.send(1.0.seconds)
+
+            // After 6s total: player has integrated -9 over 6s = -54.
+            // Spawned at t=5: has integrated -9 over 1s = -9.
+            assertTrue("Expected player ≈ -54 but was ${player.sampleValue()}") {
+                abs(player.sampleValue() - (-54.0)) < 0.1
+            }
+            assertTrue("Expected spawned ≈ -9 but was ${spawned.sampleValue()}") {
+                abs(spawned.sampleValue() - (-9.0)) < 0.1
+            }
+        }
+    }
 })
