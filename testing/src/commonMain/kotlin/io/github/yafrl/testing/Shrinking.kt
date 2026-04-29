@@ -1,10 +1,16 @@
 package io.github.yafrl.testing
 
 import io.github.yafrl.Signal
+import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.TimelineScope
+import io.github.yafrl.timeline.BehaviorID
+import io.kotest.property.Arb
+import io.kotest.property.RandomSource
+import io.kotest.property.Sample
+import kotlin.time.Duration
 
 /**
  * Attempts to find the minimal list of actions that reproduces a test failure using recursive
@@ -15,18 +21,26 @@ import io.github.yafrl.timeline.TimelineScope
  * Note: Should probably use recursive list shrinking native to kotest if that ever makes it into
  *  kotest natively.
  **/
+@OptIn(FragileYafrlAPI::class)
 fun <W> shrinkActions(
     setupState: TimelineScope.() -> Signal<W>,
     actions: List<StateSpaceAction>,
+    randomizeBehaviors: Boolean = false,
+    randomSource: RandomSource = RandomSource.default(),
+    clockGenerator: Arb<Duration> = fpsClockGenerator(),
     actionsPassed: Boolean = true,
     test: (List<W>) -> Boolean,
 ): List<StateSpaceAction>? {
     // Adapted from my fork of kotest to work with the current (un-forked) version of Kotest.
     val shrinks = when {
         actions.isEmpty() -> emptyList()
-        actions.size == 1 -> listOfNotNull<List<StateSpaceAction>>(
-            actions.first().shrink()
-        )
+        actions.size == 1 -> {
+            // Try removing the single action entirely, then try each individually shrunk
+            // variant (smaller event value or smaller behavior value) as its own candidate.
+            listOf(emptyList<StateSpaceAction>()) + actions.first().shrink().map { shrunkAction ->
+                listOf(shrunkAction)
+            }
+        }
         else -> {
             val removals = listOf(
                 // just the last element
@@ -61,11 +75,22 @@ fun <W> shrinkActions(
         val states = mutableListOf<W>()
 
         runYafrl {
+            var currentBehaviorValues: Map<BehaviorID, Sample<Any?>> = emptyMap()
+            if (randomizeBehaviors) {
+                // Fall back to fresh draws for behaviors not present in the recorded map
+                // (e.g. a behavior that was inactive during the original failing run).
+                val fallback = arbBehaviorMockProvider(randomSource, clockGenerator)
+                timeline.behaviorMockProvider = { id, type ->
+                    currentBehaviorValues[id]?.value ?: fallback(id, type)
+                }
+            }
+
             val signal = setupState()
 
             states += sample { signal.currentValue() }
 
             for (action in shrink) {
+                currentBehaviorValues = action.behaviorValues
                 action.performAction(timeline)
                 states += sample { signal.currentValue() }
             }
@@ -86,7 +111,7 @@ fun <W> shrinkActions(
             anyFailed = true
 
             // Recurse to see if we can get an even smaller result.
-            val result = shrinkActions(setupState, shrink, testPassed, test)
+            val result = shrinkActions(setupState, shrink, randomizeBehaviors, randomSource, clockGenerator, testPassed, test)
 
             if (result == null) {
                 continue

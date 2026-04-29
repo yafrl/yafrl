@@ -193,7 +193,7 @@ sealed interface Behavior<out A> {
      * [Sampled] is the only behavior type whose underlying source can be impure
      *  / non-deterministic. To preserve the per-frame constancy guarantee
      *  (within one frame, repeated samples of the same [Behavior] return the
-     *  same value), [sampleValueAt] consults [Timeline.behaviorsSampled] —
+     *  same value), [sampleValueAt] consults [Timeline.behaviorsSampled] --
      *  populating it on first access in a frame and re-using the cached value
      *  on subsequent accesses until the next frame begins.
      *
@@ -214,7 +214,15 @@ sealed interface Behavior<out A> {
                 @Suppress("UNCHECKED_CAST")
                 return timeline.behaviorsSampled[id] as A
             }
-            val value = current()
+            val provider = timeline.behaviorMockProvider
+            val value: A = if (provider != null) {
+                val type = timeline.graph.getExternalBehaviors()[id]?.type
+                    ?: error("No registered ExternalBehavior for id=$id")
+                @Suppress("UNCHECKED_CAST")
+                provider(id, type) as A
+            } else {
+                current()
+            }
             timeline.behaviorsSampled[id] = value
             return value
         }
