@@ -12,13 +12,18 @@ import kotlin.time.Duration
 
 /**
  * Introduces a context from which behaviors and states can be sampled.
+ *
+ * Within a single frame, repeated calls to [SampleScope.sampleValue] on the same
+ *  [Behavior] reference will always return the same value. The per-frame cache
+ *  lives on the [Timeline] (see [Timeline.cachedSampleValue]), so this guarantee
+ *  holds across distinct [sample] invocations inside the same frame.
  **/
 @OptIn(FragileYafrlAPI::class) inline fun <R> TimelineScope.sample(
     body: SampleScope.() -> R
 ): R {
     val scope = object: SampleScope(timeline) {
         override fun <A> Behavior<A>.sampleValue(): A {
-            return sampleValueAt(timeline.time)
+            return timeline.cachedSampleValue(this)
         }
 
         override fun <A> Signal<A>.currentValue(): A {
