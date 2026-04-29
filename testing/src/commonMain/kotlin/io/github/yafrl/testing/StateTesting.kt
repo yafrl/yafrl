@@ -6,6 +6,7 @@ import io.github.yafrl.Signal
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
+import io.github.yafrl.timeline.BehaviorID
 import io.github.yafrl.timeline.Node
 import io.github.yafrl.timeline.NodeID
 import io.github.yafrl.timeline.logging.EventLogger
@@ -17,10 +18,10 @@ import io.kotest.property.RandomSource
 import io.kotest.property.Sample
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.numericDouble
-import io.kotest.property.asSample
 import io.kotest.property.resolution.resolve
 import kotlin.random.Random
 import kotlin.random.nextInt
+import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -43,18 +44,91 @@ fun fpsClockGenerator(frameRate: Double = 60.0, delta: Duration = 2.0.millisecon
 }
 
 /**
+ * Resolves a Kotest [Arb] for the given [KType], using [clockGenerator] for
+ *  [Duration] values. Returns `Arb<Any?>` via unchecked cast.
+ **/
+@Suppress("UNCHECKED_CAST")
+internal fun arbFor(type: KType, clockGenerator: Arb<Duration>): Arb<Any?> = when (type) {
+    typeOf<Duration>() -> clockGenerator as Arb<Any?>
+    typeOf<Unit>() -> (arbitrary { Unit }) as Arb<Any?>
+    else -> resolve(type)
+}
+
+/**
+ * Builds the [Timeline.behaviorMockProvider] hook used during state-testing
+ *  of external behaviors. When installed on a [Timeline], every per-frame
+ *  first sample of an [io.github.yafrl.behaviors.Behavior.Sampled] is
+ *  produced by resolving a Kotest [Arb] from the behavior's registered
+ *  [KType] instead of invoking its real `current` lambda.
+ *
+ * Does not record draws. Use [BehaviorDrawRecorder] when shrink trees are needed.
+ **/
+internal fun arbBehaviorMockProvider(
+    randomSource: RandomSource,
+    clockGenerator: Arb<Duration>
+): (BehaviorID, KType) -> Any? = { _, type ->
+    arbFor(type, clockGenerator).sample(randomSource).value
+}
+
+/**
+ * Installs a provider on [timeline] that replays [recorded] behavior values
+ *  verbatim, falling back to fresh draws via [fallback] for any behavior not
+ *  in the recorded map (e.g. a behavior that was inactive during the original run).
+ **/
+internal fun replayBehaviorProvider(
+    recorded: Map<BehaviorID, Sample<Any?>>,
+    fallback: (BehaviorID, KType) -> Any?
+): (BehaviorID, KType) -> Any? = { id, type ->
+    recorded[id]?.value ?: fallback(id, type)
+}
+
+/**
+ * Records the [Sample] (value + shrink tree) drawn for each external behavior
+ *  during a single frame. Install [provider] on [Timeline.behaviorMockProvider];
+ *  call [beginFrame] before each action fires, then [snapshot] after the frame's
+ *  state has been read to capture all draws for that frame.
+ **/
+internal class BehaviorDrawRecorder(
+    private val randomSource: RandomSource,
+    private val clockGenerator: Arb<Duration>
+) {
+    private val currentFrameDraws = mutableMapOf<BehaviorID, Sample<Any?>>()
+
+    val provider: (BehaviorID, KType) -> Any? = { id, type ->
+        val sample = arbFor(type, clockGenerator).sample(randomSource)
+        currentFrameDraws[id] = sample
+        sample.value
+    }
+
+    fun beginFrame() { currentFrameDraws.clear() }
+
+    fun snapshot(): Map<BehaviorID, Sample<Any?>> = currentFrameDraws.toMap()
+}
+
+/**
  * Advances the FRP graph to an arbitrary state in the state space, after
  *  which assertions can be run with [check].
  *
  * Useful for checking simple invariants in an FRP system.
+ *
+ * If [randomizeBehaviors] is `true`, every external behavior
+ *  ([io.github.yafrl.behaviors.Behavior.Companion.sampled]) will return a
+ *  random value drawn from a Kotest `Arb` for its registered type instead
+ *  of invoking its real sampling lambda. Per-frame constancy is preserved.
  **/
+@OptIn(FragileYafrlAPI::class)
 fun <T> atArbitraryState(
     traceLength: Int = 100,
     randomSource: RandomSource = RandomSource.default(),
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
+    randomizeBehaviors: Boolean = false,
     setupState: TimelineScope.() -> Signal<T>,
     check: (T) -> Unit
 ) = runYafrl {
+    if (randomizeBehaviors) {
+        timeline.behaviorMockProvider = arbBehaviorMockProvider(randomSource, clockGenerator)
+    }
+
     val signal = setupState()
 
     repeat(traceLength) {
@@ -120,23 +194,44 @@ internal fun randomStateSpaceAction(
 
 /**
  * Representation of a randomly generated action that can be made in a [Timeline].
+ *
+ * [behaviorValues] holds the [Sample] (value + Kotest shrink tree) drawn for each
+ *  external behavior during the frame this action fired. It is populated when
+ *  [randomizeBehaviors] is `true`; it is empty otherwise.
+ *
+ * Having the shrink tree lets the shrinker try smaller behavior values alongside
+ *  the existing event/signal value shrinking, using the same recursive list-shrinking
+ *  strategy.
  **/
 sealed class StateSpaceAction {
     abstract val value: Sample<Any?>
 
     abstract val nodeID: NodeID
 
+    abstract val behaviorValues: Map<BehaviorID, Sample<Any?>>
+
     abstract fun shrink(): List<StateSpaceAction>
 
     abstract fun performAction(timeline: Timeline)
 
-    data class FireEvent(override val nodeID: NodeID, override val value: Sample<Any?>) : StateSpaceAction() {
+    data class FireEvent(
+        override val nodeID: NodeID,
+        override val value: Sample<Any?>,
+        override val behaviorValues: Map<BehaviorID, Sample<Any?>> = emptyMap()
+    ) : StateSpaceAction() {
         override fun shrink(): List<StateSpaceAction> {
-            val shrinks = value.shrinks
-
-            return shrinks.children.value.map { childTree ->
-                FireEvent(nodeID = nodeID, value = childTree.asSample())
+            // In Kotest 6.x, RTree<A>.value is () -> A (a lazy producer).
+            // childTree.asSample() wraps the RTree itself as the Sample value, which is wrong.
+            // Call childTree.value() to get the actual shrunken value.
+            val valueShrinks = value.shrinks.children.value.map { childTree ->
+                copy(value = Sample(childTree.value(), childTree))
             }
+            val behaviorShrinks = behaviorValues.flatMap { (id, sample) ->
+                sample.shrinks.children.value.map { childTree ->
+                    copy(behaviorValues = behaviorValues + (id to Sample(childTree.value(), childTree)))
+                }
+            }
+            return valueShrinks + behaviorShrinks
         }
 
         @OptIn(FragileYafrlAPI::class)
@@ -153,13 +248,21 @@ sealed class StateSpaceAction {
         }
     }
 
-    data class UpdateValue(override val nodeID: NodeID, override val value: Sample<Any?>) : StateSpaceAction() {
+    data class UpdateValue(
+        override val nodeID: NodeID,
+        override val value: Sample<Any?>,
+        override val behaviorValues: Map<BehaviorID, Sample<Any?>> = emptyMap()
+    ) : StateSpaceAction() {
         override fun shrink(): List<StateSpaceAction> {
-            val shrinks = value.shrinks
-
-            return shrinks.children.value.map { childTree ->
-                UpdateValue(nodeID = nodeID, value = childTree.asSample())
+            val valueShrinks = value.shrinks.children.value.map { childTree ->
+                copy(value = Sample(childTree.value(), childTree))
             }
+            val behaviorShrinks = behaviorValues.flatMap { (id, sample) ->
+                sample.shrinks.children.value.map { childTree ->
+                    copy(behaviorValues = behaviorValues + (id to Sample(childTree.value(), childTree)))
+                }
+            }
+            return valueShrinks + behaviorShrinks
         }
 
         @OptIn(FragileYafrlAPI::class)
@@ -208,6 +311,11 @@ sealed class StateSpaceAction {
  *
  * For each trace, at most [maxTraceLength] actions in the state graph will be
  *  taken.
+ *
+ * If [randomizeBehaviors] is `true`, every external behavior
+ *  ([io.github.yafrl.behaviors.Behavior.Companion.sampled]) will return a
+ *  random value drawn from a Kotest `Arb` for its registered type instead
+ *  of invoking its real sampling lambda. Per-frame constancy is preserved.
  **/
 @OptIn(FragileYafrlAPI::class)
 fun <W> testPropositionHoldsFor(
@@ -216,6 +324,7 @@ fun <W> testPropositionHoldsFor(
     maxTraceLength: Int = 50,
     clockGenerator: Arb<Duration> = fpsClockGenerator(),
     randomSource: RandomSource = RandomSource.default(),
+    randomizeBehaviors: Boolean = false,
     proposition: LTLSyntax<W>.() -> LTL<W>
 ) {
     val (numIterations, result) = propositionHoldsFor(
@@ -224,7 +333,8 @@ fun <W> testPropositionHoldsFor(
         maxTraceLength,
         clockGenerator,
         proposition,
-        randomSource
+        randomSource,
+        randomizeBehaviors
     )
 
     if (result != null) {
@@ -232,7 +342,7 @@ fun <W> testPropositionHoldsFor(
 
         val actions = result.actions
 
-        val shrunkActions = shrinkActions(setupState, actions) { actions ->
+        val shrunkActions = shrinkActions(setupState, actions, randomizeBehaviors, randomSource, clockGenerator) { actions ->
             val result = LTL.evaluate(
                 proposition,
                 actions.asIterable().iterator(),
@@ -245,11 +355,20 @@ fun <W> testPropositionHoldsFor(
         val shrunkStates = mutableListOf<W>()
 
         runYafrl {
+            var currentBehaviorValues: Map<BehaviorID, Sample<Any?>> = emptyMap()
+            if (randomizeBehaviors) {
+                val fallback = arbBehaviorMockProvider(randomSource, clockGenerator)
+                timeline.behaviorMockProvider = { id, type ->
+                    currentBehaviorValues[id]?.value ?: fallback(id, type)
+                }
+            }
+
             val signal = setupState()
 
             shrunkStates += sample { signal.currentValue() }
 
             for (action in shrunkActions) {
+                currentBehaviorValues = action.behaviorValues
                 action.performAction(timeline)
                 shrunkStates += sample { signal.currentValue() }
             }
@@ -310,13 +429,15 @@ data class LTLTestFailure<W>(
 )
 
 // Returns trace on failure, null otherwise.
+@OptIn(FragileYafrlAPI::class)
 private fun <W> propositionHoldsFor(
     setupState: TimelineScope.() -> Signal<W>,
     numIterations: Int,
     maxTraceLength: Int,
     clockGenerator: Arb<Duration>,
     proposition: LTLSyntax<W>.() -> LTL<W>,
-    randomSource: RandomSource
+    randomSource: RandomSource,
+    randomizeBehaviors: Boolean
 ): Pair<Int, LTLTestFailure<W>?> {
     var iterations = 0
     repeat(numIterations) {
@@ -327,6 +448,12 @@ private fun <W> propositionHoldsFor(
         val actionTrace = mutableListOf<StateSpaceAction>()
 
         val iterator = runYafrl {
+            val recorder = if (randomizeBehaviors) {
+                BehaviorDrawRecorder(randomSource, clockGenerator).also {
+                    timeline.behaviorMockProvider = it.provider
+                }
+            } else null
+
             val state = setupState()
 
             sequence {
@@ -336,12 +463,25 @@ private fun <W> propositionHoldsFor(
                     yield(state.currentValue())
 
                     while (true) {
+                        recorder?.beginFrame()
+
                         val action = randomStateSpaceAction(randomSource, clockGenerator, timeline)
                         action.performAction(timeline)
 
-                        actionTrace += action
-                        stateTrace += state.currentValue()
-                        yield(state.currentValue())
+                        val currentState = state.currentValue()
+                        stateTrace += currentState
+
+                        // Capture behavior draws before yielding: state.currentValue() above
+                        // triggered the lazy recompute (sampling behaviors), and we must record
+                        // them now. If we did this after yield, LTL.evaluate stopping on the
+                        // failing state would leave the last action's behavior values unrecorded.
+                        val capturedBehaviors = recorder?.snapshot() ?: emptyMap()
+                        actionTrace += when (action) {
+                            is StateSpaceAction.FireEvent -> action.copy(behaviorValues = capturedBehaviors)
+                            is StateSpaceAction.UpdateValue -> action.copy(behaviorValues = capturedBehaviors)
+                        }
+
+                        yield(currentState)
                     }
                 }
             }.asIterable().iterator()
