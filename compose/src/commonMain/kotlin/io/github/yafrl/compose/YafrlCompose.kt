@@ -152,6 +152,8 @@ fun YafrlCompose(
     }
 }
 
+inline fun <A> unsafePerformIO(f: () -> A): A = f()
+
 /**
  * Utility function to assist with using a [io.github.yafrl.Signal]
  *  in Jetpack Compose, by converting it to a [androidx.compose.runtime.State].

@@ -10,6 +10,7 @@ import io.github.yafrl.vector.Float2
 import io.github.yafrl.vector.Float3
 import io.github.yafrl.vector.VectorSpace
 import kotlinx.coroutines.flow.FlowCollector
+import yairm210.purity.annotations.Pure
 import kotlin.jvm.JvmName
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -86,15 +87,15 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <A, B> Signal<A>.map(f: SampleScope.(A) -> B): Signal<B> {
+    fun <A, B> Signal<A>.map(@Pure f: SampleScope.(A) -> B): Signal<B> {
         return Signal(timeline.createMappedNode(node, f))
     }
 
-    fun <A, B> Signal<A>.flatMap(f: SampleScope.(A) -> Signal<B>): Signal<B> {
+    fun <A, B> Signal<A>.flatMap(@Pure f: SampleScope.(A) -> Signal<B>): Signal<B> {
         return map(f).flatten()
     }
 
-    fun <A, B> Signal<A>.switchMap(f: SampleScope.(A) -> Event<B>): Event<B> {
+    fun <A, B> Signal<A>.switchMap(@Pure f: SampleScope.(A) -> Event<B>): Event<B> {
         return map(f).switch()
     }
 
@@ -126,7 +127,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
      * ```
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <A, B, C> Signal<A>.combineWith(state2: Signal<B>, op: (A, B) -> C): Signal<C> {
+    fun <A, B, C> Signal<A>.combineWith(state2: Signal<B>, @Pure op: (A, B) -> C): Signal<C> {
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node),
             combine = { values ->
@@ -141,7 +142,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
     }
 
     @OptIn(FragileYafrlAPI::class)
-    fun <A, B, C, D> Signal<A>.combineWith(state2: Signal<B>, state3: Signal<C>, op: (A, B, C) -> D): Signal<D> {
+    fun <A, B, C, D> Signal<A>.combineWith(state2: Signal<B>, state3: Signal<C>, @Pure op: (A, B, C) -> D): Signal<D> {
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node, state3.node),
             combine = { values ->
@@ -161,7 +162,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
         state2: Signal<B>,
         state3: Signal<C>,
         state4: Signal<D>,
-        op: (A, B, C, D) -> E
+        @Pure op: (A, B, C, D) -> E
     ): Signal<E> {
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node, state3.node, state4.node),
@@ -184,7 +185,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
         state3: Signal<C>,
         state4: Signal<D>,
         state5: Signal<E>,
-        op: (A, B, C, D, E) -> F
+        @Pure op: (A, B, C, D, E) -> F
     ): Signal<F> {
         val combined = timeline.createCombinedNode(
             parentNodes = listOf(this.node, state2.node, state3.node, state4.node, state5.node),
@@ -231,7 +232,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
      * ```
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <A, B> Signal.Companion.fold(initial: A, events: Event<B>, reducer: SampleScope.(A, B) -> A): Signal<A> {
+    fun <A, B> Signal.Companion.fold(initial: A, events: Event<B>, @Pure reducer: SampleScope.(A, B) -> A): Signal<A> {
         return Signal(
             timeline.createFoldNode(initial, events.node, reducer)
         )
@@ -444,7 +445,7 @@ open class SignalScope(timeline: Timeline): HasTimeline, EventScope(timeline) {
     /**
      * Method version of [Signal.fold], for easier use in method chains.
      **/
-    fun <A, B> Event<A>.scan(initial: B, reducer: SampleScope.(B, A) -> B): Signal<B> {
+    fun <A, B> Event<A>.scan(initial: B, @Pure reducer: SampleScope.(B, A) -> B): Signal<B> {
         return Signal.fold(initial, this, reducer)
     }
 

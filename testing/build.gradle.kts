@@ -57,7 +57,7 @@ kotlin {
                 implementation(libs.kotest.property)
                 implementation(libs.kotest.assertions)
                 implementation(libs.serialization)
-                // implementation(libs.purity.annotations)
+                implementation(libs.purity.annotations)
             }
         }
         val jvmTest by getting {

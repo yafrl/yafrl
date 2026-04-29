@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalComposeLibrary::class)
 
+import org.gradle.kotlin.dsl.configure
 import org.jetbrains.compose.ExperimentalComposeLibrary
+import yairm210.purity.PurityConfiguration
 
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - Jetpack Compose integration."
@@ -35,7 +37,7 @@ kotlin {
                 implementation(compose.material)
                 // TODO: Probably want to split the stuff that depends on this into another module.
                 implementation(libs.arrow.optics)
-                // implementation(libs.purity.annotations)
+                 implementation(libs.purity.annotations)
             }
         }
         val jvmTest by getting {
@@ -51,4 +53,17 @@ kotlin {
             }
         }
     }
+}
+
+configure<PurityConfiguration> {
+    warnOnPossibleAnnotations = true
+
+    wellKnownPureFunctions = setOf(
+        "kotlin.collections.isNotEmpty",
+        "kotlin.collections.sumOf"
+    )
+    wellKnownPureClasses = setOf()
+    wellKnownReadonlyClasses = setOf()
+    wellKnownReadonlyFunctions = setOf()
+    wellKnownInternalStateClasses = setOf()
 }

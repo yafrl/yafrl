@@ -1,5 +1,6 @@
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import yairm210.purity.PurityConfiguration
 
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - core library"
@@ -64,7 +65,7 @@ kotlin {
                 implementation(libs.kotlin.datetime)
                 implementation(libs.serialization)
                 implementation(libs.kotlinx.io)
-                // implementation(libs.purity.annotations)
+                implementation(libs.purity.annotations)
             }
         }
         val commonTest by getting {
@@ -92,36 +93,27 @@ kotlin {
     jvmToolchain(17)
 }
 
-//mavenPublishing {
-//    publishToMavenCentral(SonatypeHost.S01)
-//
-//    signAllPublications()
-//
-//    coordinates(group.toString(), project.name, version.toString())
-//
-//    pom {
-//        name = project.name
-//        description = projectDescription
-//        inceptionYear = "2025"
-//        url = "https://github.com/sintrastes/yafrl/"
-//        licenses {
-//            license {
-//                name = "The MIT License"
-//                url = "https://opensource.org/license/mit"
-//                distribution = "https://opensource.org/license/mit"
-//            }
-//        }
-//        developers {
-//            developer {
-//                id = "sintrastes"
-//                name = "Nathan Bedell"
-//                url = "https://github.com/sintrastes/"
-//            }
-//        }
-//        scm {
-//            url = "https://github.com/sintrastes/yafrl/"
-//            connection = "scm:git:git://github.com/sintrastes/yafrl.git"
-//            developerConnection = "scm:git:ssh://git@github.com/sintrastes/yafrl.git"
-//        }
-//    }
-//}
+configure<PurityConfiguration> {
+    warnOnPossibleAnnotations = true
+
+    wellKnownPureFunctions = setOf(
+        // These are not actually pure, but we treat them as pure
+        // to allow for the correct constraints on combinators for external users of the library.
+        "io.github.yafrl.timeline.Timeline.cachedSampleValue",
+        "io.github.yafrl.behaviors.Behavior.sampleValueAt",
+        "io.github.yafrl.timeline.Timeline.fetchNodeValue",
+        "io.github.yafrl.timeline.current",
+        "kotlinx.atomicfu.locks.synchronized",
+        "io.github.yafrl.timeline.Node.<get-dirty>",
+        "io.github.yafrl.timeline.Node.<set-dirty>",
+        "io.github.yafrl.timeline.Node.<get-rawValue>",
+        "io.github.yafrl.timeline.Node.<set-rawValue>",
+        // Actually pure
+        "kotlin.collections.plus",
+        "kotlin.collections.drop"
+    )
+    wellKnownPureClasses = setOf()
+    wellKnownReadonlyClasses = setOf()
+    wellKnownReadonlyFunctions = setOf()
+    wellKnownInternalStateClasses = setOf()
+}
