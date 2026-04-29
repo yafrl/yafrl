@@ -24,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import yairm210.purity.annotations.Pure
+import kotlin.reflect.KType
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -58,6 +59,20 @@ class Timeline(
     internal var currentFrame: Long = -1
 
     internal var behaviorsSampled = mutableMapOf<BehaviorID, Any?>()
+
+    /**
+     * Optional hook for state-testing: when non-null, every per-frame first
+     *  sample of an [Behavior.Sampled] (i.e. an external behavior) is produced
+     *  by this provider instead of by the behavior's real `current` lambda.
+     *
+     * The provider receives the behavior's [BehaviorID] and the [KType] under
+     *  which it was registered as an `ExternalBehavior` so that callers (e.g.
+     *  the testing module) can resolve a Kotest `Arb` from the type.
+     *
+     * `null` (default) preserves real sampling.
+     **/
+    @FragileYafrlAPI
+    var behaviorMockProvider: ((BehaviorID, KType) -> Any?)? = null
 
     val timeTravel = initTimeTravel(this)
 
