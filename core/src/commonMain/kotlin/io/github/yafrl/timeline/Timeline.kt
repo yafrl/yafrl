@@ -547,7 +547,11 @@ class Timeline(
     @PublishedApi
     @Pure
     internal fun <A> cachedSampleValue(behavior: Behavior<A>): A {
-        return behavior.sampleValueAt(time)
+        // Behavior.Sampled.sampleValueAt intentionally ignores its time argument.
+        // Evaluating `time` eagerly would lazily initialize clock/timeBehavior/pausedState
+        // as a side effect, adding the clock to externalNodes. This corrupts NodeID
+        // assignment during shrink replays in state-space testing.
+        return behavior.sampleValueAt(if (behavior is Behavior.Sampled<*>) 0.seconds else time)
     }
 
     /**

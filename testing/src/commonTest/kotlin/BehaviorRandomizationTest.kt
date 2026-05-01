@@ -9,10 +9,12 @@ import io.github.yafrl.testing.arbBehaviorMockProvider
 import io.github.yafrl.testing.atArbitraryState
 import io.github.yafrl.testing.fpsClockGenerator
 import io.github.yafrl.testing.testPropositionHoldsFor
+import io.github.yafrl.timeline.BehaviorID
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.property.RandomSource
+import io.kotest.property.Sample
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -345,7 +347,7 @@ class BehaviorRandomizationTest : FunSpec({
         // Replay the exact same shrunk actions with the recorded behavior values.
         val replayedStates = mutableListOf<Int>()
         runYafrl {
-            var currentBehaviorValues = emptyMap<io.github.yafrl.timeline.BehaviorID, io.kotest.property.Sample<Any?>>()
+            var currentBehaviorValues = emptyMap<BehaviorID, Sample<Any?>>()
             val fallback = arbBehaviorMockProvider(RandomSource.seeded(99L), fpsClockGenerator())
             timeline.behaviorMockProvider = { id, type ->
                 currentBehaviorValues[id]?.value ?: fallback(id, type)
