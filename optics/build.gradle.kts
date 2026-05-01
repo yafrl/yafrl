@@ -1,3 +1,6 @@
+import org.gradle.kotlin.dsl.configure
+import yairm210.purity.PurityConfiguration
+
 extra["projectDescription"] =
     "Yet Another Functional Reactive Library - Arrow optics integrations."
 
@@ -8,7 +11,7 @@ plugins {
     alias(libs.plugins.maven)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
-    alias(libs.plugins.kotest)
+    alias(libs.plugins.purity)
 }
 
 repositories {
@@ -48,6 +51,7 @@ kotlin {
             dependencies {
                 implementation(project(":yafrl-core"))
                 implementation(libs.arrow.optics)
+                implementation(libs.purity.annotations)
             }
         }
         val commonTest by getting {
@@ -62,4 +66,18 @@ kotlin {
             }
         }
     }
+}
+
+configure<PurityConfiguration> {
+    warnOnPossibleAnnotations = true
+
+    wellKnownPureFunctions = setOf(
+        "arrow.optics.PPrism.reverseGet",
+        "arrow.optics.PLens.get",
+        "arrow.optics.PLens.set"
+    )
+    wellKnownPureClasses = setOf()
+    wellKnownReadonlyClasses = setOf()
+    wellKnownReadonlyFunctions = setOf()
+    wellKnownInternalStateClasses = setOf()
 }

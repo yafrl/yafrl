@@ -20,6 +20,7 @@ import io.github.yafrl.behaviors.Behavior.Sampled
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.TimelineScope
 import io.github.yafrl.timeline.debugging.ExternalBehavior
+import yairm210.purity.annotations.Pure
 import kotlin.math.pow
 import kotlin.reflect.typeOf
 import kotlin.time.Duration
@@ -382,6 +383,7 @@ open class BehaviorScope(timeline: Timeline) : SignalScope(timeline) {
     /**
      * Builds a behavior whose value remains constant for all times.
      **/
+    @Pure
     inline fun <reified A> Behavior.Companion.const(value: A): Behavior<A> {
         return Polynomial(VectorSpace.instance(), listOf(value))
     }

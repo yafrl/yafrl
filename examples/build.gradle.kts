@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalComposeLibrary::class)
 
 import org.jetbrains.compose.ExperimentalComposeLibrary
+import org.gradle.kotlin.dsl.configure
+import yairm210.purity.PurityConfiguration
 
 plugins {
     kotlin("multiplatform") version libs.versions.kotlin.get()
@@ -8,6 +10,7 @@ plugins {
     alias(libs.plugins.compose)
     alias(libs.plugins.compose.plugin)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.purity)
 }
 
 repositories {
@@ -87,4 +90,14 @@ afterEvaluate {
 
 dependencies {
     ksp("io.arrow-kt:arrow-optics-ksp-plugin:2.1.0")
+}
+
+configure<PurityConfiguration> {
+    warnOnPossibleAnnotations = true
+
+    wellKnownPureFunctions = setOf()
+    wellKnownPureClasses = setOf()
+    wellKnownReadonlyClasses = setOf()
+    wellKnownReadonlyFunctions = setOf()
+    wellKnownInternalStateClasses = setOf()
 }

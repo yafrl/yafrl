@@ -64,6 +64,9 @@ class YafrlComposeTests {
             .onNodeWithContentDescription("Pause button")
             .performClick()
 
+        // Advance clock so recomposition fires after state change
+        composeTestRule.mainClock.advanceTimeBy(100)
+
         println("After click")
 
         // Verify paused state

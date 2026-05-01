@@ -8,14 +8,17 @@ import io.github.yafrl.runYafrl
 import io.github.yafrl.sample
 import io.github.yafrl.timeline.Timeline
 import io.github.yafrl.timeline.TimelineScope
+import yairm210.purity.annotations.Pure
 import kotlin.reflect.typeOf
 
 object TextAdventureExample {
     /** Interface for an action that the user can perform that updates that game's state. */
     fun interface Action {
+        @Pure
         operator fun invoke(state: GameState): GameState
 
         data class GoTo(val room: Room) : Action {
+            @Pure
             override fun invoke(state: GameState): GameState {
                 return state.copy(room = room)
             }

@@ -1,21 +1,29 @@
 package io.github.yafrl.vector
 
+import yairm210.purity.annotations.Pure
+
 /**
  * Abstraction for a vector space over the real numbers.
  **/
 interface VectorSpace<V> {
     val zero: V
 
+    @Pure
     operator fun V.plus(other: V): V
 
+    @Pure
     operator fun V.minus(other: V): V
 
+    @Pure
     operator fun Number.times(vect: V): V
 
+    @Pure
     operator fun V.times(value: Number): V
 
+    @Pure
     operator fun V.div(value: Number): V
 
+    @Pure
     fun with(accum: (V, V) -> V): VectorSpace<V> {
         return object: VectorSpace<V> by this {
             override fun V.plus(other: V): V {
@@ -34,6 +42,7 @@ interface VectorSpace<V> {
          *
          * Throws an [IllegalArgumentException] if no instance is available.
          **/
+        @Pure
         inline fun <reified T> instance(): VectorSpace<T> {
             return when (T::class) {
                 Double::class -> ScalarSpace.double() as VectorSpace<T>
@@ -50,6 +59,7 @@ interface VectorSpace<V> {
         /** Utility to check if a type [T] has a defined vector space instance. */
         inline fun <reified T> hasInstance(): Boolean = runCatching { instance<T>() }.isSuccess
 
+        @Pure
         fun float2() = object: VectorSpace<Float2> {
             override val zero: Float2 = Float2(0f, 0f)
 
@@ -74,6 +84,7 @@ interface VectorSpace<V> {
             }
         }
 
+        @Pure
         fun float3() = object: VectorSpace<Float3> {
             override val zero: Float3 = Float3(0f, 0f, 0f)
 
@@ -98,6 +109,7 @@ interface VectorSpace<V> {
             }
         }
 
+        @Pure
         fun double2() = object: VectorSpace<Double2> {
             override val zero: Double2 = Double2(0.0, 0.0)
 
@@ -122,6 +134,7 @@ interface VectorSpace<V> {
             }
         }
 
+        @Pure
         fun double3() = object: VectorSpace<Double3> {
             override val zero: Double3 = Double3(0.0, 0.0, 0.0)
 
@@ -149,6 +162,7 @@ interface VectorSpace<V> {
 }
 
 object ScalarSpace {
+    @Pure
     fun float() = object: VectorSpace<Float> {
         override val zero: Float = 0f
 
@@ -173,6 +187,7 @@ object ScalarSpace {
         }
     }
 
+    @Pure
     fun double() = object: VectorSpace<Double> {
         override val zero: Double = 0.0
 
@@ -197,6 +212,7 @@ object ScalarSpace {
         }
     }
 
+    @Pure
     fun int() = object: VectorSpace<Int> {
         override val zero: Int = 0
 

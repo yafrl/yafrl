@@ -23,6 +23,7 @@ import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import yairm210.purity.annotations.Pure
 import kotlin.reflect.KType
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -387,7 +388,7 @@ class Timeline(
 
         if (!internal && node.onNextFrame != null) {
             if (debugLogging) println("Adding on next frame listener for ${node.label}")
-            onNextFrameListeners.add { node.onNextFrame!!.invoke(node) }
+            onNextFrameListeners.add { node.onNextFrame.invoke(node) }
         }
 
         updateChildNodes(behaviorsSampled, node)
@@ -430,7 +431,7 @@ class Timeline(
 
             if (child.onNextFrame != null) {
                 if (debugLogging) println("Adding on next frame listener for ${child.label}")
-                onNextFrameListeners.add { child.onNextFrame!!.invoke(child) }
+                onNextFrameListeners.add { child.onNextFrame.invoke(child) }
             }
 
             if (debugLogging) println("Updating child node of ${node.label}")
@@ -544,8 +545,13 @@ class Timeline(
      **/
     @OptIn(FragileYafrlAPI::class)
     @PublishedApi
+    @Pure
     internal fun <A> cachedSampleValue(behavior: Behavior<A>): A {
-        return behavior.sampleValueAt(time)
+        // Behavior.Sampled.sampleValueAt intentionally ignores its time argument.
+        // Evaluating `time` eagerly would lazily initialize clock/timeBehavior/pausedState
+        // as a side effect, adding the clock to externalNodes. This corrupts NodeID
+        // assignment during shrink replays in state-space testing.
+        return behavior.sampleValueAt(if (behavior is Behavior.Sampled<*>) 0.seconds else time)
     }
 
     /**

@@ -1,6 +1,5 @@
 package io.github.yafrl
-
-import io.github.yafrl.annotations.ExperimentalYafrlAPI
+import yairm210.purity.annotations.Pure
 import io.github.yafrl.annotations.FragileYafrlAPI
 import io.github.yafrl.behaviors.Behavior
 import io.github.yafrl.timeline.HasTimeline
@@ -73,7 +72,7 @@ open class EventScope(override val timeline: Timeline) : HasTimeline {
      * Note: [f] should be a pure function.
      **/
     @OptIn(FragileYafrlAPI::class)
-    fun <A, B> Event<A>.map(f: SampleScope.(A) -> B): Event<B> {
+    fun <A, B> Event<A>.map(@Pure f: SampleScope.(A) -> B): Event<B> {
         return Event(
             timeline.createMappedNode(
                 parent = node,
@@ -90,7 +89,7 @@ open class EventScope(override val timeline: Timeline) : HasTimeline {
 
     fun <A, B> Event<A>.tag(behavior: Behavior<B>): Event<B> = map { behavior.sampleValue() }
 
-    fun <A, B: Any> Event<A>.mapNotNull(f: (A) -> B?): Event<B> {
+    fun <A, B: Any> Event<A>.mapNotNull(@Pure f: (A) -> B?): Event<B> {
         return map { f(it) }.filter { it != null }.map { it!! }
     }
 
@@ -503,6 +502,7 @@ open class BroadcastEvent<A> @OptIn(FragileYafrlAPI::class) @FragileYafrlAPI con
 sealed interface EventState<out A> {
     fun <B> map(f: (A) -> B): EventState<B>
 
+    @Pure
     fun isFired(): Boolean
 
     data class Fired<A>(val event: A) : EventState<A> {

@@ -8,6 +8,7 @@ import io.github.yafrl.timeline.current
 import io.github.yafrl.timeline.logging.EventLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import yairm210.purity.annotations.Pure
 import kotlin.time.Duration
 
 /**
@@ -58,7 +59,9 @@ inline fun <R> runYafrl(
  * Compare with [MonadSample]() from reflex.
  **/
 abstract class SampleScope(timeline: Timeline): TimelineScope(timeline) {
+    @Pure
     abstract fun <A> Behavior<A>.sampleValue(): A
 
+    @Pure
     abstract fun <A> Signal<A>.currentValue(): A
 }
